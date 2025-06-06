@@ -1,0 +1,99 @@
+---
+import type { SocialLinks } from '../interfaces';
+
+interface Props {
+  socialLinks?: SocialLinks;
+  theme?: {
+    backgroundColor?: string;
+    textColor?: string;
+  };
+}
+
+const { socialLinks, theme } = Astro.props;
+
+const socialIcons = {
+  facebook: 'fab fa-facebook-f',
+  instagram: 'fab fa-instagram',
+  twitter: 'fab fa-twitter',
+  tiktok: 'fab fa-tiktok',
+  youtube: 'fab fa-youtube',
+  linkedin: 'fab fa-linkedin-in',
+  whatsapp: 'fab fa-whatsapp',
+  telegram: 'fab fa-telegram',
+  pinterest: 'fab fa-pinterest',
+  snapchat: 'fab fa-snapchat'
+};
+
+const formatWhatsAppUrl = (phone: string) => {
+  const cleanPhone = phone.replace(/\D/g, '');
+  return `https://wa.me/${cleanPhone}`;
+};
+
+const socialEntries = socialLinks ? Object.entries(socialLinks).filter(([_, url]) => url) : [];
+---
+
+{socialEntries.length > 0 && (
+  <div class="social-links">
+    {socialEntries.map(([platform, url]) => {
+      const href = platform === 'whatsapp' ? formatWhatsAppUrl(url) : url;
+      const icon = socialIcons[platform as keyof typeof socialIcons] || 'fas fa-link';
+      
+      return (
+        <a 
+          href={href}
+          class="social-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Visitar ${platform}`}
+          style={theme?.backgroundColor ? `--social-bg: ${theme.backgroundColor}; --social-text: ${theme.textColor || '#FFFFFF'}` : ''}
+        >
+          <i class={icon}></i>
+        </a>
+      );
+    })}
+  </div>
+)}
+
+<style>
+  .social-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+  
+  .social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--social-bg, #FF4500);
+    color: var(--social-text, #FFFFFF);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  .social-link:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  }
+  
+  .social-link i {
+    font-size: 1.1rem;
+  }
+  
+  @media (max-width: 480px) {
+    .social-link {
+      width: 44px;
+      height: 44px;
+    }
+    
+    .social-link i {
+      font-size: 1rem;
+    }
+  }
+</style>

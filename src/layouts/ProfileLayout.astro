@@ -1,0 +1,186 @@
+---
+import type { Restaurant, LinkTree } from '../interfaces';
+
+interface Props {
+  restaurant: Restaurant;
+  linkTree: LinkTree;
+}
+
+const { restaurant, linkTree } = Astro.props;
+
+// Generar colores CSS personalizados basados en el tema
+const cssVariables = {
+  '--primary-color': restaurant.primaryColor || linkTree.ctaBackgroundColor || '#FF4500',
+  '--secondary-color': restaurant.secondaryColor || '#005F85',
+  '--background-color': linkTree.backgroundColor || '#FFF8F0',
+  '--text-color': linkTree.textColor || '#2C2C2C',
+  '--links-bg': linkTree.linksBackgroundColor || '#FFFFFF',
+  '--links-text': linkTree.linksColor || '#2C2C2C',
+  '--social-bg': linkTree.socialMediaBackgroundColor || restaurant.primaryColor || '#FF4500',
+  '--social-text': linkTree.socialMediaTextColor || '#FFFFFF',
+  '--cta-bg': linkTree.ctaBackgroundColor || restaurant.primaryColor || '#FF4500',
+  '--cta-text': linkTree.ctaTextColor || '#FFFFFF'
+};
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <title>{restaurant.name} - Menú Digital</title>
+  <meta name="description" content={restaurant.description || `Descubre el menú digital de ${restaurant.name}`}>
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={`${restaurant.name} - Menú Digital`}>
+  <meta property="og:description" content={restaurant.description || `Descubre el menú digital de ${restaurant.name}`}>
+  <meta property="og:url" content={`https://menu-upp.com/${restaurant.username}`}>
+  <meta property="og:image" content={linkTree.coverImage?.url || restaurant.imageCover || '/images/default-og.webp'}>
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={`${restaurant.name} - Menú Digital`}>
+  <meta name="twitter:description" content={restaurant.description || `Descubre el menú digital de ${restaurant.name}`}>
+  <meta name="twitter:image" content={linkTree.coverImage?.url || restaurant.imageCover || '/images/default-og.webp'}>
+  
+  <!-- Mobile -->
+  <meta name="theme-color" content={restaurant.primaryColor || '#FF4500'}>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+
+<body style={Object.entries(cssVariables).map(([key, value]) => `${key}:${value}`).join(';')}>
+  <div class="profile-container">
+    <slot />
+    
+    <footer class="footer">
+      <p>© 2025 {restaurant.name} - Powered by Menu-upp</p>
+    </footer>
+  </div>
+
+  <style>
+    :root {
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --border-radius: 16px;
+      --border-radius-sm: 12px;
+      --border-radius-lg: 24px;
+      --transition: all 0.3s ease;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 15px rgba(0,0,0,0.12);
+      --shadow-lg: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: var(--font-family);
+      background-color: var(--background-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+    
+    .profile-container {
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      background-color: var(--background-color);
+      position: relative;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 2rem 1.5rem 1rem;
+      font-size: 0.8rem;
+      color: rgba(44, 44, 44, 0.6);
+      border-top: 1px solid rgba(0,0,0,0.05);
+      margin-top: 3rem;
+    }
+    
+    /* Animaciones de entrada */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .profile-container {
+        max-width: 100%;
+      }
+    }
+    
+    @media (min-width: 481px) {
+      .profile-container {
+        box-shadow: 0 0 40px rgba(0,0,0,0.1);
+        border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+      }
+    }
+  </style>
+
+  <script>
+    // Animaciones de entrada progresivas
+    document.addEventListener('DOMContentLoaded', () => {
+      const animatedElements = document.querySelectorAll('.profile-header, .social-links, .link-card, .cta-container');
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              entry.target.style.animation = 'fadeInUp 0.6s ease forwards';
+            }, index * 100);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      
+      animatedElements.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        observer.observe(el);
+      });
+    });
+
+    // Analytics tracking (opcional)
+    const trackClick = (linkId) => {
+      // Implementar tracking de clicks si es necesario
+      console.log(`Click tracked for link: ${linkId}`);
+    };
+  </script>
+</body>
+</html>

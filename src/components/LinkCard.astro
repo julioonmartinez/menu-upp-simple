@@ -1,0 +1,194 @@
+---
+// src/components/LinkCard.astro
+import type { Link } from '../interfaces';
+
+interface Props {
+  link: Link;
+  theme?: {
+    backgroundColor?: string;
+    textColor?: string;
+  };
+}
+
+const { link, theme } = Astro.props;
+
+const icons = {
+  menu: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"></path>
+    <ellipse cx="12" cy="13" rx="2" ry="2" />
+  </svg>`,
+  calendar: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>`,
+  delivery: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="1" y="3" width="15" height="13"></rect>
+    <polygon points="16,3 21,8 21,16 16,16"></polygon>
+    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+  </svg>`,
+  event: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+  </svg>`,
+  gallery: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+    <polyline points="21,15 16,10 5,21"></polyline>
+  </svg>`,
+  location: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+    <circle cx="12" cy="10" r="3"></circle>
+  </svg>`,
+  wine: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M8 22h8"></path>
+    <path d="M12 15v7"></path>
+    <path d="M12 15c-1.5-1.5-3-3.5-3-6V3h6v6c0 2.5-1.5 4.5-3 6z"></path>
+    <path d="M9 3h6"></path>
+  </svg>`,
+  store: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"></path>
+    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>`,
+  website: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="2" y1="12" x2="22" y2="12"></line>
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+  </svg>`,
+  default: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path>
+  </svg>`
+};
+
+const getIcon = (iconKey?: string) => {
+  return icons[iconKey as keyof typeof icons] || icons.default;
+};
+---
+
+<a 
+  href={link.url}
+  class="link-card"
+  target={link.url.startsWith('http') ? '_blank' : '_self'}
+  rel={link.url.startsWith('http') ? 'noopener noreferrer' : ''}
+  style={theme ? `--link-bg: ${theme.backgroundColor}; --link-text: ${theme.textColor}` : ''}
+>
+  <div class="link-content">
+    <div class="link-icon" set:html={getIcon(link.icon)} />
+    <div class="link-text">
+      <h3 class="link-title">{link.title}</h3>
+      {link.description && <p class="link-description">{link.description}</p>}
+    </div>
+  </div>
+  <div class="link-arrow">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="9,18 15,12 9,6"></polyline>
+    </svg>
+  </div>
+</a>
+
+<style>
+  .link-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background-color: var(--link-bg, #FFFFFF);
+    color: var(--link-text, #2C2C2C);
+    border-radius: 16px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .link-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s ease;
+  }
+  
+  .link-card:hover::before {
+    left: 100%;
+  }
+  
+  .link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+  
+  .link-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 1rem;
+  }
+  
+  .link-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background-color: rgba(255,69,0,0.1);
+    color: #FF4500;
+    flex-shrink: 0;
+  }
+  
+  .link-text {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .link-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+  }
+  
+  .link-description {
+    font-size: 0.875rem;
+    color: var(--link-text-secondary, #666);
+    margin: 0;
+    line-height: 1.3;
+  }
+  
+  .link-arrow {
+    color: #FF4500;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+  
+  .link-card:hover .link-arrow {
+    transform: translateX(4px);
+  }
+  
+  @media (max-width: 480px) {
+    .link-card {
+      padding: 0.875rem 1rem;
+    }
+    
+    .link-icon {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .link-title {
+      font-size: 0.9rem;
+    }
+    
+    .link-description {
+      font-size: 0.8rem;
+    }
+  }
+</style>
