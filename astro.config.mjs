@@ -30,7 +30,7 @@ export default defineConfig({
         context: 'client',
         access: 'public',
         type: 'string',
-        default: 'true' // Por defecto usar mock data
+        default: 'false' // Por defecto usar mock data
       }
     }
   }
