@@ -3,148 +3,171 @@ import type { Restaurant, LinkTree } from '../interfaces';
 
 const getBaseUrl = () => {
   const apiUrl = import.meta.env.PUBLIC_API_URL;
-  if (!apiUrl) {
-    console.warn('No se encontró PUBLIC_API_URL, usando fallback');
-    return import.meta.env.DEV ? 'http://localhost:8000' : 'https://menuapp-api.onrender.com';
+  const isDev = import.meta.env.DEV;
+  
+  if (isDev && !apiUrl) {
+    return 'http://localhost:8000/api';
   }
   
-  console.log(`Usando API: ${apiUrl} (${import.meta.env.MODE})`);
+  if (!isDev && !apiUrl) {
+    throw new Error('PUBLIC_API_URL is required in production');
+  }
+  
   return apiUrl;
 };
 
 /**
- * Obtiene la información de un restaurante por username
- * @param username Username del restaurante
- * @returns Datos del restaurante
+ * Verifica si debemos usar mock data
  */
-export async function fetchRestaurantByUsername(username: string): Promise<Restaurant> {
-  const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/restaurants/username/${username}`;
+const shouldUseMockData = (): boolean => {
+  const useMockData = import.meta.env.PUBLIC_USE_MOCK_DATA;
+  const isDev = import.meta.env.DEV;
   
-  console.log(`Fetching restaurant: ${url}`);
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    // Timeout para evitar esperas largas
-    signal: AbortSignal.timeout(10000) // 10 segundos
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error fetching restaurant data: ${response.status} ${errorText}`);
+  if (isDev && useMockData === undefined) {
+    return true;
   }
   
-  return response.json();
-}
+  return useMockData === 'true';
+};
 
 /**
- * Obtiene la información de los links de un restaurante por username
- * @param username Username del restaurante
- * @returns Datos del linktree
+ * Wrapper para fetch con timeout
  */
-export async function fetchLinksByUsername(username: string): Promise<LinkTree> {
-  const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/linktrees/slug/${username}`;
+async function fetchWithTimeout(url: string, options: RequestInit & { timeout?: number } = {}) {
+  const { timeout = 10000, ...fetchOptions } = options;
   
-  console.log(`Fetching links: ${url}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
   
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    signal: AbortSignal.timeout(10000) // 10 segundos
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error fetching links data: ${response.status} ${errorText}`);
-  }
-  
-  return response.json();
-}
-
-/**
- * Obtiene todos los datos del perfil del restaurante
- * @param username Username del restaurante
- * @returns Objeto con información del restaurante y sus links
- */
-export async function fetchRestaurantProfile(username: string) {
   try {
-    console.log(`Fetching profile for: ${username}`);
-    
-    // Hacer peticiones en paralelo para mejor performance
-    const [restaurantData, linksData] = await Promise.all([
-      fetchRestaurantByUsername(username),
-      fetchLinksByUsername(username)
-    ]);
-    
-    console.log(`Successfully fetched profile for: ${username}`);
-    
-    return {
-      restaurant: restaurantData,
-      linkTree: linksData
-    };
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
   } catch (error) {
-    console.error(`Error fetching restaurant profile for ${username}:`, error);
+    clearTimeout(timeoutId);
     throw error;
   }
 }
 
 /**
- * Verifica si la API está disponible
- * @returns Promise<boolean>
+ * Obtiene la información de un restaurante por username desde API
  */
-export async function checkApiHealth(): Promise<boolean> {
+export async function fetchRestaurantByUsername(username: string): Promise<Restaurant> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/username/${username}`;
+  
+  const response = await fetchWithTimeout(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    timeout: 8000,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Restaurant API Error: ${response.status}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Obtiene la información de los links por username desde API
+ */
+export async function fetchLinksByUsername(username: string): Promise<LinkTree> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/linktrees/slug/${username}`;
+  
+  const response = await fetchWithTimeout(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    timeout: 8000,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Links API Error: ${response.status}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Obtiene todos los datos del perfil
+ */
+export async function fetchRestaurantProfile(username: string) {
+  // Verificar si debemos usar mock data
+  if (shouldUseMockData()) {
+    const { getMockRestaurantProfile } = await import('../data/mockData');
+    const mockData = getMockRestaurantProfile(username);
+    return {
+      restaurant: mockData.restaurant,
+      linkTree: mockData.linkTree,
+      dataSource: 'mock'
+    };
+  }
+  
+  // Usar API real
+  const [restaurantData, linksData] = await Promise.all([
+    fetchRestaurantByUsername(username),
+    fetchLinksByUsername(username)
+  ]);
+  
+  return {
+    restaurant: restaurantData,
+    linkTree: linksData,
+    dataSource: 'api'
+  };
+}
+
+/**
+ * Verifica si la API está disponible (para debug)
+ */
+export async function checkApiHealth(): Promise<{ healthy: boolean; url: string; error?: string }> {
   try {
     const baseUrl = getBaseUrl();
-    const response = await fetch(`${baseUrl}/health`, {
+    const response = await fetchWithTimeout(`${baseUrl}/health`, {
       method: 'GET',
-      signal: AbortSignal.timeout(5000) // 5 segundos para health check
+      timeout: 5000,
     });
     
-    return response.ok;
+    return {
+      healthy: response.ok,
+      url: baseUrl,
+      error: response.ok ? undefined : `HTTP ${response.status}`
+    };
   } catch (error) {
-    console.warn('API health check failed:', error);
-    return false;
+    return {
+      healthy: false,
+      url: getBaseUrl(),
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }
 
 /**
- * Obtiene la información de un restaurante (método original mantenido para compatibilidad)
- * @param restaurantId ID del restaurante
- * @returns Datos del restaurante
+ * Función de debug (para página de debug)
  */
-export async function fetchRestaurantData(restaurantId: string): Promise<Restaurant> {
-  const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/restaurants/${restaurantId}`);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error fetching restaurant data: ${response.status} ${errorText}`);
-  }
-  
-  return response.json();
-}
-
-/**
- * Obtiene la información de los links de un restaurante (método original mantenido para compatibilidad)
- * @param restaurantId ID del restaurante
- * @returns Datos del linktree
- */
-export async function fetchLinksData(restaurantId: string): Promise<LinkTree> {
-  const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/linktrees/restaurant/${restaurantId}`);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error fetching restaurant data: ${response.status} ${errorText}`);
-  }
-  
-  return response.json();
+export function debugApiConfiguration() {
+  return {
+    environment: import.meta.env.MODE,
+    isDev: import.meta.env.DEV,
+    apiUrl: import.meta.env.PUBLIC_API_URL,
+    useMockData: import.meta.env.PUBLIC_USE_MOCK_DATA,
+    shouldUseMock: shouldUseMockData(),
+    resolvedBaseUrl: (() => {
+      try {
+        return getBaseUrl();
+      } catch (e) {
+        return `Error: ${e instanceof Error ? e.message : 'Unknown'}`;
+      }
+    })(),
+    timestamp: new Date().toISOString()
+  };
 }
