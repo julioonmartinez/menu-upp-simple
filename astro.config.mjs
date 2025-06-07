@@ -1,7 +1,8 @@
 import { defineConfig } from 'astro/config';
-
+import vercel from '@astrojs/vercel/serverless';
 export default defineConfig({
-  output: 'static', 
+ output: 'server', // ✅ Era 'static'
+  adapter: vercel(), // ✅ Necesario para SSR
   site: 'https://menu-upp-basic.vercel.app',
   
   // Configuración para desarrollo

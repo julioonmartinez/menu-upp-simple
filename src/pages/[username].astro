@@ -7,18 +7,19 @@ import LinkCard from '../components/LinkCard.astro';
 import CTAButton from '../components/CTAButton.astro';
 
 // Import services and mock data
-import { fetchRestaurantProfile } from '../services/apiService';
+import { fetchRestaurantProfile, checkApiHealth } from '../services/apiService';
 import { getMockRestaurantProfile } from '../data/mockData';
 import type { Restaurant, LinkTree, Link } from '../interfaces';
 
-export async function getStaticPaths() {
-  // Generar rutas estáticas para Vercel
-  const mockUsernames = ['labellavita', 'tacoselrey', 'sushizen'];
+// export async function getStaticPaths() {
+//   // Para desarrollo y producción, generar paths estáticos
+//   // En el futuro esto se podría obtener de la API
+//   const mockUsernames = ['labellavita', 'tacoselrey', 'sushizen'];
   
-  return mockUsernames.map(username => ({
-    params: { username }
-  }));
-}
+//   return mockUsernames.map(username => ({
+//     params: { username }
+//   }));
+// }
 
 interface Props {
   restaurant: Restaurant;
@@ -29,24 +30,42 @@ const { username } = Astro.params;
 
 let restaurant: Restaurant;
 let linkTree: LinkTree;
+let dataSource = 'unknown';
 
 try {
-  // Usar variable de entorno específica para controlar mock data
-  const useMockData = import.meta.env.PUBLIC_USE_MOCK_DATA === 'true' || import.meta.env.DEV;
+  // Verificar si debemos forzar mock data
+  const forceMockData = import.meta.env.PUBLIC_USE_MOCK_DATA === 'true';
   
-  if (useMockData) {
-    // Usar mock data en desarrollo Y en producción si está configurado
+  if (forceMockData) {
+    console.log(`🔧 Using forced mock data for: ${username}`);
     const mockData = getMockRestaurantProfile(username!);
     restaurant = mockData.restaurant;
     linkTree = mockData.linkTree;
+    dataSource = 'mock-forced';
   } else {
-    // Usar API solo cuando esté explícitamente configurado
-    const data = await fetchRestaurantProfile(username!);
-    restaurant = data.restaurant;
-    linkTree = data.linkTree;
+    // Intentar usar la API real
+    try {
+      console.log(`🌐 Attempting to fetch from API: ${username}`);
+      
+      const data = await fetchRestaurantProfile(username!);
+      restaurant = data.restaurant;
+      linkTree = data.linkTree;
+      dataSource = 'api';
+      
+      console.log(`✅ Successfully fetched from API: ${username}`);
+    } catch (apiError) {
+      console.warn(`⚠️ API failed for ${username}, falling back to mock data:`, apiError);
+      
+      // Fallback a mock data si la API falla
+      const mockData = getMockRestaurantProfile(username!);
+      restaurant = mockData.restaurant;
+      linkTree = mockData.linkTree;
+      dataSource = 'mock-fallback';
+    }
   }
 } catch (error) {
-  console.error('Error loading restaurant profile:', error);
+  console.error('❌ Error loading restaurant profile:', error);
+  // Return 404 if no data available (ni API ni mock data)
   return Astro.redirect('/404');
 }
 
@@ -95,7 +114,18 @@ const ctaTheme = {
     )}
     
     <!-- Call to Action -->
-    <CTAButton restaurant={restaurant} theme={ctaTheme} />
+    <!-- <CTAButton restaurant={restaurant} theme={ctaTheme} /> -->
+    
+    <!-- Data Source Indicator (solo en desarrollo) -->
+    {import.meta.env.DEV && (
+      <div class="data-source-indicator">
+        <span class={`source-badge source-${dataSource}`}>
+          {dataSource === 'api' && '🌐 API'}
+          {dataSource === 'mock-forced' && '🔧 Mock (Forced)'}
+          {dataSource === 'mock-fallback' && '⚠️ Mock (Fallback)'}
+        </span>
+      </div>
+    )}
     
     <!-- Información adicional -->
     {(restaurant.cuisineType || restaurant.features) && (
@@ -190,6 +220,36 @@ const ctaTheme = {
   .main-links > *:nth-child(3) { animation-delay: 0.3s; }
   .main-links > *:nth-child(4) { animation-delay: 0.4s; }
   .main-links > *:nth-child(5) { animation-delay: 0.5s; }
+  
+  /* Data source indicator (desarrollo) */
+  .data-source-indicator {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1000;
+  }
+  
+  .source-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  
+  .source-api {
+    background-color: #22C55E;
+  }
+  
+  .source-mock-forced {
+    background-color: #3B82F6;
+  }
+  
+  .source-mock-fallback {
+    background-color: #F59E0B;
+  }
   
   @keyframes fadeInUp {
     to {

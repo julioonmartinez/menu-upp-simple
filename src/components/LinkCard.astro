@@ -10,7 +10,9 @@ interface Props {
   };
 }
 
+
 const { link, theme } = Astro.props;
+
 
 const icons = {
   menu: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -72,7 +74,7 @@ const getIcon = (iconKey?: string) => {
   class="link-card"
   target={link.url.startsWith('http') ? '_blank' : '_self'}
   rel={link.url.startsWith('http') ? 'noopener noreferrer' : ''}
-  style={theme ? `--link-bg: ${theme.backgroundColor}; --link-text: ${theme.textColor}` : ''}
+  style={theme ? `--link-bg: ${link.customColor == '' ? '#ffff' : link.customColor }; --link-text: ${theme.textColor}` : ''}
 >
   <div class="link-content">
     <div class="link-icon" set:html={getIcon(link.icon)} />
