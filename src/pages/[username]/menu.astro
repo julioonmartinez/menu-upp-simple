@@ -9,10 +9,10 @@ import FloatingButton from '../../components/microcomponentes/FloatingButton.sve
 import MenuSection from '../../components/MenuSection.astro';
 import PromotionModal from '../../components/PromotionModal.svelte';
 // import AnalyticsTracker from '../../components/AnalyticsTracker.astro';
-import { fetchAllRestaurantDataByUsername } from '../../services/apiService';
-import type { Restaurant } from '../../interface/restaurant';
-import type { Category } from '../../interface/categories';
-import type { Dish } from '../../interface/dish';
+import { fetchAllRestaurantDataByUsername, fetchDishesByUsernameAndCategory } from '../../services/apiService';
+import type { Restaurant } from '../../interfaces/restaurant';
+import type { Category } from '../../interfaces/categories';
+import type { Dish } from '../../interfaces/dish';
 
 // Obtener el username de los parámetros de la URL
 const { username } = Astro.params;
@@ -45,6 +45,8 @@ try {
   console.log('Restaurant Info:', restaurantInfo.name);
   console.log('Categories count:', categoriesInfo?.length || 0);
   console.log('Dishes count:', dishesInfo?.length || 0);
+  const dishesByCategory = await fetchDishesByUsernameAndCategory(username, categoriesInfo[0].id!)
+  console.log( 'dishes by category 0', dishesByCategory)
   
 } catch (error) {
   console.error('Error fetching restaurant data by username:', error);

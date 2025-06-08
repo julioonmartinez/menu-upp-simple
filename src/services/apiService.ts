@@ -1,6 +1,6 @@
 // src/services/apiService.ts
-import type { Category } from "../interface/categories";
-import type { Dish } from "../interface/dish";
+import type { Category } from "../interfaces/categories";
+import type { Dish } from "../interfaces/dish";
 import type { Restaurant, LinkTree } from '../interfaces';
 
 const getBaseUrl = () => {
@@ -60,7 +60,8 @@ const handleApiResponse = async (response: Response, context: string) => {
     return data;
   } catch (parseError) {
     console.error(`❌ Error parsing JSON for ${context}:`, parseError);
-    throw new Error(`Error parsing response for ${context}: ${parseError.message}`);
+    const errorMessage = (parseError instanceof Error) ? parseError.message : String(parseError);
+    throw new Error(`Error parsing response for ${context}: ${errorMessage}`);
   }
 };
 
@@ -365,4 +366,8 @@ export function debugApiConfiguration() {
     })(),
     timestamp: new Date().toISOString()
   };
+}
+
+function fetchCategories(id: string): Category[] | PromiseLike<Category[]> {
+  throw new Error("Function not implemented.");
 }
