@@ -78,7 +78,7 @@ const ctaTheme = {
     {activeLinks.length > 0 && (
       <div class="main-links">
         {activeLinks.map((link: Link) => (
-          <LinkCard link={link} theme={linkTheme} />
+          <LinkCard username={username} link={link} theme={linkTheme} />
         ))}
       </div>
     )}

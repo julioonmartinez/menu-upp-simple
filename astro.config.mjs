@@ -1,15 +1,19 @@
 import { defineConfig } from 'astro/config';
 import vercel from '@astrojs/vercel/serverless';
+import svelte from '@astrojs/svelte'
 export default defineConfig({
  output: 'server', // ✅ Era 'static'
   adapter: vercel(), // ✅ Necesario para SSR
   site: 'https://menu-upp-basic.vercel.app',
-  
+  integrations: [svelte()],
   // Configuración para desarrollo
   server: {
     port: 3000,
     host: true
   },
+  // experimental: {
+  //   serverIslands: true
+  // },
   //  adapter: vercel(),
   // Optimizaciones
   build: {

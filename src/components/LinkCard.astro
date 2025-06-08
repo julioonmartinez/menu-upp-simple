@@ -7,9 +7,10 @@ interface Props {
     backgroundColor?: string;
     textColor?: string;
   };
+  username: string
 }
 
-const { link, theme } = Astro.props;
+const { link, theme, username } = Astro.props;
 
 // Función mejorada para convertir iconos del backend a clases de Font Awesome 6
 const getIconClass = (iconKey?: string) => {
@@ -171,7 +172,7 @@ if (import.meta.env.DEV) {
 ---
 
 <a 
-  href={link.url}
+  href={ link.type == 'menu' ? `${username}/menu` : link.url  }
   class="link-card"
   target={link.url.startsWith('http') ? '_blank' : '_self'}
   rel={link.url.startsWith('http') ? 'noopener noreferrer' : ''}

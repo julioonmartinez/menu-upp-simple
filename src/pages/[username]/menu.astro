@@ -1,0 +1,373 @@
+---
+// src/pages/[username]/menu.astro
+// Vista del menú basada en username del restaurante
+import Layout from '../../layouts/Layout.astro';
+import Hero from '../../components/Hero.astro';
+import CategoryNav from '../../components/CategoryNav.astro';
+import Header from '../../components/Header.astro';
+import FloatingButton from '../../components/microcomponentes/FloatingButton.svelte';
+import MenuSection from '../../components/MenuSection.astro';
+import PromotionModal from '../../components/PromotionModal.svelte';
+// import AnalyticsTracker from '../../components/AnalyticsTracker.astro';
+import { fetchAllRestaurantDataByUsername } from '../../services/apiService';
+import type { Restaurant } from '../../interface/restaurant';
+import type { Category } from '../../interface/categories';
+import type { Dish } from '../../interface/dish';
+
+// Obtener el username de los parámetros de la URL
+const { username } = Astro.params;
+
+if (!username) {
+  return Astro.redirect('/404');
+  
+}
+
+// Estados iniciales
+let restaurantInfo: Restaurant | null = null;
+let categoriesInfo: Category[] | null = null;
+let dishesInfo: Dish[] | null = null;
+let errorMessage: string | null = null;
+
+try {
+  // Obtener todos los datos del restaurante usando el username
+  const data = await fetchAllRestaurantDataByUsername(username);
+  
+  // Asignar los datos a las variables correspondientes
+  restaurantInfo = data.restaurant;
+  categoriesInfo = data.categories;
+  dishesInfo = data.dishes;
+
+  // Verificar que el restaurante existe y está activo
+  if (!restaurantInfo) {
+    return Astro.redirect('/404');
+  }
+
+  console.log('Restaurant Info:', restaurantInfo.name);
+  console.log('Categories count:', categoriesInfo?.length || 0);
+  console.log('Dishes count:', dishesInfo?.length || 0);
+  
+} catch (error) {
+  console.error('Error fetching restaurant data by username:', error);
+  errorMessage = error instanceof Error ? error.message : 'Restaurant not found';
+  
+  // Si no se encuentra el restaurante, redirigir a 404
+  if (error instanceof Error && error.message.includes('404')) {
+    return Astro.redirect('/404');
+  }
+}
+
+// Meta tags para SEO
+const pageTitle = restaurantInfo ? `${restaurantInfo.name} - Menú Completo` : 'Menú';
+const pageDescription = restaurantInfo 
+  ? `Descubre el delicioso menú de ${restaurantInfo.name}. ${categoriesInfo?.length || 0} categorías con ${dishesInfo?.length || 0} platillos únicos.`
+  : 'Menú del restaurante';
+---
+
+<Layout 
+  restaurant={restaurantInfo!} 
+  title={pageTitle}
+  description={pageDescription}
+>
+  <!-- Meta tags adicionales -->
+  <meta slot="head" name="restaurant-username" content={username} />
+  <meta slot="head" name="restaurant-id" content={restaurantInfo?.id || ''} />
+  <meta slot="head" property="og:title" content={pageTitle} />
+  <meta slot="head" property="og:description" content={pageDescription} />
+  <meta slot="head" property="og:image" content={restaurantInfo?.imageCover || restaurantInfo?.image || ''} />
+  <meta slot="head" property="og:type" content="restaurant.menu" />
+  
+  <!-- Structured Data para SEO -->
+  <script type="application/ld+json" slot="head">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "{restaurantInfo?.name || ''}",
+      "description": "{restaurantInfo?.description || ''}",
+      "url": "{Astro.url.href}",
+      "image": "{restaurantInfo?.image || ''}",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "{restaurantInfo?.location || ''}"
+      },
+      "hasMenu": {
+        "@type": "Menu",
+        "hasMenuSection": [
+          {categoriesInfo?.map(cat => ({
+            "@type": "MenuSection",
+            "name": cat.name,
+            "description": cat.description || ""
+          })) || []}
+        ]
+      }
+    }
+  </script>
+
+  {restaurantInfo && (
+    <Header restaurant={restaurantInfo} />
+  )}
+
+  <main class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    {errorMessage && (
+      <div class="container mx-auto px-4 py-8">
+        <div class="bg-red-50 border-l-4 border-red-400 p-6 rounded-lg shadow-sm" role="alert">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">Error al cargar el menú</h3>
+              <p class="mt-2 text-sm text-red-700">{errorMessage}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {!errorMessage && restaurantInfo && (
+      <>
+        <!-- Hero Section Mejorado -->
+        <section class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+          <div class="absolute inset-0 bg-black/20"></div>
+          <div class="relative container mx-auto px-4 py-16 md:py-24">
+            <div class="text-center text-white">
+              <div class="inline-flex items-center px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm mb-6">
+                <span class="text-sm font-medium">🍽️ Menú Completo</span>
+              </div>
+              <h1 class="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                {restaurantInfo.name}
+              </h1>
+              <p class="text-xl md:text-2xl text-gray-200 mb-8 max-w-3xl mx-auto">
+                {restaurantInfo.description || 'Descubre nuestro delicioso menú'}
+              </p>
+              <div class="flex flex-wrap justify-center gap-4 text-sm">
+                <div class="flex items-center px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm">
+                  <span class="mr-2">📋</span>
+                  {categoriesInfo?.length || 0} Categorías
+                </div>
+                <div class="flex items-center px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm">
+                  <span class="mr-2">🍽️</span>
+                  {dishesInfo?.length || 0} Platillos
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Decorative Elements -->
+          <div class="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+          <div class="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+          <div class="absolute top-1/2 left-1/4 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>
+        </section>
+
+        <!-- Navigation Section -->
+        <div class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
+          <CategoryNav CATEGORIES={categoriesInfo} />
+        </div>
+
+        <!-- Menu Content -->
+        <div class="pb-20">
+          {categoriesInfo && dishesInfo && (
+            <MenuSection
+              CATEGORIES={categoriesInfo}
+              DISHES={dishesInfo}
+              isStore={false}
+              modelCard='one'
+            />
+          )}
+        </div>
+
+        <!-- Floating Action Button -->
+        <div class="fixed bottom-6 right-6 z-50">
+          <FloatingButton client:load />
+        </div>
+
+        <!-- Empty State -->
+        {(!categoriesInfo || categoriesInfo.length === 0) && (
+          <div class="container mx-auto px-4 py-16 text-center">
+            <div class="max-w-md mx-auto">
+              <div class="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.220 0-4.240-.90-5.709-2.364C6.774 11.846 7.000 11 7.500 11h9c.500 0 .726.846 1.209 1.636z"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 mb-2">Menú en preparación</h3>
+              <p class="text-gray-600">Estamos trabajando en nuestro menú. ¡Vuelve pronto!</p>
+            </div>
+          </div>
+        )}
+      </>
+    )}
+  </main>
+
+  <!-- Analytics Tracking -->
+  <!-- <AnalyticsTracker 
+    type="menu" 
+    resourceId={restaurantInfo?.id || username}
+  /> -->
+  
+  <!-- Interactive Components -->
+  <PromotionModal client:load />
+</Layout>
+
+<script>
+  // Analytics tracking mejorado para el menú por username
+  import { trackCategoryInteraction } from '../../services/analyticsService';
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    // Track category navigation
+    const categoryLinks = document.querySelectorAll('.category-item');
+    categoryLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        const categoryId = link.getAttribute('data-category-id');
+        const categoryName = link.getAttribute('data-category-name');
+        
+        if (categoryId) {
+          trackCategoryInteraction(categoryId);
+          
+          // Advanced analytics
+          window.dispatchEvent(new CustomEvent('categorySelected', {
+            detail: {
+              categoryId,
+              categoryName,
+              timestamp: Date.now(),
+              source: 'menu-navigation'
+            }
+          }));
+        }
+      });
+    });
+    
+    // Track menu page view
+    const restaurantUsername = document.querySelector('meta[name="restaurant-username"]')?.getAttribute('content');
+    const restaurantId = document.querySelector('meta[name="restaurant-id"]')?.getAttribute('content');
+    
+    window.dispatchEvent(new CustomEvent('menuPageView', {
+      detail: {
+        pageType: 'menu',
+        restaurantId,
+        restaurantUsername,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now(),
+        url: window.location.href
+      }
+    }));
+    
+    // Performance tracking
+    window.addEventListener('load', () => {
+      const loadTime = performance.now();
+      console.log(`Menu loaded in ${loadTime.toFixed(2)}ms`);
+      
+      window.dispatchEvent(new CustomEvent('menuLoadComplete', {
+        detail: {
+          loadTime,
+          restaurantUsername,
+          timestamp: Date.now()
+        }
+      }));
+    });
+    
+    console.log('Advanced analytics initialized for menu:', restaurantUsername);
+  });
+
+  // Smooth scroll for category navigation
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.matches('.category-link, .category-link *')) {
+      const link = target.closest('.category-link') as HTMLAnchorElement;
+      const href = link?.getAttribute('href');
+      
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        const targetElement = document.querySelector(href);
+        if (targetElement) {
+          targetElement.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  /* Enhanced animations and transitions */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+  
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Glass morphism effect for sticky navigation */
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  /* Enhanced loading animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Floating animation for action button */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  .fixed.bottom-6.right-6 {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  /* Gradient text animation */
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  .bg-gradient-to-r {
+    background-size: 200% 200%;
+    animation: gradientShift 10s ease infinite;
+  }
+  
+  /* Responsive improvements */
+  @media (max-width: 768px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+  
+  /* Print styles */
+  @media print {
+    .fixed, .sticky {
+      position: static !important;
+    }
+    
+    .bg-gradient-to-r {
+      background: #4f46e5 !important;
+      color: white !important;
+    }
+  }
+</style>
