@@ -28,13 +28,13 @@ const logApiCall = (method: string, url: string, response?: Response, error?: Er
         stack: error.stack
       });
     } else if (response) {
-      console.log(`✅ API ${method} Success:`, {
-        url,
-        status: response.status,
-        statusText: response.statusText
-      });
+      // console.log(`✅ API ${method} Success:`, {
+      //   url,
+      //   status: response.status,
+      //   statusText: response.statusText
+      // });
     } else {
-      console.log(`📡 API ${method} Call:`, { url });
+      // console.log(`📡 API ${method} Call:`, { url });
     }
   }
 };
@@ -56,7 +56,7 @@ const handleApiResponse = async (response: Response, context: string) => {
   
   try {
     const data = await response.json();
-    console.log(`📦 ${context} Data:`, data);
+    // console.log(`📦 ${context} Data:`, data);
     return data;
   } catch (parseError) {
     console.error(`❌ Error parsing JSON for ${context}:`, parseError);
@@ -239,7 +239,7 @@ export async function fetchDishesByUsernameAndCategory(
  * Obtiene todos los datos del restaurante por username con manejo robusto de errores
  */
 export async function fetchAllRestaurantDataByUsername(username: string) {
-  console.log(`🚀 Iniciando carga de datos para restaurante: ${username}`);
+  // console.log(`🚀 Iniciando carga de datos para restaurante: ${username}`);
   
   try {
     // Ejecutar llamadas en paralelo con manejo individual de errores
@@ -263,11 +263,11 @@ export async function fetchAllRestaurantDataByUsername(username: string) {
       : [];
     
     // Log de resultados
-    console.log(`📊 Resultados de carga:`, {
-      restaurant: restaurant ? '✅ Cargado' : '❌ Error',
-      categories: categoriesResult.status === 'fulfilled' ? `✅ ${categories.length} categorías` : `❌ ${categoriesResult.reason}`,
-      dishes: dishesResult.status === 'fulfilled' ? `✅ ${dishes.length} platillos` : `❌ ${dishesResult.reason}`
-    });
+    // console.log(`📊 Resultados de carga:`, {
+    //   restaurant: restaurant ? '✅ Cargado' : '❌ Error',
+    //   categories: categoriesResult.status === 'fulfilled' ? `✅ ${categories.length} categorías` : `❌ ${categoriesResult.reason}`,
+    //   dishes: dishesResult.status === 'fulfilled' ? `✅ ${dishes.length} platillos` : `❌ ${dishesResult.reason}`
+    // });
     
     // Si el restaurante no se pudo cargar, es un error crítico
     if (!restaurant) {

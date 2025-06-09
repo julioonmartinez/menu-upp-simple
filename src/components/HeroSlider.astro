@@ -1,0 +1,604 @@
+---
+// HeroSlider.astro
+export interface HeroSlide {
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  alt?: string;
+}
+
+interface Props {
+  slides: HeroSlide[];
+  autoPlay?: boolean;
+  autoPlayInterval?: number;
+  showDots?: boolean;
+  showArrows?: boolean;
+  height?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+const {
+  slides,
+  autoPlay = true,
+  autoPlayInterval = 5000,
+  showDots = true,
+  showArrows = true,
+  height = "60vh",
+  primaryColor = "#1a202c",
+  secondaryColor = "#e6ddd4"
+} = Astro.props;
+
+// Generar ID único para este slider
+const sliderId = `hero-slider-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<section 
+  class="hero-slider" 
+  style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor}; --hero-height: ${height};`}
+  data-slider-id={sliderId}
+  data-auto-play={autoPlay}
+  data-interval={autoPlayInterval}
+>
+  <div class="slider-container">
+    <div class="slides-wrapper" id={`slides-${sliderId}`}>
+      {slides.map((slide, index) => (
+        <div 
+          class={`slide ${index === 0 ? 'active' : ''}`}
+          data-slide={index}
+        >
+          <div class="slide-image">
+            <img 
+              src={slide.imageUrl} 
+              alt={slide.alt || slide.title}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+            <div class="slide-overlay"></div>
+          </div>
+          <div class="slide-content">
+            <div class="content-wrapper">
+              <h1 class="slide-title">{slide.title}</h1>
+              <p class="slide-subtitle">{slide.subtitle}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {showArrows && slides.length > 1 && (
+      <div class="slider-navigation">
+        <button class="nav-btn prev-btn" aria-label="Imagen anterior">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="nav-btn next-btn" aria-label="Siguiente imagen">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    )}
+
+    {showDots && slides.length > 1 && (
+      <div class="slider-dots">
+        {slides.map((_, index) => (
+          <button 
+            class={`dot ${index === 0 ? 'active' : ''}`}
+            data-slide={index}
+            aria-label={`Ir a imagen ${index + 1}`}
+          ></button>
+        ))}
+      </div>
+    )}
+
+    {slides.length > 1 && (
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  /* Variables y reset */
+  .hero-slider {
+    position: relative;
+    width: 100%;
+    height: var(--hero-height);
+    overflow: hidden;
+    background-color: #000;
+    border-radius: 0;
+  }
+
+  /* Container principal */
+  .slider-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Wrapper de slides */
+  .slides-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Slides individuales */
+  .slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+  }
+
+  .slide.active {
+    opacity: 1;
+    z-index: 2;
+  }
+
+  /* Imagen del slide */
+  .slide-image {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .slide-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .slide.active .slide-image img {
+    transform: scale(1.05);
+  }
+
+  /* Overlay para mejorar legibilidad */
+  .slide-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      135deg,
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.6) 100%
+    );
+    z-index: 1;
+  }
+
+  /* Contenido del slide */
+  .slide-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    padding: 3rem 2rem 2rem;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(0, 0, 0, 0.4) 50%,
+      transparent 100%
+    );
+  }
+
+  .content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    transform: translateY(30px);
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+    padding-bottom: 2rem;
+    padding-left: 2.2rem;
+    padding-right: 2.2rem;
+  }
+
+  .slide.active .content-wrapper {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* Tipografía */
+  .slide-title {
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 700;
+    color: white;
+    margin: 0 0 1rem 0;
+    line-height: 1.1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: -0.02em;
+  }
+
+  .slide-subtitle {
+    font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    line-height: 1.4;
+    max-width: 600px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Navegación con flechas */
+  .slider-navigation {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    z-index: 4;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 1rem;
+    pointer-events: none;
+  }
+
+  .nav-btn {
+    pointer-events: all;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    transform: translateY(-50%);
+  }
+
+  .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  .nav-btn:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  /* Dots de navegación */
+  .slider-dots {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    display: flex;
+    
+    gap: 0.75rem;
+  }
+
+  .dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .dot.active,
+  .dot:hover {
+    background: white;
+    border-color: white;
+  }
+
+  .dot.active {
+    transform: scale(1.2);
+  }
+
+  /* Barra de progreso */
+  .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: 4;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary-color);
+    transition: width linear;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .slide-content {
+      padding: 2rem 1rem 1.5rem;
+    }
+
+    .slider-navigation {
+      padding: 0 0.5rem;
+    }
+
+    .nav-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .slider-dots {
+      bottom: 1rem;
+      gap: 0.5rem;
+    }
+
+    .dot {
+      width: 0.625rem;
+      height: 0.625rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .slide-content {
+      padding: 1.5rem 1rem 1rem;
+    }
+  }
+
+  /* Estados de focus para accesibilidad */
+  .nav-btn:focus-visible,
+  .dot:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* Animaciones adicionales */
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* Efectos de parallax sutil */
+  @media (prefers-reduced-motion: no-preference) {
+    .slide-image img {
+      will-change: transform;
+    }
+  }
+
+  /* Respeto por preferencias de movimiento reducido */
+  @media (prefers-reduced-motion: reduce) {
+    .slide,
+    .content-wrapper,
+    .slide-image img,
+    .nav-btn,
+    .dot {
+      transition: none;
+    }
+    
+    .progress-fill {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // @ts-nocheck
+  class HeroSlider {
+    /**
+     * @param {HTMLElement} slider - El elemento slider del DOM
+     */
+    constructor(slider) {
+      /** @type {HTMLElement} */
+      this.slider = slider;
+      
+      /** @type {string} */
+      this.sliderId = slider.dataset.sliderId;
+      
+      /** @type {NodeListOf<HTMLElement>} */
+      this.slides = slider.querySelectorAll('.slide');
+      
+      /** @type {NodeListOf<HTMLElement>} */
+      this.dots = slider.querySelectorAll('.dot');
+      
+      /** @type {HTMLElement|null} */
+      this.nextBtn = slider.querySelector('.next-btn');
+      
+      /** @type {HTMLElement|null} */
+      this.prevBtn = slider.querySelector('.prev-btn');
+      
+      /** @type {HTMLElement|null} */
+      this.progressFill = slider.querySelector('.progress-fill');
+      
+      /** @type {number} */
+      this.currentSlide = 0;
+      
+      /** @type {boolean} */
+      this.isAutoPlay = slider.dataset.autoPlay === 'true';
+      
+      /** @type {number} */
+      this.interval = parseInt(slider.dataset.interval) || 5000;
+      
+      /** @type {number|null} */
+      this.autoPlayTimer = null;
+      
+      /** @type {number|null} */
+      this.progressTimer = null;
+      
+      /** @type {number} */
+      this.touchStartX = 0;
+      
+      /** @type {number} */
+      this.touchEndX = 0;
+      
+      this.init();
+    }
+
+    init() {
+      if (this.slides.length <= 1) return;
+      
+      this.setupEventListeners();
+      if (this.isAutoPlay) {
+        this.startAutoPlay();
+      }
+      
+      // Pausa autoplay cuando el usuario interactúa
+      this.slider.addEventListener('mouseenter', () => this.pauseAutoPlay());
+      this.slider.addEventListener('mouseleave', () => this.resumeAutoPlay());
+    }
+
+    setupEventListeners() {
+      // Navegación con flechas
+      this.nextBtn?.addEventListener('click', () => this.nextSlide());
+      this.prevBtn?.addEventListener('click', () => this.prevSlide());
+      
+      // Navegación con dots
+      this.dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => this.goToSlide(index));
+      });
+      
+      // Touch/swipe support
+      this.slider.addEventListener('touchstart', (e) => {
+        this.touchStartX = e.changedTouches[0].screenX;
+      });
+      
+      this.slider.addEventListener('touchend', (e) => {
+        this.touchEndX = e.changedTouches[0].screenX;
+        this.handleSwipe();
+      });
+      
+      // Navegación con teclado
+      this.slider.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') this.prevSlide();
+        if (e.key === 'ArrowRight') this.nextSlide();
+      });
+    }
+
+    goToSlide(index) {
+      if (index === this.currentSlide) return;
+      
+      // Remover clases activas
+      this.slides[this.currentSlide].classList.remove('active');
+      this.dots[this.currentSlide]?.classList.remove('active');
+      
+      // Actualizar índice
+      this.currentSlide = index;
+      
+      // Agregar clases activas
+      this.slides[this.currentSlide].classList.add('active');
+      this.dots[this.currentSlide]?.classList.add('active');
+      
+      // Reiniciar autoplay si está activo
+      if (this.isAutoPlay) {
+        this.restartAutoPlay();
+      }
+    }
+
+    nextSlide() {
+      const nextIndex = (this.currentSlide + 1) % this.slides.length;
+      this.goToSlide(nextIndex);
+    }
+
+    prevSlide() {
+      const prevIndex = (this.currentSlide - 1 + this.slides.length) % this.slides.length;
+      this.goToSlide(prevIndex);
+    }
+
+    handleSwipe() {
+      const swipeThreshold = 50;
+      const diff = this.touchStartX - this.touchEndX;
+      
+      if (Math.abs(diff) > swipeThreshold) {
+        if (diff > 0) {
+          this.nextSlide();
+        } else {
+          this.prevSlide();
+        }
+      }
+    }
+
+    startAutoPlay() {
+      if (!this.isAutoPlay || this.slides.length <= 1) return;
+      
+      this.autoPlayTimer = setInterval(() => {
+        this.nextSlide();
+      }, this.interval);
+      
+      this.startProgressBar();
+    }
+
+    pauseAutoPlay() {
+      if (this.autoPlayTimer) {
+        clearInterval(this.autoPlayTimer);
+        this.autoPlayTimer = null;
+      }
+      this.pauseProgressBar();
+    }
+
+    resumeAutoPlay() {
+      if (this.isAutoPlay && !this.autoPlayTimer) {
+        this.startAutoPlay();
+      }
+    }
+
+    restartAutoPlay() {
+      this.pauseAutoPlay();
+      this.resumeAutoPlay();
+    }
+
+    startProgressBar() {
+      if (this.progressFill) {
+        this.progressFill.style.width = '0%';
+        this.progressFill.style.transitionDuration = `${this.interval}ms`;
+        
+        // Forzar reflow
+        this.progressFill.offsetHeight;
+        
+        this.progressFill.style.width = '100%';
+      }
+    }
+
+    pauseProgressBar() {
+      if (this.progressFill) {
+        const currentWidth = this.progressFill.getBoundingClientRect().width;
+        const containerWidth = this.progressFill.parentElement.getBoundingClientRect().width;
+        const percentage = (currentWidth / containerWidth) * 100;
+        
+        this.progressFill.style.transitionDuration = '0s';
+        this.progressFill.style.width = `${percentage}%`;
+      }
+    }
+  }
+
+  // Inicializar todos los sliders en la página
+  document.addEventListener('DOMContentLoaded', () => {
+    const sliders = document.querySelectorAll('.hero-slider');
+    sliders.forEach(slider => new HeroSlider(slider));
+  });
+</script>

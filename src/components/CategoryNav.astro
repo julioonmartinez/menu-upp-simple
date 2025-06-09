@@ -1,2 +1,199 @@
 ---
+import type { LinkTree, Restaurant } from '../interfaces';
+import type { Category } from '../interfaces/categories'
+
+
+interface Props {
+    categories: Category[],
+    restaurant : Restaurant,
+    linkTree : LinkTree
+}
+const {categories, restaurant, linkTree} = Astro.props
+const primaryColor = restaurant.primaryColor || '#1a202c';
+const secondaryColor = restaurant.secondaryColor || '#e6ddd4';
+
+
+const capitalizarPrimeraLetra = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
 ---
+<nav class="category-nav" style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}>
+  <div class="nav-container">
+    <div class="nav-wrapper">
+      <ul class="category-list">
+        <div id="indicator" class="category-indicator"></div>
+        {categories!.map((category, index) => (
+          <li class="category-item">
+            <button 
+              class="category-button"
+              data-category={category.id}
+              aria-selected={index === 0 ? 'true' : 'false'}
+            >
+              {capitalizarPrimeraLetra(category.name)}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<style>
+  /* Navegación principal */
+  .category-nav {
+    background-color: white;
+    padding: 0.75rem 0; /* py-3 */
+    position: sticky;
+    top: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+    z-index: 30;
+    height: fit-content;
+  }
+
+  /* Container */
+  .nav-container {
+    max-width: 1200px; /* container */
+    margin: 0 auto; /* mx-auto */
+    padding: 0 1rem; /* px-4 */
+  }
+
+  /* Wrapper relativo */
+  .nav-wrapper {
+    position: relative;
+  }
+
+  /* Lista de categorías */
+  .category-list {
+    display: flex;
+    gap: 1.5rem; /* space-x-6 */
+    white-space: nowrap;
+    padding: 0 0.5rem; /* px-2 */
+    position: relative;
+    list-style: none;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  /* Ocultar scrollbar en Webkit */
+  .category-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Item de categoría */
+  .category-item {
+    flex-shrink: 0;
+  }
+
+  /* Botón de categoría */
+  .category-button {
+    font-size: 1.125rem; /* text-lg */
+    font-weight: 500; /* font-medium */
+    padding: 0.25rem 0; /* py-1 */
+    transition: all 0.3s ease; /* transition-all duration-300 */
+    cursor: pointer;
+    position: relative;
+    background: none;
+    border: none;
+    color: #6b7280; /* text-gray-500 por defecto */
+    outline: none;
+    text-transform: capitalize;
+  }
+
+  /* Estados del botón */
+  .category-button:hover {
+    color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  .category-button:active {
+    transform: translateY(0);
+  }
+
+  /* Botón activo */
+  .category-button[aria-selected="true"] {
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  /* Indicador animado */
+  .category-indicator {
+    position: absolute;
+    bottom: 0;
+    height: 0.125rem; /* h-0.5 */
+    background-color: var(--primary-color);
+    transition: all 0.3s ease; /* transition-all duration-300 */
+    border-radius: 2px;
+    width: 0;
+    left: 0;
+  }
+
+  /* Estados de focus para accesibilidad */
+  .category-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .category-nav {
+      padding: 0.5rem 0;
+    }
+    
+    .nav-container {
+      padding: 0 0.75rem;
+    }
+    
+    .category-list {
+      gap: 1rem;
+      padding: 0 0.25rem;
+    }
+    
+    .category-button {
+      font-size: 1rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .category-list {
+      gap: 0.75rem;
+    }
+    
+    .category-button {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Animación suave para el scroll horizontal en móviles */
+  @media (max-width: 768px) {
+    .category-list {
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Mejoras visuales adicionales */
+  .category-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -0.5rem;
+    right: -0.5rem;
+    bottom: 0;
+    background: transparent;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+    z-index: -1;
+  }
+
+  .category-button:hover::before {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+
+  .category-button[aria-selected="true"]::before {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+</style>
