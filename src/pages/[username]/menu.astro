@@ -2,27 +2,21 @@
 // src/pages/[username]/menu.astro
 // Vista del menú basada en username del restaurante
 import Layout from '../../layouts/Layout.astro';
-import Hero from '../../components/Hero.astro';
-import CategoryNav from '../../components/CategoryNav.astro';
 import Header from '../../components/Header.astro';
-import FloatingButton from '../../components/microcomponentes/FloatingButton.svelte';
-import MenuSection from '../../components/MenuSection.astro';
-import PromotionModal from '../../components/PromotionModal.svelte';
-// import AnalyticsTracker from '../../components/AnalyticsTracker.astro';
-import { fetchAllRestaurantDataByUsername, fetchDishesByUsernameAndCategory } from '../../services/apiService';
+import CategoryNav from '../../components/CategoryNav.astro';
+import DynamicMenu from '../../components/DynamicMenu.svelte';
+import HeroSlider from '../../components/HeroSlider.astro';
+import { fetchAllRestaurantDataByUsername, fetchLinksByUsername } from '../../services/apiService';
 import type { Restaurant } from '../../interfaces/restaurant';
 import type { Category } from '../../interfaces/categories';
 import type { Dish } from '../../interfaces/dish';
-import { fetchLinksByUsername } from '../../services/apiService';
 import type { LinkTree } from '../../interfaces';
-import HeroSlider from '../../components/HeroSlider.astro';
 
 // Obtener el username de los parámetros de la URL
 const { username } = Astro.params;
 
 if (!username) {
   return Astro.redirect('/404');
-  
 }
 
 // Estados iniciales
@@ -30,12 +24,13 @@ let restaurantInfo: Restaurant | null = null;
 let categoriesInfo: Category[] | null = null;
 let dishesInfo: Dish[] | null = null;
 let errorMessage: string | null = null;
-let linksTreeInfo : LinkTree | null = null
+let linksTreeInfo: LinkTree | null = null;
 
 try {
   // Obtener todos los datos del restaurante usando el username
   const data = await fetchAllRestaurantDataByUsername(username);
-  linksTreeInfo = await fetchLinksByUsername(username)
+  linksTreeInfo = await fetchLinksByUsername(username);
+  
   // Asignar los datos a las variables correspondientes
   restaurantInfo = data.restaurant;
   categoriesInfo = data.categories;
@@ -46,15 +41,12 @@ try {
     return Astro.redirect('/404');
   }
 
-  // console.log('Restaurant Info:', restaurantInfo.name);
-  // console.log('Categories count:', categoriesInfo?.length || 0);
-  // console.log('Dishes count:', dishesInfo?.length || 0);
-  const dishesByCategory = await fetchDishesByUsernameAndCategory(username, categoriesInfo[0].id!);
-  console.log(linksTreeInfo)
-  // console.log( 'dishes by category 0', dishesByCategory)
+  console.log('🏪 Restaurant Info:', restaurantInfo.name);
+  console.log('📂 Categories count:', categoriesInfo?.length || 0);
+  console.log('🍽️ Total dishes count:', dishesInfo?.length || 0);
   
 } catch (error) {
-  console.error('Error fetching restaurant data by username:', error);
+  console.error('❌ Error fetching restaurant data by username:', error);
   errorMessage = error instanceof Error ? error.message : 'Restaurant not found';
   
   // Si no se encuentra el restaurante, redirigir a 404
@@ -62,11 +54,13 @@ try {
     return Astro.redirect('/404');
   }
 }
+
+// Configurar slides del hero
 const slides = [
   {
-    imageUrl: '/images/restaurants/labellavita/cover.webp',
-    title: 'Bienvenidos a nuestro restaurante',
-    subtitle: 'Disfruta de la mejor comida mexicana tradicional'
+    imageUrl: restaurantInfo?.imageCover || '/images/restaurants/labellavita/cover.webp',
+    title: `Bienvenidos a ${restaurantInfo?.name || 'nuestro restaurante'}`,
+    subtitle: restaurantInfo?.description || 'Disfruta de la mejor comida tradicional'
   },
   {
     imageUrl: '/images/restaurants/sushizen/cover.webp', 
@@ -85,20 +79,318 @@ const pageTitle = restaurantInfo ? `${restaurantInfo.name} - Menú Completo` : '
 const pageDescription = restaurantInfo 
   ? `Descubre el delicioso menú de ${restaurantInfo.name}. ${categoriesInfo?.length || 0} categorías con ${dishesInfo?.length || 0} platillos únicos.`
   : 'Menú del restaurante';
+
+// Verificar que tenemos los datos necesarios
+const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length > 0;
 ---
-<Layout>
-<Header restaurant={restaurantInfo!} linkTree={linksTreeInfo!} ></Header>
-<CategoryNav categories={categoriesInfo!} restaurant={restaurantInfo!} linkTree={linksTreeInfo!} ></CategoryNav>
-<HeroSlider slides={slides} slides={slides}
-  autoPlay={true}
-  autoPlayInterval={5000}
-  showDots={true}
-  showArrows={true}
-  height="40vh"
-  primaryColor={restaurantInfo?.primaryColor}
-  secondaryColor={restaurantInfo?.secondaryColor}
 
+<Layout restaurant={restaurantInfo!} >
+  <!-- Header del restaurante -->
+  {hasValidData && (
+    <Header restaurant={restaurantInfo!} linkTree={linksTreeInfo!} />
+  )}
+  
+  <!-- Navegación de categorías -->
+  {hasValidData && (
+    <CategoryNav 
+      categories={categoriesInfo!} 
+      restaurant={restaurantInfo!} 
+      linkTree={linksTreeInfo!} 
+    />
+  )}
+  
+  <!-- Hero Slider -->
+  {hasValidData && (
+    <HeroSlider 
+      slides={slides}
+      autoPlay={true}
+      autoPlayInterval={5000}
+      showDots={true}
+      showArrows={true}
+      height="40vh"
+      primaryColor={restaurantInfo?.primaryColor}
+      secondaryColor={restaurantInfo?.secondaryColor}
+    />
+  )}
+  
+  <!-- Menú dinámico -->
+  {hasValidData ? (
+    <DynamicMenu 
+      username={username}
+      categories={categoriesInfo!}
+      restaurant={restaurantInfo!}
+      storeMode={false}
+      client:load
+      primaryColor={restaurantInfo?.primaryColor}
+      secondaryColor={restaurantInfo?.secondaryColor}
+      backgroundColor={linksTreeInfo?.backgroundColor}
+    />
+  ) : (
+    <div class="error-container">
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <h1 class="error-title">Error al cargar el menú</h1>
+        <p class="error-description">
+          {errorMessage || 'No se pudieron cargar los datos del restaurante'}
+        </p>
+        <a href={`/${username}`} class="back-button">
+          Volver al perfil
+        </a>
+      </div>
+    </div>
+  )}
+  
+  <!-- Footer del menú -->
+  {hasValidData && (
+    <footer class="menu-footer">
+      <div class="footer-content">
+        <div class="restaurant-info">
+          <h3>{restaurantInfo!.name}</h3>
+          {restaurantInfo!.address && (
+            <p class="address">📍 {restaurantInfo!.address}</p>
+          )}
+          {restaurantInfo!.phone && (
+            <p class="phone">📞 {restaurantInfo!.phone}</p>
+          )}
+          {restaurantInfo!.schedule && (
+            <p class="schedule">🕒 {restaurantInfo!.schedule}</p>
+          )}
+        </div>
+        
+        <div class="footer-actions">
+          <a href={`/${username}`} class="profile-link">
+            Ver perfil completo
+          </a>
+          
+          {restaurantInfo!.phone && (
+            <a 
+              href={`tel:${restaurantInfo!.phone}`} 
+              class="call-button"
+            >
+              Llamar ahora
+            </a>
+          )}
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>© 2025 {restaurantInfo!.name} - Powered by Menu-upp</p>
+      </div>
+    </footer>
+  )}
+</Layout>
 
-></HeroSlider>
-  <Layout />
+<style>
+  /* Error container */
+  .error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 2rem;
+  }
+  
+  .error-content {
+    text-align: center;
+    max-width: 500px;
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  
+  .error-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .error-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 1rem;
+  }
+  
+  .error-description {
+    color: #6b7280;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .back-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: transform 0.3s ease;
+  }
+  
+  .back-button:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Footer del menú */
+  .menu-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 3rem;
+  }
+  
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  .restaurant-info h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+  
+  .restaurant-info p {
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .footer-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .profile-link,
+  .call-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+  }
+  
+  .profile-link {
+    background: white;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+  
+  .profile-link:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+  
+  .call-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  
+  .call-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+  
+  .footer-bottom {
+    background: #e2e8f0;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .footer-bottom p {
+    color: #6b7280;
+    font-size: 0.75rem;
+    margin: 0;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .footer-content {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    
+    .footer-actions {
+      align-items: center;
+    }
+    
+    .profile-link,
+    .call-button {
+      width: 200px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .error-content {
+      padding: 2rem 1rem;
+    }
+    
+    .footer-content {
+      padding: 1.5rem 1rem;
+    }
+    
+    .error-title {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Estados de carga progresiva */
+  .category-nav,
+  .dynamic-menu,
+  .menu-footer {
+    opacity: 0;
+    animation: fadeInUp 0.6s ease forwards;
+  }
+  
+  .category-nav {
+    animation-delay: 0.1s;
+  }
+  
+  .dynamic-menu {
+    animation-delay: 0.2s;
+  }
+  
+  .menu-footer {
+    animation-delay: 0.3s;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  // Analytics y tracking
+  document.addEventListener('DOMContentLoaded', () => {
+    // Track page view
+    window.dispatchEvent(new CustomEvent('menuPageView', {
+      detail: {
+        restaurantUsername: window.location.pathname.split('/')[1],
+        timestamp: Date.now(),
+        userAgent: navigator.userAgent,
+        referrer: document.referrer
+      }
+    }));
+    
+    // Log de inicialización
+    console.log('🍽️ Menu page loaded successfully');
+  });
+</script>
 

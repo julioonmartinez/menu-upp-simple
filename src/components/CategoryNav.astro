@@ -2,7 +2,6 @@
 import type { LinkTree, Restaurant } from '../interfaces';
 import type { Category } from '../interfaces/categories'
 
-
 interface Props {
     categories: Category[],
     restaurant : Restaurant,
@@ -11,7 +10,6 @@ interface Props {
 const {categories, restaurant, linkTree} = Astro.props
 const primaryColor = restaurant.primaryColor || '#1a202c';
 const secondaryColor = restaurant.secondaryColor || '#e6ddd4';
-
 
 const capitalizarPrimeraLetra = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -26,7 +24,9 @@ const capitalizarPrimeraLetra = (str: string) => {
           <li class="category-item">
             <button 
               class="category-button"
-              data-category={category.id}
+              data-category-id={category.id}
+              data-category-name={category.name}
+              data-index={index}
               aria-selected={index === 0 ? 'true' : 'false'}
             >
               {capitalizarPrimeraLetra(category.name)}
@@ -38,70 +38,189 @@ const capitalizarPrimeraLetra = (str: string) => {
   </div>
 </nav>
 
+<script>
+  class CategoryNavigation {
+    constructor() {
+      this.navElement = document.querySelector('.category-nav');
+      this.buttons = document.querySelectorAll('.category-button');
+      this.indicator = document.getElementById('indicator');
+      this.currentCategory = null;
+      
+      this.init();
+    }
+    
+    init() {
+      // Configurar eventos de clic
+      this.buttons.forEach(button => {
+        button.addEventListener('click', (e) => {
+          this.handleCategoryClick(e.target);
+        });
+      });
+      
+      // Activar la primera categoría por defecto
+      if (this.buttons.length > 0) {
+        this.setActiveCategory(this.buttons[0], false);
+      }
+      
+      // Configurar indicador
+      this.updateIndicator();
+    }
+    
+    handleCategoryClick(button) {
+      this.setActiveCategory(button, true);
+    }
+    
+    setActiveCategory(button, shouldDispatch = true) {
+      // Remover active de todos los botones
+      this.buttons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      
+      // Activar el botón seleccionado
+      button.classList.add('active');
+      button.setAttribute('aria-selected', 'true');
+      
+      // Obtener datos de la categoría
+      const categoryId = button.getAttribute('data-category-id');
+      const categoryName = button.getAttribute('data-category-name');
+      const categoryIndex = parseInt(button.getAttribute('data-index'));
+      
+      this.currentCategory = { id: categoryId, name: categoryName, index: categoryIndex };
+      
+      // Actualizar indicador
+      this.updateIndicator();
+      
+      // Disparar evento personalizado si es necesario
+      if (shouldDispatch) {
+        this.dispatchCategoryChange(categoryId, categoryName, categoryIndex);
+      }
+      
+      // Para la primera carga, también disparar el evento pero con un delay
+      if (!shouldDispatch && categoryIndex === 0) {
+        setTimeout(() => {
+          this.dispatchCategoryChange(categoryId, categoryName, categoryIndex);
+        }, 100);
+      }
+    }
+    
+    dispatchCategoryChange(categoryId, categoryName, categoryIndex) {
+      // Crear evento personalizado
+      const event = new CustomEvent('categoryChanged', {
+        detail: {
+          categoryId,
+          categoryName,
+          categoryIndex,
+          timestamp: Date.now()
+        },
+        bubbles: true
+      });
+      
+      // Disparar el evento
+      document.dispatchEvent(event);
+      
+      console.log('📂 Category changed:', { categoryId, categoryName, categoryIndex });
+    }
+    
+    updateIndicator() {
+  const activeButton = document.querySelector('.category-button.active');
+  const categoryList = document.querySelector('.category-list');
+  
+  if (activeButton && this.indicator && categoryList) {
+    const buttonRect = activeButton.getBoundingClientRect();
+    const listRect = categoryList.getBoundingClientRect();
+    
+    // Calcular posición relativa al contenedor de la lista
+    const left = buttonRect.left - listRect.left;
+    const width = buttonRect.width;
+    
+    // Aplicar estilos al indicador
+    this.indicator.style.left = `${left}px`;
+    this.indicator.style.width = `${width}px`;
+    this.indicator.style.opacity = '1';
+  }
+}
+    
+    // Método público para cambiar categoría programáticamente
+    selectCategory(categoryId) {
+      const button = document.querySelector(`[data-category-id="${categoryId}"]`);
+      if (button) {
+        this.setActiveCategory(button, true);
+      }
+    }
+    
+    // Método para obtener la categoría actual
+    getCurrentCategory() {
+      return this.currentCategory;
+    }
+  }
+  
+  // Inicializar cuando el DOM esté listo
+  document.addEventListener('DOMContentLoaded', () => {
+    new CategoryNavigation();
+  });
+  
+  // Exponer globalmente para debugging
+  window.CategoryNavigation = CategoryNavigation;
+</script>
+
 <style>
   /* Navegación principal */
   .category-nav {
     background-color: white;
-    padding: 0.75rem 0; /* py-3 */
+    padding: 0.75rem 0;
     position: sticky;
     top: 0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     z-index: 30;
     height: fit-content;
   }
 
-  /* Container */
   .nav-container {
-    max-width: 1200px; /* container */
-    margin: 0 auto; /* mx-auto */
-    padding: 0 1rem; /* px-4 */
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
   }
 
-  /* Wrapper relativo */
   .nav-wrapper {
     position: relative;
   }
 
-  /* Lista de categorías */
   .category-list {
     display: flex;
-    gap: 1.5rem; /* space-x-6 */
+    gap: 1.5rem;
     white-space: nowrap;
-    padding: 0 0.5rem; /* px-2 */
+    padding: 0 0.5rem;
     position: relative;
     list-style: none;
     margin: 0;
     overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  /* Ocultar scrollbar en Webkit */
   .category-list::-webkit-scrollbar {
     display: none;
   }
 
-  /* Item de categoría */
   .category-item {
     flex-shrink: 0;
   }
 
-  /* Botón de categoría */
   .category-button {
-    font-size: 1.125rem; /* text-lg */
-    font-weight: 500; /* font-medium */
-    padding: 0.25rem 0; /* py-1 */
-    transition: all 0.3s ease; /* transition-all duration-300 */
+    font-size: 1.125rem;
+    font-weight: 500;
+    padding: 0.25rem 0;
+    transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
     background: none;
     border: none;
-    color: #6b7280; /* text-gray-500 por defecto */
+    color: #6b7280;
     outline: none;
     text-transform: capitalize;
   }
 
-  /* Estados del botón */
   .category-button:hover {
     color: var(--primary-color);
     transform: translateY(-1px);
@@ -111,8 +230,7 @@ const capitalizarPrimeraLetra = (str: string) => {
     transform: translateY(0);
   }
 
-  /* Botón activo */
-  .category-button[aria-selected="true"] {
+  .category-button.active {
     color: var(--primary-color);
     font-weight: 600;
   }
@@ -121,12 +239,13 @@ const capitalizarPrimeraLetra = (str: string) => {
   .category-indicator {
     position: absolute;
     bottom: 0;
-    height: 0.125rem; /* h-0.5 */
+    height: 0.125rem;
     background-color: var(--primary-color);
-    transition: all 0.3s ease; /* transition-all duration-300 */
+    transition: all 0.3s ease;
     border-radius: 2px;
     width: 0;
     left: 0;
+    opacity: 0;
   }
 
   /* Estados de focus para accesibilidad */
@@ -193,7 +312,7 @@ const capitalizarPrimeraLetra = (str: string) => {
     background-color: rgba(0, 0, 0, 0.02);
   }
 
-  .category-button[aria-selected="true"]::before {
+  .category-button.active::before {
     background-color: rgba(0, 0, 0, 0.03);
   }
 </style>

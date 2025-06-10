@@ -1,6 +1,6 @@
 ---
 import type { Restaurant, LinkTree } from '../interfaces';
-
+import '../styles/reset.css'
 interface Props {
   restaurant: Restaurant;
   linkTree: LinkTree;
@@ -19,7 +19,8 @@ const cssVariables = {
   '--social-bg': linkTree.socialMediaBackgroundColor || restaurant.primaryColor || '#FF4500',
   '--social-text': linkTree.socialMediaTextColor || '#FFFFFF',
   '--cta-bg': linkTree.ctaBackgroundColor || restaurant.primaryColor || '#FF4500',
-  '--cta-text': linkTree.ctaTextColor || '#FFFFFF'
+  '--cta-text': linkTree.ctaTextColor || '#FFFFFF',
+  '--font-family-personal': restaurant.fontFamily
 };
 ---
 
@@ -61,7 +62,7 @@ const cssVariables = {
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 </head>
 
-<body style={Object.entries(cssVariables).map(([key, value]) => `${key}:${value}`).join(';')}>
+<body style={  Object.entries(cssVariables).map(([key, value]) => `${key}:${value}`).join(';') }>
   <div class="profile-container">
     <slot />
     
@@ -89,7 +90,7 @@ const cssVariables = {
     }
     
     body {
-      font-family: var(--font-family);
+      font-family: var( --font-family-personal, --font-family);
       background-color: var(--background-color);
       color: var(--text-color);
       line-height: 1.6;

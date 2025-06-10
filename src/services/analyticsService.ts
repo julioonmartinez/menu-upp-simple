@@ -1,370 +1,304 @@
 // src/services/analyticsService.ts
 // Servicio de analytics para tracking de interacciones del menú
 
-interface AnalyticsEvent {
-  event: string;
-  data: Record<string, any>;
-  timestamp: number;
-  sessionId: string;
-  userAgent?: string;
-  url?: string;
-}
+// src/services/analyticsService.ts (Actualizado para integrarse con tu backend FastAPI)
+import { getDeviceId } from "./deviceIdService";
 
-interface DishViewEvent {
-  dishId: string;
-  dishName?: string;
-  categoryId?: string;
-  viewDuration?: number;
-  viewMode?: string;
-  searchQuery?: string;
-}
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || '/api';
 
-interface CategoryInteractionEvent {
-  categoryId: string;
-  categoryName?: string;
-  source?: string;
-  previousCategory?: string;
-}
+// Verificar si estamos en el navegador
+const isBrowser = typeof window !== 'undefined';
 
-class AnalyticsService {
-  private sessionId: string;
-  private events: AnalyticsEvent[] = [];
-  private observers: Map<string, IntersectionObserver> = new Map();
-  private viewStartTimes: Map<string, number> = new Map();
-  private currentCategory: string = '';
-  private isInitialized: boolean = false;
+/**
+ * Cache en memoria para evitar múltiples registros de la misma vista
+ */
+const viewsCache = new Set<string>();
 
-  constructor() {
-    this.sessionId = this.generateSessionId();
-    this.init();
-  }
-
-  private init() {
-    if (this.isInitialized) return;
-    
-    this.setupGlobalListeners();
-    this.isInitialized = true;
-    
-    console.log('Analytics service initialized with session:', this.sessionId);
-  }
-
-  private generateSessionId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  private setupGlobalListeners() {
-    // Listen to custom events
-    window.addEventListener('dishViewed', this.handleDishViewed.bind(this));
-    window.addEventListener('categorySelected', this.handleCategorySelected.bind(this));
-    window.addEventListener('menuPageView', this.handleMenuPageView.bind(this));
-    window.addEventListener('dishFavoriteToggle', this.handleDishFavoriteToggle.bind(this));
-    window.addEventListener('dishRated', this.handleDishRated.bind(this));
-    window.addEventListener('viewModeChanged', this.handleViewModeChanged.bind(this));
-    window.addEventListener('dishSearched', this.handleDishSearched.bind(this));
-
-    // Track page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        this.trackEvent('page_hidden', {});
-      } else {
-        this.trackEvent('page_visible', {});
-      }
-    });
-
-    // Track scroll behavior
-    let scrollTimeout: number;
-    window.addEventListener('scroll', () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = window.setTimeout(() => {
-        this.trackScrollPosition();
-      }, 150);
-    });
-  }
-
-  private handleDishViewed(event: CustomEvent) {
-    const { dishId, categoryId, viewMode, searchQuery } = event.detail;
-    
-    this.trackEvent('dish_viewed', {
-      dishId,
-      categoryId,
-      viewMode,
-      searchQuery,
-      scrollPosition: window.scrollY
-    });
-  }
-
-  private handleCategorySelected(event: CustomEvent) {
-    const { categoryId, categoryName, source } = event.detail;
-    const previousCategory = this.currentCategory;
-    
-    this.trackEvent('category_selected', {
-      categoryId,
-      categoryName,
-      source,
-      previousCategory
-    });
-    
-    this.currentCategory = categoryId;
-  }
-
-  private handleMenuPageView(event: CustomEvent) {
-    const { restaurantId, restaurantUsername } = event.detail;
-    
-    this.trackEvent('menu_page_view', {
-      restaurantId,
-      restaurantUsername,
-      referrer: document.referrer,
-      userAgent: navigator.userAgent,
-      screenResolution: `${screen.width}x${screen.height}`,
-      viewport: `${window.innerWidth}x${window.innerHeight}`
-    });
-  }
-
-  private handleDishFavoriteToggle(event: CustomEvent) {
-    const { dishId, dishName, isLiked } = event.detail;
-    
-    this.trackEvent('dish_favorite_toggle', {
-      dishId,
-      dishName,
-      isLiked,
-      action: isLiked ? 'add_favorite' : 'remove_favorite'
-    });
-  }
-
-  private handleDishRated(event: CustomEvent) {
-    const { dishId, dishName, rating } = event.detail;
-    
-    this.trackEvent('dish_rated', {
-      dishId,
-      dishName,
-      rating,
-      categoryId: this.currentCategory
-    });
-  }
-
-  private handleViewModeChanged(event: CustomEvent) {
-    const { viewMode, categoryId } = event.detail;
-    
-    this.trackEvent('view_mode_changed', {
-      viewMode,
-      categoryId
-    });
-  }
-
-  private handleDishSearched(event: CustomEvent) {
-    const { query, categoryId, resultCount } = event.detail;
-    
-    this.trackEvent('dish_searched', {
-      query,
-      categoryId,
-      resultCount,
-      queryLength: query.length
-    });
-  }
-
-  private trackScrollPosition() {
-    const scrollPercent = Math.round(
-      (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
-    );
-    
-    if (scrollPercent % 25 === 0) { // Track at 25%, 50%, 75%, 100%
-      this.trackEvent('scroll_milestone', {
-        scrollPercent,
-        scrollPosition: window.scrollY
-      });
+/**
+ * Registra una vista de un recurso (restaurante, plato, link tree)
+ */
+export async function recordView(resourceType: any, resourceId: any) {
+  if (!isBrowser) return;
+  
+  try {
+    // Evitar registrar la misma vista múltiples veces en la misma sesión
+    const cacheKey = `${resourceType}:${resourceId}`;
+    if (viewsCache.has(cacheKey)) {
+      console.log(`Vista ya registrada para ${cacheKey}, omitiendo duplicado`);
+      return;
     }
-  }
-
-  public trackEvent(eventName: string, data: Record<string, any>) {
-    const event: AnalyticsEvent = {
-      event: eventName,
-      data: {
-        ...data,
-        sessionId: this.sessionId
-      },
-      timestamp: Date.now(),
-      sessionId: this.sessionId,
+    viewsCache.add(cacheKey);
+    
+    // Obtener el device ID de forma consistente
+    const deviceId = getDeviceId();
+    
+    console.log(`Registrando vista para ${resourceType}:${resourceId} con device ID: ${deviceId}`);
+    
+    // Datos para enviar
+    const analyticsData = {
+      timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
+      referrer: document.referrer || 'direct',
+      path: window.location.pathname,
       url: window.location.href
     };
-
-    this.events.push(event);
     
-    // Log to console in development
-    if (import.meta.env.DEV) {
-      console.log('📊 Analytics Event:', eventName, data);
-    }
-
-    // Send to analytics service (implement your backend endpoint)
-    this.sendToAnalyticsService(event);
-  }
-
-  private async sendToAnalyticsService(event: AnalyticsEvent) {
-    try {
-      // Implementar envío a tu servicio de analytics
-      // Por ejemplo, envío a Google Analytics 4, Mixpanel, etc.
+    // IMPORTANTE: Usar sendBeacon para eventos que pueden ocurrir al salir de la página
+    if (navigator.sendBeacon) {
+      const headers = {
+        type: 'application/json',
+      };
       
-      // Ejemplo con fetch a tu API:
-      /*
-      await fetch('/api/analytics/track', {
+      const data = new Blob([JSON.stringify(analyticsData)], headers);
+      const url = `${API_BASE_URL}/analytics/view/${resourceType}/${resourceId}`;
+      
+      // Enviar con sendBeacon primero (sin headers personalizados)
+      const success = navigator.sendBeacon(url, data);
+      console.log(`Analytics via sendBeacon: ${success ? 'exitoso' : 'fallido'}`);
+      
+      // Enviar también con fetch para asegurar que el header X-Device-ID llegue
+      fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Device-ID': deviceId, // Encabezado crucial para contar visitas únicas
         },
-        body: JSON.stringify(event)
-      });
-      */
+        body: JSON.stringify(analyticsData),
+        keepalive: true
+      }).catch(e => console.error('Error en fetch después de sendBeacon:', e));
       
-      // Ejemplo con Google Analytics 4:
-      if (typeof gtag !== 'undefined') {
-        gtag('event', event.event, {
-          custom_parameter_1: JSON.stringify(event.data),
-          session_id: event.sessionId
-        });
-      }
-      
-    } catch (error) {
-      console.error('Failed to send analytics event:', error);
+      return;
     }
-  }
-
-  public initDishViewObserver(selector: string = '.dish-wrapper'): IntersectionObserver {
-    const observerId = `dish-observer-${Date.now()}`;
     
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        const dishId = entry.target.getAttribute('data-dish-id');
-        
-        if (entry.isIntersecting && dishId) {
-          // Start tracking view time
-          this.viewStartTimes.set(dishId, Date.now());
-          
-          // Track initial view
-          this.trackEvent('dish_in_view', {
-            dishId,
-            intersectionRatio: entry.intersectionRatio
-          });
-          
-        } else if (!entry.isIntersecting && dishId) {
-          // Calculate view duration
-          const startTime = this.viewStartTimes.get(dishId);
-          if (startTime) {
-            const viewDuration = Date.now() - startTime;
-            this.viewStartTimes.delete(dishId);
-            
-            this.trackEvent('dish_out_of_view', {
-              dishId,
-              viewDuration,
-              intersectionRatio: entry.intersectionRatio
-            });
-          }
-        }
-      });
-    }, {
-      threshold: [0.1, 0.5, 0.9],
-      rootMargin: '0px 0px -10% 0px'
+    // Fallback a fetch si sendBeacon no está disponible
+    const response = await fetch(`${API_BASE_URL}/analytics/view/${resourceType}/${resourceId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-ID': deviceId, // Encabezado crucial para contar visitas únicas
+      },
+      body: JSON.stringify(analyticsData),
+      keepalive: true,
     });
-
-    // Observe existing elements
-    document.querySelectorAll(selector).forEach(el => {
-      observer.observe(el);
-    });
-
-    this.observers.set(observerId, observer);
-    return observer;
-  }
-
-  public trackCategoryInteraction(categoryId: string, additionalData: Record<string, any> = {}) {
-    this.trackEvent('category_interaction', {
-      categoryId,
-      interactionType: 'click',
-      ...additionalData
-    });
-  }
-
-  public trackPerformanceMetrics() {
-    if (typeof performance !== 'undefined' && performance.timing) {
-      const timing = performance.timing;
-      const metrics = {
-        pageLoadTime: timing.loadEventEnd - timing.navigationStart,
-        domContentLoaded: timing.domContentLoadedEventEnd - timing.navigationStart,
-        firstPaint: 0,
-        firstContentfulPaint: 0
-      };
-
-      // Get paint metrics if available
-      if (typeof performance.getEntriesByType === 'function') {
-        const paintEntries = performance.getEntriesByType('paint');
-        paintEntries.forEach(entry => {
-          if (entry.name === 'first-paint') {
-            metrics.firstPaint = entry.startTime;
-          } else if (entry.name === 'first-contentful-paint') {
-            metrics.firstContentfulPaint = entry.startTime;
-          }
-        });
-      }
-
-      this.trackEvent('performance_metrics', metrics);
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
     }
+    
+    console.log(`Analytics enviados via fetch: ${response.ok ? 'exitoso' : 'fallido'}`);
+  } catch (error) {
+    console.error('Error registrando vista:', error);
   }
+}
 
-  public getSessionEvents(): AnalyticsEvent[] {
-    return [...this.events];
-  }
+// Caché para clics recientes para evitar duplicados
+const recentClicks = new Map<string, number>();
 
-  public clearSessionEvents() {
-    this.events = [];
-  }
-
-  public destroy() {
-    // Clean up observers
-    this.observers.forEach(observer => observer.disconnect());
-    this.observers.clear();
-    this.viewStartTimes.clear();
-    this.isInitialized = false;
-  }
-
-  // Public methods for backward compatibility
-  public recordView(itemId: string, itemType: string = 'dish') {
-    this.trackEvent('item_view', {
-      itemId,
-      itemType,
-      categoryId: this.currentCategory
+/**
+ * Registra un clic en un enlace
+ */
+export async function recordLinkClick(linkId: string) {
+  if (!isBrowser) return;
+  
+  try {
+    // Evitar doble registro de clics (debounce)
+    const now = Date.now();
+    const lastClick = recentClicks.get(linkId) || 0;
+    if (now - lastClick < 500) { // Ignorar clics con menos de 500ms de diferencia
+      console.log(`Clic demasiado rápido para ${linkId}, omitiendo duplicado`);
+      return;
+    }
+    recentClicks.set(linkId, now);
+    
+    const deviceId = getDeviceId();
+    console.log(`Registrando clic para link:${linkId} con device ID: ${deviceId}`);
+    
+    // Datos para enviar
+    const analyticsData = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      pageUrl: window.location.href,
+      path: window.location.pathname,
+      referrer: document.referrer || 'direct'
+    };
+    
+    // IMPORTANTE: Tu backend espera X-Device-ID como header, no en el cuerpo
+    
+    // Usar sendBeacon para que el seguimiento funcione incluso si el usuario abandona la página
+    if (navigator.sendBeacon) {
+      const data = new Blob([JSON.stringify(analyticsData)], {
+        type: 'application/json',
+      });
+      
+      // Crear sendBeacon con headers (truco usando Headers y Request)
+      const headers = new Headers({
+        'Content-Type': 'application/json',
+        'X-Device-ID': deviceId
+      });
+      
+      const url = `${API_BASE_URL}/analytics/click/link/${linkId}`;
+      
+      // Hay una limitación en sendBeacon que no permite enviar headers personalizados directamente
+      // Enviamos sin headers primero e intentamos con fetch después
+      const success = navigator.sendBeacon(url, data);
+      console.log(`Analytics de clic enviados via sendBeacon: ${success ? 'exitoso' : 'fallido'}`);
+      
+      // Como sendBeacon no permite headers personalizados, hacemos un segundo intento con fetch
+      if (success) {
+        // Enviar de nuevo con fetch solo para asegurar que el header X-Device-ID llegue
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-Device-ID': deviceId,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({...analyticsData, sendBeacon: true}),
+          keepalive: true,
+          mode: 'no-cors' // Importante para evitar problemas CORS
+        }).catch(() => {/* Ignoramos errores aquí */});
+      }
+      
+      return;
+    }
+    
+    // Fallback a fetch si sendBeacon no está disponible
+    const response = await fetch(`${API_BASE_URL}/analytics/click/link/${linkId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-ID': deviceId,
+      },
+      body: JSON.stringify(analyticsData),
+      keepalive: true,
     });
+    
+    console.log(`Analytics de clic enviados via fetch: ${response.ok ? 'exitoso' : 'fallido'}`);
+  } catch (error) {
+    console.error('Error registrando clic de link:', error);
   }
 }
 
-// Create singleton instance
-const analyticsService = new AnalyticsService();
-
-// Export functions for backward compatibility
-export const trackCategoryInteraction = (categoryId: string, additionalData?: Record<string, any>) => {
-  analyticsService.trackCategoryInteraction(categoryId, additionalData);
-};
-
-export const recordView = (itemId: string, itemType: string = 'dish') => {
-  analyticsService.recordView(itemId, itemType);
-};
-
-export const initDishViewObserver = (selector?: string) => {
-  return analyticsService.initDishViewObserver(selector);
-};
-
-export const trackEvent = (eventName: string, data: Record<string, any>) => {
-  analyticsService.trackEvent(eventName, data);
-};
-
-export const trackPerformanceMetrics = () => {
-  analyticsService.trackPerformanceMetrics();
-};
-
-// Initialize performance tracking when page loads
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      trackPerformanceMetrics();
-    }, 1000);
-  });
+/**
+ * Registra una interacción con un plato
+ */
+export function trackDishInteraction(dishId: string, eventType: string) {
+  if (!isBrowser) return;
+  
+  try {
+    const deviceId = getDeviceId();
+    console.log(`Registrando ${eventType} para plato:${dishId}`);
+    
+    // Mapeo de eventos internos a endpoints de backend
+    const eventEndpointMap: {[key: string]: string} = {
+      'favorite': 'favorite/dish',
+      'cart_add': 'click/link', // Para cart_add usamos click/link con un prefijo
+      'rating': 'click/link' // Para rating usamos click/link con un prefijo
+    };
+    
+    // Si es un evento que no tiene endpoint directo, usar click/link con prefijo
+    if (!eventEndpointMap[eventType]) {
+      recordLinkClick(`dish-${eventType}-${dishId}`);
+      return;
+    }
+    
+    // Para eventos con endpoint directo
+    const endpoint = eventEndpointMap[eventType];
+    const resourceId = endpoint === 'click/link' ? `dish-${eventType}-${dishId}` : dishId;
+    
+    // Datos para enviar
+    const analyticsData = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      pageUrl: window.location.href,
+      path: window.location.pathname,
+      referrer: document.referrer || 'direct'
+    };
+    
+    // Usar sendBeacon para fiabilidad
+    if (navigator.sendBeacon) {
+      const data = new Blob([JSON.stringify(analyticsData)], {
+        type: 'application/json',
+      });
+      
+      const url = `${API_BASE_URL}/analytics/${endpoint}/${resourceId}`;
+      const success = navigator.sendBeacon(url, data);
+      console.log(`Analytics de interacción enviados via sendBeacon: ${success ? 'exitoso' : 'fallido'}`);
+      
+      // Enviar de nuevo con fetch para asegurar headers
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Device-ID': deviceId,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({...analyticsData, sendBeacon: true}),
+        keepalive: true,
+        mode: 'no-cors'
+      }).catch(() => {/* Ignoramos errores aquí */});
+      
+      return;
+    }
+    
+    // Fallback a fetch
+    fetch(`${API_BASE_URL}/analytics/${endpoint}/${resourceId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-ID': deviceId,
+      },
+      body: JSON.stringify(analyticsData),
+      keepalive: true,
+    }).catch(err => console.error(`Error trackingDishInteraction: ${err}`));
+  } catch (error) {
+    console.error(`Error rastreando ${eventType} del plato:`, error);
+  }
 }
 
-export default analyticsService;
+/**
+ * Registra una interacción con una categoría
+ */
+export function trackCategoryInteraction(categoryId: string) {
+  if (!isBrowser) return;
+  recordLinkClick(`category-${categoryId}`);
+}
+
+/**
+ * Inicializa el observador de intersección para rastrear vistas de platos
+ */
+export function initDishViewObserver(selector = '.card-wrapper') {
+  if (!isBrowser || typeof IntersectionObserver === 'undefined') return;
+  
+  console.log(`Inicializando observador para ${selector}`);
+  
+  // Configuración del observador
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // Obtener ID del plato desde el atributo data
+        const element = entry.target as HTMLElement;
+        const itemId = element.dataset.itemId;
+        
+        // Si tenemos un ID, registrar vista
+        if (itemId) {
+          recordView('dish', itemId);
+          
+          // Dejar de observar este elemento después de registrar la vista
+          observer.unobserve(element);
+        }
+      }
+    });
+  }, {
+    threshold: 0.5, // El elemento debe estar al menos 50% visible
+    rootMargin: '0px'
+  });
+  
+  // Observar todos los elementos que coincidan con el selector
+  setTimeout(() => {
+    document.querySelectorAll(selector).forEach(element => {
+      observer.observe(element);
+    });
+    console.log(`Observando ${document.querySelectorAll(selector).length} elementos`);
+  }, 300); // Pequeño retraso para asegurarse de que los elementos estén renderizados
+  
+  return observer;
+}

@@ -8,7 +8,9 @@
   export let dish;
   export let index = 0;
   export let storeMode = false;
-  
+  export let primaryColor = '#2b2b2b';
+  export let secondaryColor = 'Ff4500'
+  export let backgroundColorCard = '#FFFF';
   // Estado local
   let isVisible = false;
   let isHovered = false;
@@ -121,7 +123,7 @@
   in:fly={{ y: 50, duration: 600, delay: index * 100, easing: quintOut }}
   data-dish-id={dish.id}
 >
-  <div class="card-container">
+  <div class="card-container" style="--bg-card-color :{backgroundColorCard} ">
     <!-- Image Container -->
     <div class="image-container">
       <img 
@@ -536,7 +538,7 @@
   /* Dark mode support */
   @media (prefers-color-scheme: dark) {
     .card-container {
-      background: #1f2937;
+      background: var(--bg-card-color);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     
