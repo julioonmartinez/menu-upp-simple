@@ -91,7 +91,7 @@
       color: white;
       border-radius: 3rem;
       padding: 0.75rem 1.25rem;
-      /* box-shadow: 0 4px 20px rgba(232, 188, 188, 0.486); */
+      box-shadow: 0 4px 20px rgba(232, 188, 188, 0.486);
       display: flex;
       align-items: center;
       justify-content: center;

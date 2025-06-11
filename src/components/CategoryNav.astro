@@ -10,12 +10,13 @@ interface Props {
 const {categories, restaurant, linkTree} = Astro.props
 const primaryColor = restaurant.primaryColor || '#1a202c';
 const secondaryColor = restaurant.secondaryColor || '#e6ddd4';
+const backgroundColor = linkTree.backgroundColor || '#FFFF';
 
 const capitalizarPrimeraLetra = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 ---
-<nav class="category-nav" style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}>
+<nav class="category-nav" style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor}; --bg-color:${backgroundColor}`}>
   <div class="nav-container">
     <div class="nav-wrapper">
       <ul class="category-list">
@@ -167,7 +168,7 @@ const capitalizarPrimeraLetra = (str: string) => {
 <style>
   /* Navegación principal */
   .category-nav {
-    background-color: white;
+    background-color: var(--bg-color);
     padding: 0.75rem 0;
     position: sticky;
     top: 0;
