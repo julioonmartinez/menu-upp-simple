@@ -77,7 +77,7 @@ export interface Restaurant {
   showRatings?: boolean;
   allowReviews?: boolean;
   allowOrders?: boolean;
-  
+  heroSlides?: HeroSlide[];
   // Meta-información
   ownerId?: string;
   active?: boolean;
@@ -94,4 +94,13 @@ export interface Restaurant {
     averageRating?: number;
   };
 }
+
+  export interface HeroSlide {
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  alt?: string;
+  image_data?: ImageData;
+}
+
 

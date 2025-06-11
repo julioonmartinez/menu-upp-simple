@@ -2,6 +2,7 @@ import type { Promotion } from "../types/Promotion";
 
 
 export interface Dish {
+    categoryId: string;
     id?: string | number,
     name: string,
     description: string,

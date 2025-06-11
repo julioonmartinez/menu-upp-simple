@@ -5,9 +5,10 @@ import type { Restaurant } from '../interfaces'
 
 interface Props {
 	restaurant: Restaurant
+	backgroundColor: string
 }
 
-const {restaurant} = Astro.props;
+const {restaurant , backgroundColor = '#FFFF'} = Astro.props;
 
 ---
 
@@ -22,7 +23,7 @@ const {restaurant} = Astro.props;
 
 		<title>Astro Basics</title>
 	</head>
-	<body style={`--font-family:${restaurant?.fontFamily } `} >
+	<body style={`--font-family:${restaurant?.fontFamily }; --bg-color:${backgroundColor} `} >
 		<slot />
 	</body>
 </html>
@@ -34,5 +35,6 @@ const {restaurant} = Astro.props;
 		width: 100%;
 		height: 100%;
 		font-family: var(--font-family);
+		background-color: var(--bg-color);
 	}
 </style>

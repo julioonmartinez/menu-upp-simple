@@ -1,0 +1,62 @@
+---
+import FavoritesDishes from '../../components/FavoritesDishes.svelte'
+import type { LinkTree, Restaurant } from '../../interfaces';
+import type { Category } from '../../interfaces/categories';
+import type { Dish } from '../../interfaces/dish';
+import Layout from '../../layouts/Layout.astro';
+import { fetchLinksByUsername } from '../../services/apiService';
+import { fetchAllRestaurantDataByUsername, fetchDishesByUsername } from '../../services/apiService';
+
+const {username} = Astro.params;
+
+if(!username){
+    return Astro.redirect('/404');
+}
+
+let restaurantInfo: Restaurant | null = null;
+let categoriesInfo: Category[] | null = null;
+let dishesInfo: Dish[] | null = null;
+let errorMessage: string | null = null;
+let linksTreeInfo: LinkTree | null = null;
+
+try {
+    const data = await fetchAllRestaurantDataByUsername(username);
+    linksTreeInfo = await fetchLinksByUsername(username);
+    dishesInfo = data.dishes
+    restaurantInfo = data.restaurant;
+    console.log('Datos obtenidos:', {
+        restaurant: restaurantInfo,
+        linksTree: linksTreeInfo,
+        coloresRestaurante: {
+            primary: restaurantInfo?.primaryColor,
+            secondary: restaurantInfo?.secondaryColor
+        }
+    });
+} catch( error){
+    console.error('Error al obtener datos:', error);
+    dishesInfo = []
+}
+
+// Validar y proveer valores por defecto para los colores
+const primaryColor = restaurantInfo?.primaryColor || '#FF4500';
+const secondaryColor = restaurantInfo?.secondaryColor || '#FF4500';
+const backgroundColor = linksTreeInfo?.backgroundColor || '#FFFFFF';
+
+console.log('Colores finales a pasar al componente:', {
+    primaryColor,
+    secondaryColor,
+    backgroundColor
+});
+---
+
+<Layout restaurant={restaurantInfo!} backgroundColor={backgroundColor}>
+    <FavoritesDishes 
+        username={restaurantInfo?.username} 
+        transition:persist 
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        backgroundColor={backgroundColor}
+        client:load 
+        dishes={dishesInfo}
+    />
+</Layout>

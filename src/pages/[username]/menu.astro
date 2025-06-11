@@ -6,6 +6,7 @@ import Header from '../../components/Header.astro';
 import CategoryNav from '../../components/CategoryNav.astro';
 import DynamicMenu from '../../components/DynamicMenu.svelte';
 import HeroSlider from '../../components/HeroSlider.astro';
+import FloatingButton from '../../components/microcomponentes/FloatingButton.svelte';
 import { fetchAllRestaurantDataByUsername, fetchLinksByUsername } from '../../services/apiService';
 import type { Restaurant } from '../../interfaces/restaurant';
 import type { Category } from '../../interfaces/categories';
@@ -41,7 +42,7 @@ try {
     return Astro.redirect('/404');
   }
 
-  console.log('🏪 Restaurant Info:', restaurantInfo.name);
+  console.log('🏪 Restaurant Info:', restaurantInfo );
   console.log('📂 Categories count:', categoriesInfo?.length || 0);
   console.log('🍽️ Total dishes count:', dishesInfo?.length || 0);
   
@@ -56,7 +57,7 @@ try {
 }
 
 // Configurar slides del hero
-const slides = [
+const slides =  restaurantInfo?.heroSlides || [
   {
     imageUrl: restaurantInfo?.imageCover || '/images/restaurants/labellavita/cover.webp',
     title: `Bienvenidos a ${restaurantInfo?.name || 'nuestro restaurante'}`,
@@ -84,7 +85,7 @@ const pageDescription = restaurantInfo
 const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length > 0;
 ---
 
-<Layout restaurant={restaurantInfo!} >
+<Layout backgroundColor={linksTreeInfo?.backgroundColor || '#FFFF'} restaurant={restaurantInfo!} >
   <!-- Header del restaurante -->
   {hasValidData && (
     <Header restaurant={restaurantInfo!} linkTree={linksTreeInfo!} />
@@ -142,7 +143,7 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   
   <!-- Footer del menú -->
   {hasValidData && (
-    <footer class="menu-footer">
+    <footer class="menu-footer" style={`--primary-color: ${restaurantInfo?.primaryColor};  `} >
       <div class="footer-content">
         <div class="restaurant-info">
           <h3>{restaurantInfo!.name}</h3>
@@ -157,7 +158,7 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
           )}
         </div>
         
-        <div class="footer-actions">
+        {/* <div class="footer-actions">
           <a href={`/${username}`} class="profile-link">
             Ver perfil completo
           </a>
@@ -170,7 +171,7 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
               Llamar ahora
             </a>
           )}
-        </div>
+        </div> */}
       </div>
       
       <div class="footer-bottom">
@@ -178,6 +179,7 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
       </div>
     </footer>
   )}
+  <FloatingButton username={restaurantInfo?.username} client:load colorPrimary={restaurantInfo?.primaryColor}  ></FloatingButton>
 </Layout>
 
 <style>
@@ -234,8 +236,8 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   
   /* Footer del menú */
   .menu-footer {
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    background: var(--primary-color);
+    /* border-top: 1px solid #e2e8f0; */
     margin-top: 3rem;
   }
   
@@ -252,12 +254,12 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   .restaurant-info h3 {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #1f2937;
+    color: white;
     margin-bottom: 1rem;
   }
   
   .restaurant-info p {
-    color: #6b7280;
+    color: white;
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
   }
@@ -301,13 +303,13 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   }
   
   .footer-bottom {
-    background: #e2e8f0;
+    background: var(--primary-color);
     padding: 1rem;
     text-align: center;
   }
   
   .footer-bottom p {
-    color: #6b7280;
+    color: white;
     font-size: 0.75rem;
     margin: 0;
   }

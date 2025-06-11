@@ -1,11 +1,8 @@
 ---
 // HeroSlider.astro
-export interface HeroSlide {
-  imageUrl: string;
-  title: string;
-  subtitle: string;
-  alt?: string;
-}
+// Define HeroSlide interface locally
+import type { HeroSlide } from '../types/slider';
+
 
 interface Props {
   slides: HeroSlide[];

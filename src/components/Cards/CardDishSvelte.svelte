@@ -9,13 +9,14 @@
   import { favoritesStore } from '../../stores/favoritesStore';
   import { trackDishInteraction, recordLinkClick } from '../../services/analyticsService';
   
-  // Props
+  // Props con valores por defecto
   export let item: Dish;
   export let index: number;
-  export let storeMode: boolean = false; // Prop para activar el modo tienda
-  export let backgroundColor = '#FFFF';
+  export let storeMode: boolean = false;
+  export let backgroundColor = '#FFFFFF';
   export let primaryColor = '#2b2b2b';
-  export let secondaryColor = 'Ff4500';
+  export let secondaryColor = '#FF4500';
+  
   // Variable reactiva para la calificación del usuario
   let userRating = 0;
   let visible = false;
@@ -24,11 +25,15 @@
   let addingToCart = false;
   let selectedOptions: DishOption[] = [];
   
-  
   // Variable reactiva para mantener actualizado el contador de likes
   let favoritesCount = item.favorites || 0;
   
   const dispatch = createEventDispatcher();
+  
+  // Computed para asegurar que los colores estén bien formateados
+  $: formattedPrimaryColor = primaryColor || '#2b2b2b';
+  $: formattedSecondaryColor = secondaryColor || '#FF4500';
+  $: formattedBackgroundColor = backgroundColor || '#FFFFFF';
   
   onMount(() => {
     // Inicializar opciones seleccionadas si existen
@@ -143,7 +148,7 @@
   class="bento-card group {visible ? 'animate-fade-in' : 'opacity-hidden'}"
   data-item-id={item.id}
   data-animation-delay={index}
-  style="--index: {index}; --bg-color:{backgroundColor}; --primary-color: {primaryColor}; --secondaryColor: {secondaryColor}"
+  style="--index: {index}; --bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
   in:fly={{y: 30, delay: index * 50, duration: 500, easing: cubicOut}}
 >
   {#if item.discount && storeMode}
@@ -314,8 +319,7 @@
 <style>
 /* Variables CSS para colores (ajusta según tu paleta) */
 :root {
-
-  --red-color: #eb0000; ;
+  --red-color: #eb0000;
   --color-secondary-md: #f3f4f6; /* gray-100 */
   --color-text: #1f2937; /* gray-800 */
   --color-white: #ffffff;
@@ -380,7 +384,7 @@
   position: relative;
   height: 12rem; /* h-48 */
   overflow: hidden;
-  background-color: var(--color-secondary);
+  background-color: #64748B;
 }
 
 .image-container.no-image {
@@ -501,6 +505,7 @@
   font-size: 1.875rem; /* text-3xl */
 }
 
+/* Esta es la clase que tenía el problema - ahora usa la variable CSS correcta */
 .regular-price {
   color: var(--primary-color);
   font-size: 1.5rem; /* text-2xl */

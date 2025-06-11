@@ -8,9 +8,83 @@
   export let variant = 'card'; // card, list, compact, hero
   export let showText = true;
   export let animated = true;
+
+  // Color props with neutral defaults
+  export let primaryColor = '#FFFF'; // neutral-500
+  export let secondaryColor = '#2b2b2b'; // neutral-100
   
   // Generate array for skeleton items
   $: skeletonItems = Array.from({ length: count }, (_, i) => i);
+  
+  // Color processing functions
+  function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 107, g: 114, b: 128 }; // fallback to neutral-500
+  }
+  
+  function rgbToHsl(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+  
+  // Generate skeleton color palette based on primary and secondary colors
+  $: colorPalette = (() => {
+    const primaryRgb = hexToRgb(primaryColor);
+    const secondaryRgb = hexToRgb(secondaryColor);
+    const primaryHsl = rgbToHsl(primaryRgb.r, primaryRgb.g, primaryRgb.b);
+    const secondaryHsl = rgbToHsl(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b);
+    
+    // Create a subtle color palette for skeleton
+    const baseColor = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s * 0.3, 20)}%, ${Math.max(primaryHsl.l * 0.9, 85)}%)`;
+    const shimmerStart = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s * 0.2, 15)}%, ${Math.max(primaryHsl.l * 0.85, 80)}%)`;
+    const shimmerMid = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s * 0.4, 25)}%, ${Math.max(primaryHsl.l * 0.95, 90)}%)`;
+    const shimmerEnd = baseColor;
+    
+    // Dark mode variants
+    const darkBaseColor = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s * 0.4, 30)}%, ${Math.min(primaryHsl.l * 0.3, 25)}%)`;
+    const darkShimmerStart = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s * 0.3, 25)}%, ${Math.min(primaryHsl.l * 0.25, 20)}%)`;
+    const darkShimmerMid = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s * 0.5, 35)}%, ${Math.min(primaryHsl.l * 0.35, 30)}%)`;
+    const darkShimmerEnd = darkBaseColor;
+    
+    // Hero background gradient
+    const heroGradientStart = `hsl(${primaryHsl.h}, ${Math.min(primaryHsl.s, 70)}%, ${Math.min(primaryHsl.l, 60)}%)`;
+    const heroGradientEnd = `hsl(${(primaryHsl.h + 30) % 360}, ${Math.min(primaryHsl.s, 65)}%, ${Math.min(primaryHsl.l * 0.8, 50)}%)`;
+    
+    return {
+      base: baseColor,
+      shimmerStart,
+      shimmerMid,
+      shimmerEnd,
+      darkBase: darkBaseColor,
+      darkShimmerStart,
+      darkShimmerMid,
+      darkShimmerEnd,
+      heroGradientStart,
+      heroGradientEnd
+    };
+  })();
   
   // Different skeleton variants
   const variants = {
@@ -46,6 +120,20 @@
     class="skeleton-loader {currentVariant.container}"
     class:animated
     in:fade={{ duration: 300 }}
+    style="
+      --skeleton-base: {colorPalette.base};
+      --skeleton-shimmer-start: {colorPalette.shimmerStart};
+      --skeleton-shimmer-mid: {colorPalette.shimmerMid};
+      --skeleton-shimmer-end: {colorPalette.shimmerEnd};
+      --skeleton-dark-base: {colorPalette.darkBase};
+      --skeleton-dark-shimmer-start: {colorPalette.darkShimmerStart};
+      --skeleton-dark-shimmer-mid: {colorPalette.darkShimmerMid};
+      --skeleton-dark-shimmer-end: {colorPalette.darkShimmerEnd};
+      --skeleton-hero-gradient-start: {colorPalette.heroGradientStart};
+      --skeleton-hero-gradient-end: {colorPalette.heroGradientEnd};
+      --primary-color: {primaryColor};
+      --secondary-color: {secondaryColor};
+    "
   >
     {#each skeletonItems as item, index}
       <div 
@@ -162,9 +250,14 @@
   .skeleton-avatar,
   .skeleton-star,
   .skeleton-button {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, 
+      var(--skeleton-shimmer-start) 0%, 
+      var(--skeleton-shimmer-mid) 50%, 
+      var(--skeleton-shimmer-end) 100%
+    );
     background-size: 200% 100%;
     border-radius: 8px;
+    transition: background 0.3s ease;
   }
   
   .animated .skeleton-line,
@@ -174,7 +267,7 @@
   .animated .skeleton-avatar,
   .animated .skeleton-star,
   .animated .skeleton-button {
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 2s ease-in-out infinite;
   }
   
   @keyframes shimmer {
@@ -188,18 +281,25 @@
   
   /* Card Skeleton */
   .card-skeleton {
-    background: white;
+    background: var(--secondary-color, #ffffff);
+    border: 1px solid var(--skeleton-base);
     border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     height: 400px;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
   }
   
   .skeleton-image {
     height: 200px;
     border-radius: 0;
+    background: linear-gradient(135deg, 
+      var(--skeleton-shimmer-start) 0%, 
+      var(--skeleton-shimmer-mid) 50%, 
+      var(--skeleton-shimmer-end) 100%
+    );
   }
   
   .skeleton-content {
@@ -269,6 +369,11 @@
     width: 80px;
     height: 20px;
     border-radius: 12px;
+    background: linear-gradient(90deg, 
+      var(--primary-color) 0%, 
+      color-mix(in srgb, var(--primary-color) 80%, white) 100%
+    );
+    opacity: 0.6;
   }
   
   /* List Skeleton */
@@ -276,9 +381,11 @@
     display: flex;
     gap: 16px;
     padding: 16px;
-    background: white;
+    background: var(--secondary-color, #ffffff);
+    border: 1px solid var(--skeleton-base);
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
   }
   
   .skeleton-image-small {
@@ -308,13 +415,15 @@
   
   /* Compact Skeleton */
   .compact-skeleton {
-    background: white;
+    background: var(--secondary-color, #ffffff);
+    border: 1px solid var(--skeleton-base);
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     height: 250px;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
   }
   
   .skeleton-image-compact {
@@ -345,9 +454,29 @@
   .hero-skeleton {
     text-align: center;
     padding: 40px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, 
+      var(--skeleton-hero-gradient-start) 0%, 
+      var(--skeleton-hero-gradient-end) 100%
+    );
     border-radius: 24px;
     color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .hero-skeleton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+      transparent 0%, 
+      rgba(255, 255, 255, 0.1) 50%, 
+      transparent 100%
+    );
+    pointer-events: none;
   }
   
   .skeleton-avatar {
@@ -356,11 +485,16 @@
     border-radius: 50%;
     margin: 0 auto 24px;
     background: rgba(255, 255, 255, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    z-index: 1;
   }
   
   .skeleton-hero-content {
     max-width: 600px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
   
   .skeleton-hero-title {
@@ -368,6 +502,7 @@
     width: 70%;
     margin: 0 auto 16px;
     background: rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
   }
   
   .skeleton-hero-subtitle {
@@ -375,6 +510,7 @@
     width: 50%;
     margin: 0 auto 32px;
     background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
   }
   
   .skeleton-hero-text {
@@ -388,6 +524,7 @@
     height: 16px;
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
   }
   
   .skeleton-buttons {
@@ -401,14 +538,119 @@
     height: 48px;
     border-radius: 24px;
     background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
   }
   
   .skeleton-button-primary {
     width: 200px;
+    background: rgba(255, 255, 255, 0.3);
   }
   
   .skeleton-button-secondary {
     width: 150px;
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .skeleton-line,
+    .skeleton-image,
+    .skeleton-image-small,
+    .skeleton-image-compact,
+    .skeleton-star,
+    .skeleton-button {
+      background: linear-gradient(90deg, 
+        var(--skeleton-dark-shimmer-start) 0%, 
+        var(--skeleton-dark-shimmer-mid) 50%, 
+        var(--skeleton-dark-shimmer-end) 100%
+      );
+      background-size: 200% 100%;
+    }
+    
+    .skeleton-image {
+      background: linear-gradient(135deg, 
+        var(--skeleton-dark-shimmer-start) 0%, 
+        var(--skeleton-dark-shimmer-mid) 50%, 
+        var(--skeleton-dark-shimmer-end) 100%
+      );
+    }
+    
+    .card-skeleton,
+    .list-skeleton,
+    .compact-skeleton {
+      background: #1f2937;
+      border-color: var(--skeleton-dark-base);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .skeleton-price {
+      background: linear-gradient(90deg, 
+        var(--primary-color) 0%, 
+        color-mix(in srgb, var(--primary-color) 70%, black) 100%
+      );
+      opacity: 0.8;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-item {
+      animation: none;
+      opacity: 1;
+    }
+    
+    .skeleton-loader {
+      animation: none;
+      opacity: 1;
+    }
+    
+    .skeleton-line,
+    .skeleton-image,
+    .skeleton-image-small,
+    .skeleton-image-compact,
+    .skeleton-avatar,
+    .skeleton-star,
+    .skeleton-button {
+      animation: none;
+      background: var(--skeleton-base);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .skeleton-line,
+      .skeleton-image,
+      .skeleton-image-small,
+      .skeleton-image-compact,
+      .skeleton-avatar,
+      .skeleton-star,
+      .skeleton-button {
+        background: var(--skeleton-dark-base);
+      }
+    }
+  }
+  
+  /* High performance mode for older devices */
+  @media (max-width: 480px) and (max-resolution: 150dpi) {
+    .animated .skeleton-line,
+    .animated .skeleton-image,
+    .animated .skeleton-image-small,
+    .animated .skeleton-image-compact,
+    .animated .skeleton-avatar,
+    .animated .skeleton-star,
+    .animated .skeleton-button {
+      animation: none;
+      background: var(--skeleton-base);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .animated .skeleton-line,
+      .animated .skeleton-image,
+      .animated .skeleton-image-small,
+      .animated .skeleton-image-compact,
+      .animated .skeleton-avatar,
+      .animated .skeleton-star,
+      .animated .skeleton-button {
+        background: var(--skeleton-dark-base);
+      }
+    }
   }
   
   /* Responsive Design */
@@ -447,86 +689,33 @@
     .skeleton-button {
       width: 200px;
     }
-  }
-  
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .skeleton-line,
-    .skeleton-image,
-    .skeleton-image-small,
-    .skeleton-image-compact,
-    .skeleton-star,
-    .skeleton-button {
-      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
-      background-size: 200% 100%;
-    }
     
-    .card-skeleton,
-    .list-skeleton,
-    .compact-skeleton {
-      background: #1f2937;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    .hero-skeleton {
+      padding: 24px 16px;
     }
     
     .skeleton-avatar {
-      background: rgba(255, 255, 255, 0.1);
-    }
-    
-    .skeleton-hero-title,
-    .skeleton-hero-subtitle,
-    .skeleton-hero-text .skeleton-line,
-    .skeleton-button {
-      background: rgba(255, 255, 255, 0.1);
+      width: 80px;
+      height: 80px;
+      margin-bottom: 16px;
     }
   }
   
-  /* Reduced motion support */
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-item {
-      animation: none;
-      opacity: 1;
-    }
-    
-    .skeleton-loader {
-      animation: none;
-      opacity: 1;
-    }
-    
-    .skeleton-line,
-    .skeleton-image,
-    .skeleton-image-small,
-    .skeleton-image-compact,
-    .skeleton-avatar,
-    .skeleton-star,
-    .skeleton-button {
-      animation: none;
-      background: #f0f0f0;
+  /* Hover effects for interactive feel */
+  @media (hover: hover) {
+    .card-skeleton:hover,
+    .list-skeleton:hover,
+    .compact-skeleton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
     }
     
     @media (prefers-color-scheme: dark) {
-      .skeleton-line,
-      .skeleton-image,
-      .skeleton-image-small,
-      .skeleton-image-compact,
-      .skeleton-avatar,
-      .skeleton-star,
-      .skeleton-button {
-        background: #374151;
+      .card-skeleton:hover,
+      .list-skeleton:hover,
+      .compact-skeleton:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
       }
-    }
-  }
-  
-  /* High performance mode for older devices */
-  @media (max-width: 480px) and (max-resolution: 150dpi) {
-    .animated .skeleton-line,
-    .animated .skeleton-image,
-    .animated .skeleton-image-small,
-    .animated .skeleton-image-compact,
-    .animated .skeleton-avatar,
-    .animated .skeleton-star,
-    .animated .skeleton-button {
-      animation: none;
-      background: #f0f0f0;
     }
   }
 </style>

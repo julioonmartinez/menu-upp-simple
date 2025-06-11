@@ -6,6 +6,8 @@
   // Props
   export let count = 6;
   export let showCategoryHeader = true;
+  export let primaryColor = '#3B82F6'; // Azul por defecto
+  export let secondaryColor = '#64748B'; // Gris azulado por defecto
   
   // Generate array for skeleton items
   $: skeletonItems = Array.from({ length: count }, (_, i) => i);
@@ -15,10 +17,73 @@
   onMount(() => {
     mounted = true;
   });
+
+  // Función para convertir hex a RGB
+  function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 59, g: 130, b: 246 }; // fallback al azul por defecto
+  }
+
+  // Función para calcular la luminancia
+  function getLuminance(r, g, b) {
+    const [rs, gs, bs] = [r, g, b].map(c => {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+  }
+
+  // Determinar si es tema oscuro basado en el color primario
+  $: primaryRgb = hexToRgb(primaryColor);
+  $: isDarkTheme = getLuminance(primaryRgb.r, primaryRgb.g, primaryRgb.b) < 0.5;
+
+  // Generar colores del skeleton basados en los colores primario y secundario
+  $: skeletonColors = (() => {
+    const primary = hexToRgb(primaryColor);
+    const secondary = hexToRgb(secondaryColor);
+    
+    if (isDarkTheme) {
+      // Para temas oscuros
+      return {
+        base: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.08)`,
+        shimmer1: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.04)`,
+        shimmer2: `rgba(${secondary.r}, ${secondary.g}, ${secondary.b}, 0.12)`,
+        shimmer3: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.04)`,
+        card: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.02)`,
+        overlay: `rgba(${secondary.r}, ${secondary.g}, ${secondary.b}, 0.15)`
+      };
+    } else {
+      // Para temas claros
+      return {
+        base: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.06)`,
+        shimmer1: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.03)`,
+        shimmer2: `rgba(${secondary.r}, ${secondary.g}, ${secondary.b}, 0.08)`,
+        shimmer3: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.03)`,
+        card: `rgba(255, 255, 255, 0.8)`,
+        overlay: `rgba(${secondary.r}, ${secondary.g}, ${secondary.b}, 0.1)`
+      };
+    }
+  })();
+
+  // CSS custom properties reactivas
+  $: cssProps = `
+    --skeleton-base: ${skeletonColors.base};
+    --skeleton-shimmer-1: ${skeletonColors.shimmer1};
+    --skeleton-shimmer-2: ${skeletonColors.shimmer2};
+    --skeleton-shimmer-3: ${skeletonColors.shimmer3};
+    --skeleton-card: ${skeletonColors.card};
+    --skeleton-overlay: ${skeletonColors.overlay};
+    --primary-color: ${primaryColor};
+    --secondary-color: ${secondaryColor};
+  `;
 </script>
 
 {#if mounted}
-  <div class="menu-skeleton-loader" in:fade={{ duration: 300 }}>
+  <div class="menu-skeleton-loader" style={cssProps} in:fade={{ duration: 300 }}>
     <!-- Category Header Skeleton -->
     {#if showCategoryHeader}
       <div class="category-header-skeleton">
@@ -103,9 +168,9 @@
     height: 2.5rem;
     width: 300px;
     margin: 0 auto 0.5rem;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
     border-radius: 8px;
   }
   
@@ -113,9 +178,10 @@
     height: 1rem;
     width: 200px;
     margin: 0 auto;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.2s;
     border-radius: 6px;
   }
   
@@ -127,16 +193,27 @@
   }
   
   .dish-skeleton-card {
-    background: white;
+    background: var(--skeleton-card);
     border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.04),
+      0 1px 3px rgba(0, 0, 0, 0.02);
     height: 400px;
     display: flex;
     flex-direction: column;
     opacity: 0;
-    animation: fadeInSkeleton 0.5s ease forwards;
+    animation: fadeInSkeleton 0.6s ease forwards;
     animation-delay: var(--delay, 0s);
+    border: 1px solid var(--skeleton-base);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .dish-skeleton-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 30px rgba(0, 0, 0, 0.06),
+      0 2px 6px rgba(0, 0, 0, 0.04);
   }
   
   @keyframes fadeInSkeleton {
@@ -154,9 +231,9 @@
   .skeleton-image {
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
   }
   
   .skeleton-favorite-btn {
@@ -166,7 +243,8 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--skeleton-overlay);
+    backdrop-filter: blur(8px);
   }
   
   .skeleton-price-badge {
@@ -176,9 +254,10 @@
     width: 80px;
     height: 28px;
     border-radius: 50px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.3s;
   }
   
   /* Content */
@@ -200,9 +279,10 @@
   .skeleton-dish-title {
     flex: 1;
     height: 24px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.1s;
     border-radius: 6px;
   }
   
@@ -210,9 +290,10 @@
     width: 60px;
     height: 20px;
     border-radius: 50px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.4s;
   }
   
   .skeleton-description {
@@ -223,14 +304,19 @@
   
   .skeleton-line {
     height: 14px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
     border-radius: 4px;
+  }
+  
+  .skeleton-line:first-child {
+    animation-delay: 0.2s;
   }
   
   .skeleton-line-short {
     width: 70%;
+    animation-delay: 0.5s;
   }
   
   /* Rating Section */
@@ -249,18 +335,25 @@
   .skeleton-star {
     width: 16px;
     height: 16px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
     border-radius: 2px;
   }
+  
+  .skeleton-star:nth-child(1) { animation-delay: 0.1s; }
+  .skeleton-star:nth-child(2) { animation-delay: 0.2s; }
+  .skeleton-star:nth-child(3) { animation-delay: 0.3s; }
+  .skeleton-star:nth-child(4) { animation-delay: 0.4s; }
+  .skeleton-star:nth-child(5) { animation-delay: 0.5s; }
   
   .skeleton-rating-text {
     width: 60px;
     height: 14px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.6s;
     border-radius: 4px;
   }
   
@@ -275,17 +368,23 @@
     width: 50px;
     height: 24px;
     border-radius: 12px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+  
+  .skeleton-tag:nth-child(1) { 
+    animation-delay: 0.3s; 
   }
   
   .skeleton-tag:nth-child(2) {
     width: 60px;
+    animation-delay: 0.4s; 
   }
   
   .skeleton-tag:nth-child(3) {
     width: 40px;
+    animation-delay: 0.5s; 
   }
   
   /* Stock Status */
@@ -299,21 +398,23 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.7s;
   }
   
   .skeleton-stock-text {
     width: 80px;
     height: 14px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, var(--skeleton-shimmer-1) 25%, var(--skeleton-shimmer-2) 50%, var(--skeleton-shimmer-3) 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
+    animation-delay: 0.8s;
     border-radius: 4px;
   }
   
-  /* Shimmer Animation */
+  /* Shimmer Animation - Suavizada */
   @keyframes shimmer {
     0% {
       background-position: -200% 0;
@@ -368,33 +469,6 @@
     }
   }
   
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .dish-skeleton-card {
-      background: #1f2937;
-    }
-    
-    .skeleton-image,
-    .skeleton-title,
-    .skeleton-subtitle,
-    .skeleton-dish-title,
-    .skeleton-special-badge,
-    .skeleton-line,
-    .skeleton-star,
-    .skeleton-rating-text,
-    .skeleton-tag,
-    .skeleton-price-badge,
-    .skeleton-stock-indicator,
-    .skeleton-stock-text {
-      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
-      background-size: 200% 100%;
-    }
-    
-    .skeleton-favorite-btn {
-      background: rgba(75, 85, 99, 0.9);
-    }
-  }
-  
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
     .dish-skeleton-card {
@@ -415,24 +489,29 @@
     .skeleton-stock-indicator,
     .skeleton-stock-text {
       animation: none;
-      background: #f0f0f0;
+      background: var(--skeleton-base);
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .dish-skeleton-card {
+      border: 2px solid var(--secondary-color);
     }
     
-    @media (prefers-color-scheme: dark) {
-      .skeleton-image,
-      .skeleton-title,
-      .skeleton-subtitle,
-      .skeleton-dish-title,
-      .skeleton-special-badge,
-      .skeleton-line,
-      .skeleton-star,
-      .skeleton-rating-text,
-      .skeleton-tag,
-      .skeleton-price-badge,
-      .skeleton-stock-indicator,
-      .skeleton-stock-text {
-        background: #374151;
-      }
+    .skeleton-image,
+    .skeleton-title,
+    .skeleton-subtitle,
+    .skeleton-dish-title,
+    .skeleton-special-badge,
+    .skeleton-line,
+    .skeleton-star,
+    .skeleton-rating-text,
+    .skeleton-tag,
+    .skeleton-price-badge,
+    .skeleton-stock-indicator,
+    .skeleton-stock-text {
+      background: var(--skeleton-shimmer-2);
     }
   }
 </style>

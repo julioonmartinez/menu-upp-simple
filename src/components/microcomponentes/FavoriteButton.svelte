@@ -166,11 +166,11 @@
   }
 
   .heart-icon.unsaved:hover {
-    color: var(--primary-color);
+    color: #eb0000;
   }
 
   .heart-icon.saved {
-    color: var(--primary-color);
+    color: #eb0000 ;
     fill: currentColor;
   }
 

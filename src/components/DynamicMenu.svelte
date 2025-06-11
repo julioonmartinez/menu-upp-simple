@@ -1,11 +1,10 @@
 <script>
-  // components/DynamicMenu.svelte
   import { onMount, onDestroy } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import EnhancedDishCard from './Cards/EnhancedDishCard.svelte';
+  import CardDishSvelte from './Cards/CardDishSvelte.svelte';
   import MenuSkeletonLoader from './MenuSkeletonLoader.svelte';
-    import CardDishSvelte from './Cards/CardDishSvelte.svelte';
+  import { fetchDishesByUsernameAndCategory, fetchDishesByUsername } from '../services/apiService';
   
   // Props
   export let username;
@@ -16,35 +15,55 @@
   export let primaryColor = '#2b2b2b';
   export let secondaryColor = 'Ff4500';
 
-  
   // Estado local
   let currentCategory = null;
   let dishes = [];
+  let allDishes = []; // Cache de todos los platos
   let isLoading = false;
   let error = null;
   let mounted = false;
+  let retryCount = 0;
+  let maxRetries = 2;
   
   // Variables para el manejo de eventos
   let categoryChangeHandler;
-  
-  // API call para obtener platillos por categoría
-  async function fetchDishesByCategory(categoryId) {
+
+  // Función mejorada para obtener platillos por categoría con fallbacks
+  async function fetchDishesByCategory(categoryId, isRetry = false) {
     if (!categoryId || !username) return;
     
     isLoading = true;
     error = null;
     
     try {
-      const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(
-        `${apiUrl}/dishes/restaurant-username/${username}/category/${categoryId}?limit=100`
-      );
+      console.log(`🔄 Fetching dishes for category: ${categoryId}, retry: ${isRetry}`);
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      // MÉTODO 1: Intentar endpoint específico de categoría
+      let data;
+      try {
+        data = await fetchDishesByUsernameAndCategory(username, categoryId, 100);
+        console.log('✅ Method 1 successful - specific category endpoint');
+      } catch (categoryError) {
+        console.warn('⚠️ Method 1 failed:', categoryError.message);
+        
+        // MÉTODO 2: Fallback - obtener todos los platos y filtrar
+        if (!allDishes || allDishes.length === 0) {
+          console.log('🔄 Loading all dishes for filtering...');
+          const allDishesResponse = await fetchDishesByUsername(username, 500);
+          allDishes = allDishesResponse.dishes || [];
+          console.log(`📦 Loaded ${allDishes.length} total dishes`);
+        }
+        
+        // Filtrar localmente
+        const filteredDishes = allDishes.filter(dish => {
+          return dish.categoryId === categoryId || 
+                 dish.category_id === categoryId ||
+                 dish.category === categoryId;
+        });
+        
+        console.log(`✅ Method 2 successful - local filtering found ${filteredDishes.length} dishes`);
+        data = { dishes: filteredDishes };
       }
-      
-      const data = await response.json();
       
       if (data && Array.isArray(data.dishes)) {
         dishes = data.dishes.map((dish, index) => ({
@@ -53,25 +72,43 @@
           inStock: dish.inStock !== undefined ? dish.inStock : Math.random() > 0.1,
           isSpecial: dish.isSpecial || (index % 7 === 0),
           reviewCount: dish.reviewCount || Math.floor(Math.random() * 100) + 5,
-          rating: dish.rating || (Math.random() * 2 + 3), // Rating entre 3-5
+          rating: dish.rating || (Math.random() * 2 + 3),
           tags: dish.tags || generateTags(dish)
         }));
+        
+        retryCount = 0; // Reset counter on success
+        console.log(`🍽️ Successfully loaded ${dishes.length} dishes for category ${categoryId}`);
       } else {
+        console.warn('⚠️ Invalid data structure received');
         dishes = [];
       }
       
-      console.log(`🍽️ Loaded ${dishes.length} dishes for category ${categoryId}`);
-      
     } catch (err) {
-      console.error('Error fetching dishes:', err);
-      error = err.message;
+      console.error('❌ Error fetching dishes:', err);
+      
+      // Intentar retry si no hemos excedido el límite
+      if (!isRetry && retryCount < maxRetries) {
+        retryCount++;
+        console.log(`🔄 Retrying... attempt ${retryCount}/${maxRetries}`);
+        
+        // Esperar un poco antes del retry
+        setTimeout(() => {
+          fetchDishesByCategory(categoryId, true);
+        }, 1000 * retryCount); // Backoff exponencial
+        
+        return; // No cambiar el estado de loading todavía
+      }
+      
+      // Si llegamos aquí, todos los intentos fallaron
+      error = `No se pudieron cargar los platillos. ${err.message}`;
       dishes = [];
+      retryCount = 0;
     } finally {
       isLoading = false;
     }
   }
-  
-  // Generar tags automáticamente para los platillos
+
+  // Función para generar tags automáticamente
   function generateTags(dish) {
     const tags = [];
     const name = dish.name?.toLowerCase() || '';
@@ -96,10 +133,10 @@
       tags.push('favorito');
     }
     
-    return tags.slice(0, 3); // Máximo 3 tags
+    return tags.slice(0, 3);
   }
-  
-  // Manejar cambio de categoría
+
+  // Función para manejar cambio de categoría
   function handleCategoryChange(event) {
     const { categoryId, categoryName, categoryIndex } = event.detail;
     
@@ -108,7 +145,15 @@
     currentCategory = { id: categoryId, name: categoryName, index: categoryIndex };
     fetchDishesByCategory(categoryId);
   }
-  
+
+  // Función para retry manual
+  function handleRetry() {
+    if (currentCategory) {
+      retryCount = 0;
+      fetchDishesByCategory(currentCategory.id);
+    }
+  }
+
   // Lifecycle hooks
   onMount(() => {
     mounted = true;
@@ -130,39 +175,23 @@
     
     console.log('🚀 DynamicMenu mounted for username:', username);
   });
-  
+
   onDestroy(() => {
-    // Limpiar listeners
     if (categoryChangeHandler) {
       document.removeEventListener('categoryChanged', categoryChangeHandler);
     }
   });
-  
-  // Formatear precio
-  function formatPrice(price) {
-    if (!price) return 'Precio a consultar';
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(price);
-  }
 </script>
 
 {#if mounted}
   <div style="--bg-color: {backgroundColor};" class="dynamic-menu" id="menu-section">
-    <!-- Header de la categoría actual -->
-    <!-- {#if currentCategory && !isLoading}
-      <div class="category-header" in:fade={{ duration: 400, delay: 200 }}>
-        <h2 class="category-title">{currentCategory.name}</h2>
-        <p class="category-count">{dishes.length} platillos disponibles</p>
-      </div>
-    {/if} -->
-    
     <!-- Estado de carga -->
     {#if isLoading}
       <MenuSkeletonLoader 
         count={6} 
         showCategoryHeader={true}
+        variant="hero"
+       
       />
     {:else}
       <!-- Menú de platillos -->
@@ -173,12 +202,17 @@
               <div class="error-icon">⚠️</div>
               <h3 class="error-title">Error al cargar platillos</h3>
               <p class="error-message">{error}</p>
-              <button 
-                class="retry-button"
-                on:click={() => currentCategory && fetchDishesByCategory(currentCategory.id)}
-              >
-                Intentar nuevamente
-              </button>
+              <div class="error-actions">
+                <button 
+                  class="retry-button"
+                  on:click={handleRetry}
+                >
+                  Intentar nuevamente
+                </button>
+                {#if retryCount > 0}
+                  <p class="retry-info">Intento {retryCount} de {maxRetries}</p>
+                {/if}
+              </div>
             </div>
           </div>
         {:else if dishes.length === 0}
@@ -197,8 +231,14 @@
                 in:fly={{ y: 30, duration: 400, delay: index * 50, easing: quintOut }}
                 data-dish-id={dish.id}
               >
-                <!-- <EnhancedDishCard {dish} {index} {storeMode} /> -->
-                 <CardDishSvelte backgroundColor={backgroundColor} primaryColor={primaryColor} secondaryColor={secondaryColor} item={dish} {index} {storeMode} ></CardDishSvelte>
+                <CardDishSvelte 
+                  backgroundColor={backgroundColor} 
+                  primaryColor={primaryColor} 
+                  secondaryColor={secondaryColor} 
+                  item={dish} 
+                  {index} 
+                  {storeMode} 
+                />
               </div>
             {/each}
           </div>
@@ -213,32 +253,26 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem 1rem;
-    min-height: 50vh;
-     background-color: var(--bg-color);
+    min-height: 100vh;
+    background-color: var(--bg-color);
+
   }
   
-  .category-header {
-    text-align: center;
-    margin-bottom: 2rem;
+  .dishes-container {
+    width: 100%;
   }
   
-  .category-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .dishes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
   }
   
-  .category-count {
-    color: #6b7280;
-    font-size: 0.875rem;
-    font-weight: 500;
+  .dish-wrapper {
+    will-change: transform;
   }
-  
+
   /* Error State */
   .error-state {
     display: flex;
@@ -270,6 +304,13 @@
     margin-bottom: 1.5rem;
     line-height: 1.5;
   }
+
+  .error-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
   
   .retry-button {
     padding: 12px 24px;
@@ -285,7 +326,13 @@
   .retry-button:hover {
     transform: translateY(-2px);
   }
-  
+
+  .retry-info {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
   /* Empty State */
   .empty-state {
     display: flex;
@@ -316,32 +363,11 @@
     color: #6b7280;
     line-height: 1.5;
   }
-  
-  /* Dishes Grid */
-  .dishes-container {
-    width: 100%;
-  
-  }
-  
-  .dishes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
-    margin-bottom: 3rem;
-  }
-  
-  .dish-wrapper {
-    will-change: transform;
-  }
-  
+
   /* Responsive Design */
   @media (max-width: 768px) {
     .dynamic-menu {
       padding: 1rem;
-    }
-    
-    .category-title {
-      font-size: 1.75rem;
     }
     
     .dishes-grid {
@@ -353,18 +379,6 @@
   @media (max-width: 480px) {
     .dishes-grid {
       gap: 1rem;
-    }
-  }
-  
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .category-title {
-      color: #f9fafb;
-    }
-    
-    .error-content,
-    .empty-content {
-      color: #f9fafb;
     }
   }
 </style>
