@@ -1,0 +1,255 @@
+---
+// pages/restaurants/top-rated.astro
+import Layout from '../../layouts/Layout.astro';
+import type { RestaurantRanking } from '../../interfaces/restaurantRating';
+import HomeLayout from '../../layouts/HomeLayout.astro';
+
+let topRestaurants: RestaurantRanking[] = [];
+let error: string | null = null;
+
+try {
+  const { fetchTopRatedRestaurants } = await import('../../services/apiRatingService');
+  topRestaurants = await fetchTopRatedRestaurants(20, 5);
+} catch (e) {
+  error = e instanceof Error ? e.message : 'Error cargando restaurantes';
+  console.error('Error en top-rated SSR:', e);
+}
+---
+
+<HomeLayout title="Restaurantes Mejor Valorados">
+  <main class="top-rated-page">
+    <div class="container">
+      <div class="page-header">
+        <h1>🏆 Restaurantes Mejor Valorados</h1>
+        <p>Los restaurantes con mejores valoraciones de nuestros usuarios</p>
+      </div>
+
+      {error && (
+        <div class="error-message">
+          <p>Error: {error}</p>
+        </div>
+      )}
+
+      {topRestaurants.length > 0 && (
+        <div class="top-restaurants">
+          {topRestaurants.map((item, index) => (
+            <div class={`restaurant-ranking ${index < 3 ? 'top-three' : ''}`}>
+              <div class="ranking-position">
+                <span class="position-number">{item.position}</span>
+                {index === 0 && <span class="medal gold">🥇</span>}
+                {index === 1 && <span class="medal silver">🥈</span>}
+                {index === 2 && <span class="medal bronze">🥉</span>}
+              </div>
+              
+              <div class="restaurant-content">
+                <div class="restaurant-image">
+                  <img 
+                    src={item.restaurant.image || item.restaurant.imageProfile || '/default-restaurant.jpg'}
+                    alt={item.restaurant.name}
+                    loading="lazy"
+                  />
+                </div>
+                
+                <div class="restaurant-details">
+                  <h3>
+                    <a href={`/${item.restaurant.username}`}>{item.restaurant.name}</a>
+                  </h3>
+                  <p class="description">{item.restaurant.description}</p>
+                  
+                  <div class="rating-info">
+                    <div class="stars">
+                      {[1,2,3,4,5].map(star => (
+                        <span class={`star ${star <= item.rating ? 'filled' : ''}`}>⭐</span>
+                      ))}
+                    </div>
+                    <span class="rating-value">{item.rating.toFixed(1)}</span>
+                    <span class="reviews-count">({item.totalReviews} reseñas)</span>
+                  </div>
+                  
+                  <div class="restaurant-meta">
+                    {item.restaurant.cuisineType && (
+                      <span class="cuisine-badge">{item.restaurant.cuisineType[0]}</span>
+                    )}
+                    {item.restaurant.priceRange && (
+                      <span class="price-badge">
+                        {item.restaurant.priceRange === 'low' && '$'}
+                        {item.restaurant.priceRange === 'medium' && '$$'}
+                        {item.restaurant.priceRange === 'high' && '$$$'}
+                      </span>
+                    )}
+                    {item.restaurant.address && (
+                      <span class="address">{item.restaurant.address}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!error && topRestaurants.length === 0 && (
+        <div class="empty-state">
+          <p>No hay suficientes restaurantes con valoraciones para mostrar el ranking.</p>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .top-rated-page {
+    padding: 40px 0;
+    background: #f8f9fa;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .page-header h1 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .page-header p {
+    color: #666;
+    font-size: 18px;
+  }
+
+  .restaurant-ranking {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.2s ease;
+  }
+
+  .restaurant-ranking:hover {
+    transform: translateY(-2px);
+  }
+
+  .top-three {
+    border: 2px solid #ffc107;
+    box-shadow: 0 4px 20px rgba(255, 193, 7, 0.3);
+  }
+
+  .ranking-position {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+  }
+
+  .position-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ff6b35;
+  }
+
+  .medal {
+    font-size: 1.5rem;
+    margin-top: 5px;
+  }
+
+  .restaurant-content {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .restaurant-image img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+
+  .restaurant-details {
+    flex: 1;
+  }
+
+  .restaurant-details h3 {
+    margin: 0 0 10px 0;
+  }
+
+  .restaurant-details h3 a {
+    color: #333;
+    text-decoration: none;
+    font-size: 1.5rem;
+  }
+
+  .restaurant-details h3 a:hover {
+    color: #ff6b35;
+  }
+
+  .description {
+    color: #666;
+    margin-bottom: 15px;
+  }
+
+  .rating-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .stars .star {
+    color: #ddd;
+    font-size: 1.2rem;
+  }
+
+  .stars .star.filled {
+    color: #ffc107;
+  }
+
+  .rating-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ff6b35;
+  }
+
+  .reviews-count {
+    color: #666;
+  }
+
+  .restaurant-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .cuisine-badge,
+  .price-badge {
+    background: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .address {
+    color: #666;
+    font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    .restaurant-content {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .restaurant-ranking {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>

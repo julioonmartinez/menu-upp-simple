@@ -1,0 +1,683 @@
+---
+// src/components/landing/CommunityFeed.astro
+---
+
+<section class="community-feed">
+  <div class="feed-container">
+    <div class="feed-header">
+      <h2 class="feed-title">
+        <span class="title-icon">🔥</span>
+        Actividad de la Comunidad
+      </h2>
+      <p class="feed-subtitle">
+        Descubre qué están valorando y compartiendo otros food lovers ahora mismo
+      </p>
+    </div>
+    
+    <div class="feed-content">
+      <!-- Feed Cards Container -->
+      <div class="feed-cards" id="community-feed">
+        <!-- Cards will be populated by JavaScript -->
+      </div>
+      
+      <!-- Load More Button -->
+      <div class="feed-actions">
+        <button class="load-more-btn" id="load-more">
+          <svg class="load-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Ver más actividad
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .community-feed {
+    padding: 4rem 1rem;
+    background: #FFFFFF;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .community-feed::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 107, 0, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  
+  .feed-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .feed-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  
+  .feed-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    color: #0D1B2A;
+    margin-bottom: 1rem;
+  }
+  
+  .title-icon {
+    font-size: 1.2em;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  .feed-subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
+    color: #1B263B;
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  
+  .feed-content {
+    position: relative;
+  }
+  
+  .feed-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  
+  .feed-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #E0E1DD;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease forwards;
+  }
+  
+  .feed-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+  
+  .feed-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #FF6B00 0%, #FF9F50 100%);
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FF6B00 0%, #FF9F50 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  
+  .user-info {
+    flex: 1;
+  }
+  
+  .user-name {
+    font-weight: 600;
+    color: #0D1B2A;
+    font-size: 0.9rem;
+    margin-bottom: 0.125rem;
+  }
+  
+  .action-time {
+    font-size: 0.75rem;
+    color: #1B263B;
+    opacity: 0.6;
+  }
+  
+  .action-type {
+    background: linear-gradient(135deg, #FF6B00 0%, #FF9F50 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .card-content {
+    margin-bottom: 1rem;
+  }
+  
+  .restaurant-dish {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .dish-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: #E0E1DD;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  
+  .dish-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .dish-name {
+    font-weight: 600;
+    color: #0D1B2A;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .restaurant-name {
+    font-size: 0.8rem;
+    color: #1B263B;
+    opacity: 0.7;
+  }
+  
+  .rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .stars {
+    color: #FF6B00;
+    font-size: 0.9rem;
+  }
+  
+  .rating-value {
+    font-weight: 600;
+    color: #0D1B2A;
+    font-size: 0.85rem;
+  }
+  
+  .user-comment {
+    color: #1B263B;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    font-style: italic;
+    padding: 0.75rem;
+    background: #E0E1DD;
+    border-radius: 12px;
+    position: relative;
+  }
+  
+  .user-comment::before {
+    content: '"';
+    position: absolute;
+    top: -0.25rem;
+    left: 0.5rem;
+    font-size: 1.5rem;
+    color: #FF6B00;
+    font-weight: bold;
+  }
+  
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.75rem;
+    border-top: 1px solid #E0E1DD;
+  }
+  
+  .interaction-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #1B263B;
+    opacity: 0.7;
+    font-size: 0.8rem;
+  }
+  
+  .stat-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .view-restaurant {
+    background: transparent;
+    color: #FF6B00;
+    border: 1px solid #FF6B00;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .view-restaurant:hover {
+    background: #FF6B00;
+    color: white;
+    transform: scale(1.05);
+  }
+  
+  .feed-actions {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .load-more-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #FF6B00 0%, #FF9F50 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .load-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 107, 0, 0.3);
+  }
+  
+  .load-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .community-feed {
+      padding: 3rem 1rem;
+    }
+    
+    .feed-header {
+      margin-bottom: 2rem;
+    }
+    
+    .feed-cards {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .feed-card {
+      padding: 1.25rem;
+    }
+    
+    .restaurant-dish {
+      gap: 0.75rem;
+    }
+    
+    .dish-image {
+      width: 50px;
+      height: 50px;
+      font-size: 1.25rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .card-footer {
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+    
+    .view-restaurant {
+      text-align: center;
+    }
+    
+    .user-comment {
+      font-size: 0.85rem;
+      padding: 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  // Mock data for community feed
+  const mockFeedData = [
+    {
+      id: 1,
+      userName: "María G.",
+      userInitial: "M",
+      action: "Valoró",
+      actionTime: "hace 5 min",
+      restaurantName: "Tacos El Rey",
+      dishName: "Tacos de Pastor",
+      dishEmoji: "🌮",
+      rating: 5,
+      comment: "¡Los mejores tacos de pastor que he probado! La carne perfectamente sazonada y las tortillas hechas a mano. Definitivamente volveré.",
+      likes: 12,
+      views: 45
+    },
+    {
+      id: 2,
+      userName: "Carlos R.",
+      userInitial: "C",
+      action: "Guardó",
+      actionTime: "hace 12 min",
+      restaurantName: "Pizza Mario",
+      dishName: "Pizza Margarita",
+      dishEmoji: "🍕",
+      rating: 4,
+      comment: "Una pizza clásica bien ejecutada. La masa crujiente y el queso de excelente calidad.",
+      likes: 8,
+      views: 32
+    },
+    {
+      id: 3,
+      userName: "Ana L.",
+      userInitial: "A",
+      action: "Comentó",
+      actionTime: "hace 18 min",
+      restaurantName: "Sushi Zen",
+      dishName: "Sashimi de Salmón",
+      dishEmoji: "🍣",
+      rating: 5,
+      comment: "Fresco, de alta calidad y presentación impecable. El chef realmente sabe lo que hace.",
+      likes: 15,
+      views: 67
+    },
+    {
+      id: 4,
+      userName: "Luis M.",
+      userInitial: "L",
+      action: "Valoró",
+      actionTime: "hace 25 min",
+      restaurantName: "Burger House",
+      dishName: "Hamburguesa BBQ",
+      dishEmoji: "🍔",
+      rating: 4,
+      comment: "Jugosa y sabrosa, aunque podría tener más salsa BBQ. Las papas fritas estuvieron perfectas.",
+      likes: 6,
+      views: 28
+    },
+    {
+      id: 5,
+      userName: "Sofia P.",
+      userInitial: "S",
+      action: "Guardó",
+      actionTime: "hace 32 min",
+      restaurantName: "Café Central",
+      dishName: "Cappuccino",
+      dishEmoji: "☕",
+      rating: 5,
+      comment: "El mejor café de la zona. Cremoso, con el equilibrio perfecto entre espresso y leche.",
+      likes: 11,
+      views: 53
+    },
+    {
+      id: 6,
+      userName: "Diego F.",
+      userInitial: "D",
+      action: "Valoró",
+      actionTime: "hace 40 min",
+      restaurantName: "Mariscos La Costa",
+      dishName: "Ceviche de Camarón",
+      dishEmoji: "🦐",
+      rating: 4,
+      comment: "Muy fresco y bien preparado. El punto de acidez perfecto y camarones de excelente calidad.",
+      likes: 9,
+      views: 41
+    }
+  ];
+  
+  let feedData = [...mockFeedData];
+  let currentIndex = 0;
+  let isLoading = false;
+  
+  function createFeedCard(data, index) {
+    const stars = '⭐'.repeat(data.rating);
+    
+    return `
+      <div class="feed-card" style="animation-delay: ${index * 0.1}s">
+        <div class="card-header">
+          <div class="user-avatar">${data.userInitial}</div>
+          <div class="user-info">
+            <div class="user-name">${data.userName}</div>
+            <div class="action-time">${data.actionTime}</div>
+          </div>
+          <div class="action-type">${data.action}</div>
+        </div>
+        
+        <div class="card-content">
+          <div class="restaurant-dish">
+            <div class="dish-image">${data.dishEmoji}</div>
+            <div class="dish-info">
+              <div class="dish-name">${data.dishName}</div>
+              <div class="restaurant-name">${data.restaurantName}</div>
+            </div>
+            <div class="rating">
+              <span class="stars">${stars}</span>
+              <span class="rating-value">${data.rating}.0</span>
+            </div>
+          </div>
+          
+          ${data.comment ? `<div class="user-comment">${data.comment}</div>` : ''}
+        </div>
+        
+        <div class="card-footer">
+          <div class="interaction-stats">
+            <div class="stat-item">
+              <svg class="stat-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+              </svg>
+              <span>${data.likes}</span>
+            </div>
+            <div class="stat-item">
+              <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>${data.views}</span>
+            </div>
+          </div>
+          <button class="view-restaurant" onclick="visitRestaurant('${data.restaurantName}')">
+            Ver restaurante
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  
+  function loadInitialCards() {
+    const feedContainer = document.getElementById('community-feed');
+    if (!feedContainer) return;
+    
+    const cardsToShow = Math.min(6, feedData.length);
+    let html = '';
+    
+    for (let i = 0; i < cardsToShow; i++) {
+      html += createFeedCard(feedData[i], i);
+    }
+    
+    feedContainer.innerHTML = html;
+    currentIndex = cardsToShow;
+  }
+  
+  function loadMoreCards() {
+    if (isLoading || currentIndex >= feedData.length) return;
+    
+    isLoading = true;
+    const feedContainer = document.getElementById('community-feed');
+    const loadBtn = document.getElementById('load-more');
+    
+    if (loadBtn) {
+      loadBtn.innerHTML = `
+        <svg class="load-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Cargando...
+      `;
+    }
+    
+    // Simulate API delay
+    setTimeout(() => {
+      // Generate more mock data if needed
+      if (currentIndex >= feedData.length) {
+        feedData = [...feedData, ...generateMoreMockData()];
+      }
+      
+      const cardsToAdd = Math.min(3, feedData.length - currentIndex);
+      let html = '';
+      
+      for (let i = currentIndex; i < currentIndex + cardsToAdd; i++) {
+        html += createFeedCard(feedData[i], i - currentIndex);
+      }
+      
+      feedContainer.innerHTML += html;
+      currentIndex += cardsToAdd;
+      
+      if (loadBtn) {
+        loadBtn.innerHTML = `
+          <svg class="load-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Ver más actividad
+        `;
+      }
+      
+      isLoading = false;
+    }, 800);
+  }
+  
+  function generateMoreMockData() {
+    const restaurants = [
+      { name: "Taco Bell", emoji: "🌮" },
+      { name: "Pizza Hut", emoji: "🍕" },
+      { name: "Subway", emoji: "🥪" },
+      { name: "Starbucks", emoji: "☕" },
+      { name: "KFC", emoji: "🍗" }
+    ];
+    
+    const dishes = [
+      "Especial del día", "Combo familiar", "Menú infantil", "Postre de la casa", "Bebida natural"
+    ];
+    
+    const comments = [
+      "Excelente calidad y buen precio. Lo recomiendo totalmente.",
+      "Servicio rápido y comida deliciosa. Volveré pronto.",
+      "Buena porción y sabor único. Me gustó mucho.",
+      "Ambiente agradable y personal amable. Muy buena experiencia.",
+      "Ingredientes frescos y preparación perfecta."
+    ];
+    
+    const users = [
+      { name: "Pedro R.", initial: "P" },
+      { name: "Laura K.", initial: "L" },
+      { name: "Miguel S.", initial: "M" },
+      { name: "Carmen F.", initial: "C" },
+      { name: "Roberto M.", initial: "R" }
+    ];
+    
+    const actions = ["Valoró", "Guardó", "Comentó"];
+    
+    return Array.from({ length: 5 }, (_, i) => {
+      const restaurant = restaurants[Math.floor(Math.random() * restaurants.length)];
+      const user = users[Math.floor(Math.random() * users.length)];
+      const action = actions[Math.floor(Math.random() * actions.length)];
+      
+      return {
+        id: feedData.length + i + 1,
+        userName: user.name,
+        userInitial: user.initial,
+        action: action,
+        actionTime: `hace ${Math.floor(Math.random() * 60) + 1} min`,
+        restaurantName: restaurant.name,
+        dishName: dishes[Math.floor(Math.random() * dishes.length)],
+        dishEmoji: restaurant.emoji,
+        rating: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars
+        comment: comments[Math.floor(Math.random() * comments.length)],
+        likes: Math.floor(Math.random() * 20) + 1,
+        views: Math.floor(Math.random() * 80) + 10
+      };
+    });
+  }
+  
+  function visitRestaurant(restaurantName) {
+    console.log(`Visiting ${restaurantName}`);
+    // In a real app, this would navigate to the restaurant page
+    // window.location.href = `/restaurant/${restaurantName.toLowerCase().replace(/\s+/g, '-')}`;
+  }
+  
+  // Initialize feed when DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    loadInitialCards();
+    
+    const loadMoreBtn = document.getElementById('load-more');
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', loadMoreCards);
+    }
+  });
+  
+  // Make visitRestaurant available globally
+  window.visitRestaurant = visitRestaurant;
+</script>

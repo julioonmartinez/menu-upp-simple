@@ -1,0 +1,179 @@
+---
+// src/components/HomePage/StatsSection.astro
+interface Stat {
+  number: string;
+  label: string;
+}
+
+interface Props {
+  stats?: Stat[];
+}
+
+const {
+  stats = [
+    { number: "50+", label: "Restaurantes Exclusivos" },
+    { number: "2.5K+", label: "Platillos Únicos" },
+    { number: "15K+", label: "Reseñas Verificadas" },
+    { number: "98%", label: "Satisfacción Cliente" }
+  ]
+} = Astro.props;
+---
+
+<section class="stats-section animate-on-scroll">
+  <div class="container">
+    <div class="stats-grid">
+      {stats.map((stat, index) => (
+        <div class="stat-item" style={`--delay: ${index * 0.1}s`}>
+          <div class="stat-number" data-target={stat.number}>{stat.number}</div>
+          <div class="stat-label">{stat.label}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .stats-section {
+    padding: var(--space-4xl) 0;
+    background: var(--pure-white);
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-2xl);
+    text-align: center;
+  }
+  
+  .stat-item {
+    animation: countUp 1s ease-out forwards;
+    animation-delay: var(--delay);
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  @keyframes countUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .stat-number {
+    font-family: var(--font-primary);
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--primary-orange);
+    margin-bottom: var(--space-sm);
+    line-height: 1;
+  }
+  
+  .stat-label {
+    font-size: 1.1rem;
+    color: var(--secondary-gray);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-lg);
+    }
+    
+    .stat-number {
+      font-size: 2.5rem;
+    }
+    
+    .stat-label {
+      font-size: 1rem;
+    }
+  }
+  
+  /* Animation state for intersection observer */
+  .stat-item.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Animated number counter
+    const statNumbers = document.querySelectorAll('.stat-number');
+    const observerOptions = {
+      threshold: 0.5,
+      rootMargin: '0px'
+    };
+    
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const number = entry.target;
+          const finalValue = number.getAttribute('data-target') || number.textContent;
+          const isPercentage = finalValue.includes('%');
+          const hasK = finalValue.includes('K');
+          const hasPlus = finalValue.includes('+');
+          const numericValue = parseInt(finalValue.replace(/[^\d]/g, ''));
+          
+          animateNumber(number, 0, numericValue, {
+            isPercentage,
+            hasK,
+            hasPlus,
+            originalText: finalValue
+          });
+          statsObserver.unobserve(number);
+        }
+      });
+    }, observerOptions);
+    
+    statNumbers.forEach(stat => statsObserver.observe(stat));
+    
+    // Number animation function
+    function animateNumber(element, start, end, options) {
+      const duration = 2000;
+      const startTime = performance.now();
+      
+      function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(start + (end - start) * easeOut);
+        
+        let displayValue = current.toString();
+        
+        if (options.hasK) {
+          displayValue = (current / 1000).toFixed(1).replace('.0', '') + 'K';
+        }
+        
+        if (options.isPercentage) {
+          displayValue += '%';
+        }
+        
+        if (options.hasPlus) {
+          displayValue += '+';
+        }
+        
+        element.textContent = displayValue;
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateNumber);
+        } else {
+          // Ensure final value matches exactly
+          element.textContent = options.originalText;
+        }
+      }
+      
+      requestAnimationFrame(updateNumber);
+    }
+  });
+</script>

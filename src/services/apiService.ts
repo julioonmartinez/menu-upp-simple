@@ -2,7 +2,7 @@
 // src/services/apiService.ts - SOLUCIÓN CORS
 import type { Category } from "../interfaces/categories";
 import type { Dish } from "../interfaces/dish";
-import type { Restaurant, LinkTree } from '../interfaces';
+import type { Restaurant, LinkTree, } from '../interfaces';
 
 const getBaseUrl = () => {
   const apiUrl = import.meta.env.PUBLIC_API_URL;
@@ -321,3 +321,4 @@ export function debugApiConfiguration() {
     timestamp: new Date().toISOString()
   };
 }
+
