@@ -171,10 +171,22 @@ export async function createAnonymousRestaurantRating(
   console.log('⭐ Creating anonymous restaurant rating:', { restaurantId, rating: ratingData.rating, deviceId });
   
   try {
+    // Validación adicional para Svelte
+    if (!restaurantId || !deviceId) {
+      throw new Error('Restaurant ID and Device ID are required');
+    }
+    
+    if (ratingData.rating < 1 || ratingData.rating > 5) {
+      throw new Error('Rating must be between 1 and 5');
+    }
+
     const response = await fetchWithStandardConfig(url, {
       method: 'POST',
       headers: getAnonymousHeaders(deviceId),
-      body: JSON.stringify(ratingData),
+      body: JSON.stringify({
+        ...ratingData,
+        anonymous: true // Asegurar que sea anónimo
+      }),
       timeout: 8000,
     });
     
@@ -185,6 +197,16 @@ export async function createAnonymousRestaurantRating(
         statusText: response.statusText,
         errorBody: errorText
       });
+      
+      // Manejo específico de errores para mejor UX
+      if (response.status === 429) {
+        throw new Error('Has alcanzado el límite de valoraciones. Inténtalo más tarde.');
+      } else if (response.status === 409) {
+        throw new Error('Ya has valorado este restaurante desde este dispositivo.');
+      } else if (response.status === 400) {
+        throw new Error('Datos de valoración inválidos.');
+      }
+      
       throw new Error(`Error creating anonymous rating: ${response.status} ${errorText}`);
     }
     
@@ -364,7 +386,7 @@ export async function searchRestaurants(
  */
 export async function fetchTopRatedRestaurants(
   limit: number = 10,
-  minReviews: number = 5
+  minReviews: number = 1
 ): Promise<RestaurantRanking[]> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/top-rated?limit=${limit}&min_reviews=${minReviews}`;
@@ -446,17 +468,63 @@ export async function fetchFeaturedRestaurants(limit: number = 6): Promise<Featu
  * Función helper para obtener el ID del dispositivo para usuarios anónimos
  */
 export function getDeviceId(): string {
-  // Verificar si ya existe un device ID en localStorage
-  let deviceId = localStorage.getItem('anonymous_device_id');
-  
-  if (!deviceId) {
-    // Generar nuevo device ID
-    deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('anonymous_device_id', deviceId);
-    console.log('🔑 Generated new device ID:', deviceId);
+  // Verificar si estamos en el browser
+  if (typeof window === 'undefined') {
+    return `server_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+
+  try {
+    // Verificar si ya existe un device ID en localStorage
+    let deviceId = localStorage.getItem('anonymous_device_id');
+    
+    if (!deviceId) {
+      // Generar nuevo device ID más robusto
+      const timestamp = Date.now();
+      const randomPart = Math.random().toString(36).substr(2, 12);
+      const browserFingerprint = generateBrowserFingerprint();
+      
+      deviceId = `device_${timestamp}_${randomPart}_${browserFingerprint}`;
+      localStorage.setItem('anonymous_device_id', deviceId);
+      localStorage.setItem('device_created_at', new Date().toISOString());
+      console.log('🔑 Generated new device ID');
+    }
+    
+    return deviceId;
+  } catch (error) {
+    console.warn('⚠️ Error accessing localStorage, using session device ID:', error);
+    // Fallback para navegadores que no soportan localStorage
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}
+
+/**
+ * Genera un fingerprint básico del navegador (NUEVA FUNCIÓN)
+ */
+function generateBrowserFingerprint(): string {
+  if (typeof window === 'undefined') return 'server';
   
-  return deviceId;
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillText('Device fingerprint', 2, 2);
+    }
+    
+    const fingerprint = [
+      navigator.userAgent.slice(0, 20),
+      navigator.language,
+      screen.width + 'x' + screen.height,
+      new Date().getTimezoneOffset(),
+      canvas.toDataURL().slice(0, 20)
+    ].join('|');
+    
+    // Hash simple del fingerprint
+    return btoa(fingerprint).slice(0, 8);
+  } catch (error) {
+    return Math.random().toString(36).substr(2, 8);
+  }
 }
 
 /**
@@ -478,8 +546,19 @@ export async function canUserRateRestaurant(
         return { canRate: false, reason: 'Ya has valorado este restaurante' };
       }
     } else if (deviceId) {
-      // Usuario anónimo: verificar device ID (esto es más complejo, el backend maneja la lógica)
-      // Por simplicidad, asumimos que siempre puede valorar anónimamente
+      // Usuario anónimo: verificar localmente primero
+      const localRatings = getLocalRatings();
+      const hasRatedLocally = localRatings.some(rating => 
+        rating.restaurantId === restaurantId && rating.deviceId === deviceId
+      );
+      
+      if (hasRatedLocally) {
+        return { 
+          canRate: false, 
+          reason: 'Ya has valorado este restaurante desde este dispositivo' 
+        };
+      }
+      
       return { canRate: true };
     } else {
       return { canRate: false, reason: 'Se requiere autenticación o device ID' };
@@ -491,6 +570,97 @@ export async function canUserRateRestaurant(
     console.warn('⚠️ Error checking if user can rate:', error);
     // Si hay error, permitir intento (el backend validará)
     return { canRate: true };
+  }
+}
+
+/**
+ * NUEVAS FUNCIONES HELPER PARA SVELTE
+ */
+
+/**
+ * Interface para valoraciones locales
+ */
+interface LocalRating {
+  restaurantId: string;
+  deviceId: string;
+  rating: number;
+  timestamp: string;
+}
+
+/**
+ * Obtiene las valoraciones guardadas localmente (NUEVA FUNCIÓN)
+ */
+export function getLocalRatings(): LocalRating[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem('local_ratings');
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('⚠️ Error reading local ratings:', error);
+    return [];
+  }
+}
+
+/**
+ * Guarda una valoración localmente (NUEVA FUNCIÓN)
+ */
+export function saveLocalRating(rating: LocalRating): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const localRatings = getLocalRatings();
+    
+    // Remover valoración anterior del mismo restaurante y dispositivo
+    const filteredRatings = localRatings.filter(r => 
+      !(r.restaurantId === rating.restaurantId && r.deviceId === rating.deviceId)
+    );
+    
+    filteredRatings.push(rating);
+    
+    // Mantener solo las últimas 100 valoraciones
+    const recentRatings = filteredRatings.slice(-100);
+    
+    localStorage.setItem('local_ratings', JSON.stringify(recentRatings));
+  } catch (error) {
+    console.warn('⚠️ Error saving local rating:', error);
+  }
+}
+
+/**
+ * Verifica si el usuario ya valoró un restaurante localmente (NUEVA FUNCIÓN)
+ */
+export function hasUserRatedLocally(restaurantId: string, deviceId: string): boolean {
+  const localRatings = getLocalRatings();
+  return localRatings.some(rating => 
+    rating.restaurantId === restaurantId && rating.deviceId === deviceId
+  );
+}
+
+/**
+ * Obtiene la valoración local del usuario para un restaurante (NUEVA FUNCIÓN)
+ */
+export function getUserLocalRating(restaurantId: string, deviceId: string): number {
+  const localRatings = getLocalRatings();
+  const rating = localRatings.find(r => 
+    r.restaurantId === restaurantId && r.deviceId === deviceId
+  );
+  return rating?.rating || 0;
+}
+
+/**
+ * Limpia todos los datos del dispositivo (NUEVA FUNCIÓN)
+ */
+export function clearDeviceData(): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.removeItem('anonymous_device_id');
+    localStorage.removeItem('device_created_at');
+    localStorage.removeItem('local_ratings');
+    console.log('🧹 Device data cleared');
+  } catch (error) {
+    console.warn('⚠️ Error clearing device data:', error);
   }
 }
 
@@ -546,7 +716,9 @@ export function debugRestaurantRatingsApi() {
       ratingStats: true,
       restaurantSearch: true,
       topRatedRestaurants: true,
-      featuredRestaurants: true
+      featuredRestaurants: true,
+      localTracking: true,
+      deviceFingerprinting: true
     },
     endpoints: {
       ratings: `${getBaseUrl()}/restaurants/{id}/ratings`,
@@ -556,6 +728,11 @@ export function debugRestaurantRatingsApi() {
       search: `${getBaseUrl()}/restaurants/search`,
       topRated: `${getBaseUrl()}/restaurants/top-rated`,
       featured: `${getBaseUrl()}/restaurants/featured`
+    },
+    deviceInfo: {
+      deviceId: getDeviceId(),
+      hasLocalStorage: typeof localStorage !== 'undefined',
+      localRatingsCount: getLocalRatings().length
     }
   };
 }

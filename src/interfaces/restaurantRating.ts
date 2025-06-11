@@ -15,6 +15,7 @@ export interface RestaurantRating {
 export interface RestaurantRatingCreate {
   rating: number;
   comment?: string;
+  anonymous?: boolean
 }
 
 export interface RestaurantRatingUpdate {

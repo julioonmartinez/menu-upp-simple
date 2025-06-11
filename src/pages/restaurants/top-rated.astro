@@ -9,7 +9,7 @@ let error: string | null = null;
 
 try {
   const { fetchTopRatedRestaurants } = await import('../../services/apiRatingService');
-  topRestaurants = await fetchTopRatedRestaurants(20, 5);
+  topRestaurants = await fetchTopRatedRestaurants(20, 2);
 } catch (e) {
   error = e instanceof Error ? e.message : 'Error cargando restaurantes';
   console.error('Error en top-rated SSR:', e);
