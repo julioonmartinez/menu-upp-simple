@@ -11,6 +11,7 @@ export interface RestaurantRating {
   timestamp: string;
   anonymous: boolean;
 }
+export type RestaurantSearchResult = Restaurant;
 
 export interface RestaurantRatingCreate {
   rating: number;
@@ -59,7 +60,7 @@ export interface RestaurantSearchFilters {
 }
 
 export interface RestaurantSearchResponse {
-  restaurants: Restaurant[];
+  restaurants: RestaurantSearchResult[];
   pagination: {
     total: number;
     page: number;
@@ -157,4 +158,27 @@ export interface RestaurantCommentsResponse {
     total_registered: number;
     total_anonymous: number;
   };
+}
+
+/**
+ * Evento de toast/notificación
+ */
+export interface ToastEvent {
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+/**
+ * Evento de cambio de página
+ */
+export interface PageChangeEvent {
+  page: number;
+}
+
+/**
+ * Evento de búsqueda
+ */
+export interface SearchEvent {
+  filters: RestaurantSearchFilters;
+  page?: number;
 }
