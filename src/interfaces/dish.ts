@@ -3,7 +3,8 @@ import type { Promotion } from "../types/Promotion";
 
 export interface Dish {
     categoryId: string;
-    id?: string | number,
+    // id?: string | number,
+    id?: string,
     name: string,
     description: string,
     price: number,

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  
+  //src/components/RestaurantSearch.svelte
   // Importar el store y funciones del servicio API
   import { 
     ratingStore, 

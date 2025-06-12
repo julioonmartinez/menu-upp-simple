@@ -1,0 +1,23 @@
+---
+// src/pages/dishes/search.astro
+import Layout from '../../layouts/HomeLayout.astro';
+import DishSearch from '../../components/DishSearch.svelte'
+import SimpleTopRatedTest from '../../components/SimpleTopRatedTest.svelte'
+---
+
+<Layout title="Buscar Platillos - Descubre los mejores platillos">
+  <DishSearch client:load />
+   <!-- <SimpleTopRatedTest client:load ></SimpleTopRatedTest> -->
+</Layout>
+
+<style>
+  /* Estilos específicos para la página si son necesarios */
+  body {
+    background-color: #f8f9fa;
+  }
+</style>
+
+<script>
+  // Scripts adicionales para la página si son necesarios
+  console.log('Página de búsqueda de platillos cargada');
+</script>
