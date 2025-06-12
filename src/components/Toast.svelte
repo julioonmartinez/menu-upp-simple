@@ -20,14 +20,26 @@
   let isPaused = false;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let intervalId: ReturnType<typeof setInterval> | null = null;
+  let isMobile = false;
+
+  // Detectar móvil
+  function checkMobile() {
+    if (typeof window !== 'undefined') {
+      isMobile = window.innerWidth < 768;
+    }
+  }
 
   onMount(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
     if (autoClose) {
       startTimer();
     }
     
     return () => {
       clearTimers();
+      window.removeEventListener('resize', checkMobile);
     };
   });
 
@@ -73,7 +85,9 @@
   }
 
   function handleMouseEnter() {
-    isPaused = true;
+    if (!isMobile) {
+      isPaused = true;
+    }
   }
 
   function handleMouseLeave() {
@@ -89,7 +103,8 @@
           bgGradient: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
           borderColor: '#a7f3d0',
           textColor: '#065f46',
-          progressColor: '#10b981'
+          progressColor: '#10b981',
+          emoji: '🎉'
         };
       case 'error':
         return {
@@ -98,7 +113,8 @@
           bgGradient: 'linear-gradient(135deg, #fef2f2, #fecaca)',
           borderColor: '#fca5a5',
           textColor: '#991b1b',
-          progressColor: '#ef4444'
+          progressColor: '#ef4444',
+          emoji: '⚠️'
         };
       case 'info':
       default:
@@ -108,7 +124,8 @@
           bgGradient: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
           borderColor: '#93c5fd',
           textColor: '#1e40af',
-          progressColor: '#3b82f6'
+          progressColor: '#3b82f6',
+          emoji: '💡'
         };
     }
   }
@@ -119,14 +136,16 @@
 {#if visible}
   <div 
     class="toast-container"
-    in:fly={{ x: 400, duration: 500, easing: backOut }}
-    out:fly={{ x: 400, duration: 300, easing: quintOut }}
+    class:mobile={isMobile}
+    in:fly={{ x: isMobile ? 0 : 300, y: isMobile ? -50 : 0, duration: 400, easing: backOut }}
+    out:fly={{ x: isMobile ? 0 : 300, y: isMobile ? -50 : 0, duration: 250, easing: quintOut }}
   >
     <div 
       class="toast"
       class:success={type === 'success'}
       class:error={type === 'error'}
       class:info={type === 'info'}
+      class:mobile={isMobile}
       style="
         background: {config.bgGradient};
         border-color: {config.borderColor};
@@ -137,41 +156,44 @@
       role="alert"
       aria-live="polite"
     >
-      <!-- Icono animado -->
+      <!-- Icono compacto -->
       <div 
         class="toast-icon"
+        class:mobile={isMobile}
         style="background-color: {config.iconBg};"
-        in:scale={{ duration: 600, delay: 200, easing: backOut }}
+        in:scale={{ duration: 500, delay: 150, easing: backOut }}
       >
-        <span class="icon-emoji">{config.icon}</span>
+        <span class="icon-emoji">{isMobile ? config.emoji : config.icon}</span>
       </div>
 
-      <!-- Contenido del mensaje -->
-      <div class="toast-content">
-        <p class="toast-message" in:fly={{ y: 20, duration: 400, delay: 300 }}>
+      <!-- Contenido del mensaje compacto -->
+      <div class="toast-content" class:mobile={isMobile}>
+        <p class="toast-message" class:mobile={isMobile} in:fly={{ y: 15, duration: 300, delay: 200 }}>
           {message}
         </p>
       </div>
 
-      <!-- Botón de cerrar -->
+      <!-- Botón de cerrar compacto -->
       <button 
         class="toast-close"
+        class:mobile={isMobile}
         on:click={handleClose}
-        title="Cerrar notificación"
+        title="Cerrar"
         aria-label="Cerrar notificación"
-        in:scale={{ duration: 300, delay: 400 }}
+        in:scale={{ duration: 250, delay: 300 }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
 
-      <!-- Barra de progreso -->
+      <!-- Barra de progreso compacta -->
       {#if autoClose}
         <div 
           class="toast-progress"
+          class:mobile={isMobile}
           style="background-color: {config.progressColor};"
-          in:fade={{ duration: 200, delay: 500 }}
+          in:fade={{ duration: 150, delay: 400 }}
         >
           <div 
             class="progress-bar"
@@ -183,21 +205,21 @@
         </div>
       {/if}
 
-      <!-- Efectos visuales -->
-      <div class="toast-shine" in:fade={{ duration: 800, delay: 100 }}></div>
+      <!-- Efectos visuales sutiles -->
+      <div class="toast-shine" in:fade={{ duration: 600, delay: 100 }}></div>
       
-      <!-- Partículas decorativas para success -->
-      {#if type === 'success'}
-        <div class="success-particles">
-          {#each Array(6) as _, i}
+      <!-- Micro-animación para success (solo desktop) -->
+      {#if type === 'success' && !isMobile}
+        <div class="success-sparkles">
+          {#each Array(4) as _, i}
             <div 
-              class="particle"
+              class="sparkle"
               style="
-                animation-delay: {i * 0.1}s;
-                left: {20 + i * 10}%;
-                --particle-color: {config.iconBg};
+                animation-delay: {i * 0.15}s;
+                left: {20 + i * 15}%;
+                --sparkle-color: {config.iconBg};
               "
-              in:scale={{ duration: 300, delay: 600 + i * 100 }}
+              in:scale={{ duration: 200, delay: 500 + i * 75 }}
             ></div>
           {/each}
         </div>
@@ -209,41 +231,59 @@
 <style>
   .toast-container {
     position: fixed;
-    top: 24px;
-    right: 24px;
+    top: 20px; /* Reducido de 24px */
+    right: 20px;
     z-index: 9999;
     pointer-events: auto;
   }
 
+  .toast-container.mobile {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+
   .toast {
     background: white;
-    border: 2px solid;
-    border-radius: 16px;
-    padding: 20px;
-    min-width: 320px;
-    max-width: 480px;
+    border: 1px solid; /* Reducido de 2px */
+    border-radius: 12px; /* Reducido de 16px */
+    padding: 14px; /* Reducido de 20px */
+    min-width: 280px; /* Reducido de 320px */
+    max-width: 420px; /* Reducido de 480px */
     box-shadow: 
-      0 20px 40px rgba(0, 0, 0, 0.15),
-      0 8px 16px rgba(0, 0, 0, 0.1);
+      0 10px 25px rgba(0, 0, 0, 0.12), /* Reducido de 20px 40px */
+      0 4px 12px rgba(0, 0, 0, 0.08); /* Reducido de 8px 16px */
     display: flex;
     align-items: flex-start;
-    gap: 16px;
+    gap: 10px; /* Reducido de 16px */
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px); /* Reducido de 10px */
     transition: all 0.3s ease;
   }
 
+  .toast.mobile {
+    min-width: auto;
+    max-width: none;
+    padding: 12px;
+    border-radius: 10px;
+    gap: 8px;
+  }
+
   .toast:hover {
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-2px) scale(1.01); /* Reducido de -4px y 1.02 */
     box-shadow: 
-      0 32px 64px rgba(0, 0, 0, 0.2),
-      0 16px 32px rgba(0, 0, 0, 0.15);
+      0 16px 32px rgba(0, 0, 0, 0.15), /* Reducido de 32px 64px */
+      0 8px 20px rgba(0, 0, 0, 0.12); /* Reducido de 16px 32px */
+  }
+
+  .toast.mobile:hover {
+    transform: none; /* Sin hover en móvil */
   }
 
   .toast-icon {
-    width: 48px;
-    height: 48px;
+    width: 36px; /* Reducido de 48px */
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -251,7 +291,13 @@
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Reducido de 8px 16px */
+  }
+
+  .toast-icon.mobile {
+    width: 28px; /* Reducido para móvil */
+    height: 28px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
   .toast-icon::before {
@@ -261,8 +307,8 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: iconShine 2s linear infinite;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: iconShine 2.5s linear infinite; /* Ralentizado */
   }
 
   @keyframes iconShine {
@@ -271,15 +317,19 @@
   }
 
   .icon-emoji {
-    font-size: 1.5rem;
+    font-size: 1.25rem; /* Reducido de 1.5rem */
     position: relative;
     z-index: 1;
-    animation: iconBounce 0.6s ease-out;
+    animation: iconBounce 0.5s ease-out; /* Reducido de 0.6s */
+  }
+
+  .toast-icon.mobile .icon-emoji {
+    font-size: 1rem; /* Más pequeño en móvil */
   }
 
   @keyframes iconBounce {
-    0% { transform: scale(0) rotate(-180deg); }
-    50% { transform: scale(1.3) rotate(-90deg); }
+    0% { transform: scale(0) rotate(-90deg); }
+    50% { transform: scale(1.2) rotate(-45deg); }
     100% { transform: scale(1) rotate(0deg); }
   }
 
@@ -288,20 +338,29 @@
     min-width: 0;
   }
 
+  .toast-content.mobile {
+    /* Ajustes específicos para móvil si es necesario */
+  }
+
   .toast-message {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.9rem; /* Reducido de 1rem */
     font-weight: 600;
-    line-height: 1.5;
+    line-height: 1.4; /* Reducido de 1.5 */
     word-wrap: break-word;
   }
 
+  .toast-message.mobile {
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
+
   .toast-close {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.08); /* Más transparente */
     border: none;
-    border-radius: 8px;
-    width: 32px;
-    height: 32px;
+    border-radius: 6px; /* Reducido de 8px */
+    width: 24px; /* Reducido de 32px */
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -312,10 +371,16 @@
     flex-shrink: 0;
   }
 
+  .toast-close.mobile {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+
   .toast-close:hover {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.15); /* Reducido de 0.2 */
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.05); /* Reducido de 1.1 */
   }
 
   .toast-close:active {
@@ -327,9 +392,13 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: rgba(0, 0, 0, 0.1);
+    height: 3px; /* Reducido de 4px */
+    background: rgba(0, 0, 0, 0.08); /* Más transparente */
     overflow: hidden;
+  }
+
+  .toast-progress.mobile {
+    height: 2px; /* Aún más delgado en móvil */
   }
 
   .progress-bar {
@@ -337,10 +406,10 @@
     transition: width 0.05s linear;
     background: linear-gradient(90deg, 
       currentColor 0%, 
-      rgba(255, 255, 255, 0.3) 50%, 
+      rgba(255, 255, 255, 0.2) 50%, /* Reducido de 0.3 */
       currentColor 100%);
     background-size: 200% 100%;
-    animation: progressShine 2s linear infinite;
+    animation: progressShine 2.5s linear infinite; /* Ralentizado */
   }
 
   @keyframes progressShine {
@@ -356,9 +425,9 @@
     height: 100%;
     background: linear-gradient(90deg, 
       transparent, 
-      rgba(255, 255, 255, 0.4), 
+      rgba(255, 255, 255, 0.2), /* Reducido de 0.4 */
       transparent);
-    animation: toastShine 3s ease-in-out infinite;
+    animation: toastShine 4s ease-in-out infinite; /* Ralentizado */
   }
 
   @keyframes toastShine {
@@ -367,7 +436,7 @@
     100% { left: 100%; }
   }
 
-  .success-particles {
+  .success-sparkles {
     position: absolute;
     top: 0;
     left: 0;
@@ -375,58 +444,58 @@
     bottom: 0;
     pointer-events: none;
     overflow: hidden;
-    border-radius: 16px;
+    border-radius: 12px;
   }
 
-  .particle {
+  .sparkle {
     position: absolute;
-    width: 6px;
-    height: 6px;
-    background: var(--particle-color);
+    width: 4px; /* Reducido de 6px */
+    height: 4px;
+    background: var(--sparkle-color);
     border-radius: 50%;
-    top: 20%;
-    animation: particleFloat 2s ease-out forwards;
+    top: 25%; /* Ajustado */
+    animation: sparkleFloat 1.5s ease-out forwards; /* Reducido de 2s */
   }
 
-  @keyframes particleFloat {
+  @keyframes sparkleFloat {
     0% {
       transform: translateY(0) scale(1);
       opacity: 1;
     }
     100% {
-      transform: translateY(-40px) scale(0);
+      transform: translateY(-25px) scale(0); /* Reducido de -40px */
       opacity: 0;
     }
   }
 
-  /* Variantes de color específicas */
+  /* Variantes de color más sutiles */
   .toast.success {
-    animation: successPulse 0.6s ease-out;
+    animation: successPulse 0.5s ease-out; /* Reducido de 0.6s */
   }
 
   .toast.error {
-    animation: errorShake 0.6s ease-out;
+    animation: errorShake 0.5s ease-out;
   }
 
   .toast.info {
-    animation: infoBounce 0.6s ease-out;
+    animation: infoBounce 0.5s ease-out;
   }
 
   @keyframes successPulse {
-    0% { transform: scale(0.8); }
-    50% { transform: scale(1.05); }
+    0% { transform: scale(0.9); }
+    50% { transform: scale(1.02); }
     100% { transform: scale(1); }
   }
 
   @keyframes errorShake {
     0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+    25% { transform: translateX(-3px); } /* Reducido de -5px */
+    75% { transform: translateX(3px); }
   }
 
   @keyframes infoBounce {
-    0% { transform: translateY(20px) scale(0.8); }
-    50% { transform: translateY(-5px) scale(1.02); }
+    0% { transform: translateY(15px) scale(0.9); } /* Reducido de 20px y 0.8 */
+    50% { transform: translateY(-3px) scale(1.01); } /* Reducido de -5px y 1.02 */
     100% { transform: translateY(0) scale(1); }
   }
 
@@ -436,73 +505,50 @@
   }
 
   .toast:hover .icon-emoji {
-    animation: iconHover 0.3s ease forwards;
+    animation: iconHover 0.25s ease forwards; /* Reducido de 0.3s */
   }
 
   @keyframes iconHover {
     0% { transform: scale(1) rotate(0deg); }
-    50% { transform: scale(1.1) rotate(5deg); }
-    100% { transform: scale(1.05) rotate(-2deg); }
+    50% { transform: scale(1.05) rotate(3deg); } /* Reducido de 1.1 y 5deg */
+    100% { transform: scale(1.02) rotate(-1deg); } /* Reducido de 1.05 y -2deg */
   }
 
-  /* Responsive Design */
-  @media (max-width: 768px) {
+  /* Responsive mejorado */
+  @media (max-width: 480px) {
     .toast-container {
-      top: 16px;
-      right: 16px;
-      left: 16px;
+      top: 8px;
+      right: 8px;
+      left: 8px;
     }
 
     .toast {
-      min-width: auto;
-      max-width: none;
-      padding: 16px;
-      gap: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      gap: 6px;
     }
 
     .toast-icon {
-      width: 40px;
-      height: 40px;
+      width: 24px;
+      height: 24px;
     }
 
     .icon-emoji {
-      font-size: 1.25rem;
+      font-size: 0.9rem;
     }
 
     .toast-message {
-      font-size: 0.95rem;
+      font-size: 0.8rem;
+      line-height: 1.3;
     }
 
     .toast-close {
-      width: 28px;
-      height: 28px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .toast-container {
-      top: 12px;
-      right: 12px;
-      left: 12px;
+      width: 18px;
+      height: 18px;
     }
 
-    .toast {
-      padding: 14px;
-      gap: 10px;
-      border-radius: 12px;
-    }
-
-    .toast-icon {
-      width: 36px;
-      height: 36px;
-    }
-
-    .icon-emoji {
-      font-size: 1.1rem;
-    }
-
-    .toast-message {
-      font-size: 0.9rem;
+    .toast-progress {
+      height: 2px;
     }
   }
 
@@ -511,7 +557,7 @@
     .toast,
     .toast-icon,
     .icon-emoji,
-    .particle,
+    .sparkle,
     .progress-bar,
     .toast-shine {
       animation: none;
@@ -520,28 +566,43 @@
     .toast {
       transition: none;
     }
+
+    .toast:hover {
+      transform: none;
+    }
   }
 
   /* Modo oscuro */
   @media (prefers-color-scheme: dark) {
     .toast {
       box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.4),
-        0 8px 16px rgba(0, 0, 0, 0.3);
+        0 10px 25px rgba(0, 0, 0, 0.3),
+        0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .toast-close {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .toast-close:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .toast-progress {
+      background: rgba(255, 255, 255, 0.08);
     }
   }
 
-  /* Estados de focus para accesibilidad */
+  /* Estados de focus mejorados */
   .toast-close:focus-visible {
     outline: 2px solid currentColor;
-    outline-offset: 2px;
+    outline-offset: 1px; /* Reducido de 2px */
+  }
+
+  /* Animaciones de entrada/salida específicas para móvil */
+  @media (max-width: 768px) {
+    .toast-container {
+      /* Las animaciones de entrada ya están configuradas en el script */
+    }
   }
 </style>

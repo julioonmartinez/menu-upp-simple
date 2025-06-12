@@ -21,6 +21,7 @@
   let imageLoaded = $state(false);
   let imageError = $state(false);
   let isHovered = $state(false);
+  let showMoreInfo = $state(false);
 
   // Función para formatear el tiempo
   function formatTimeAgo(dateString: string): string {
@@ -80,6 +81,10 @@
   function handleToast(event: CustomEvent<{ message: string; type: 'success' | 'error' | 'info' }>) {
     dispatch('toast', event.detail);
   }
+
+  function toggleMoreInfo() {
+    showMoreInfo = !showMoreInfo;
+  }
 </script>
 
 <article 
@@ -87,9 +92,9 @@
   class:hovered={isHovered}
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
-  in:fly={{ y: 30, duration: 500, easing: quintOut }}
+  in:fly={{ y: 20, duration: 400, easing: quintOut }}
 >
-  <!-- Imagen del restaurante -->
+  <!-- Imagen del restaurante con overlay de info -->
   <div class="restaurant-image-container">
     {#if restaurant.image || restaurant.imageProfile}
       <img 
@@ -106,148 +111,159 @@
       {/if}
     {:else}
       <div class="restaurant-placeholder">
-        <div class="placeholder-icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" 
-                  fill="currentColor" opacity="0.6"/>
-            <path d="M3 20L4.545 16.82L8 18L4.545 19.18L3 16L1.455 19.18L-2 18L1.455 16.82L3 20Z" 
-                  fill="currentColor" opacity="0.4"/>
-          </svg>
-        </div>
-        <span class="placeholder-text">Sin imagen</span>
+        <div class="placeholder-icon">🍽️</div>
       </div>
     {/if}
 
-    <!-- Badge de valoración -->
-    {#if restaurant.analytics?.averageRating}
-      <div class="rating-badge" in:scale={{ duration: 300, delay: 200 }}>
-        <span class="rating-star">⭐</span>
-        <span class="rating-value">{restaurant.analytics.averageRating.toFixed(1)}</span>
-      </div>
-    {/if}
+    <!-- Overlay con info esencial -->
+    <div class="image-overlay">
+      <!-- Rating badge compacto -->
+      {#if restaurant.analytics?.averageRating}
+        <div class="rating-badge-compact" in:scale={{ duration: 300, delay: 100 }}>
+          <span class="rating-star">⭐</span>
+          <span class="rating-value">{restaurant.analytics.averageRating.toFixed(1)}</span>
+        </div>
+      {/if}
+
+      <!-- Price badge -->
+      {#if restaurant.priceRange}
+        <div 
+          class="price-badge-compact"
+          style="background-color: {getPriceRangeColor(restaurant.priceRange)}20; border-color: {getPriceRangeColor(restaurant.priceRange)}; color: {getPriceRangeColor(restaurant.priceRange)}"
+        >
+          {getPriceRangeText(restaurant.priceRange)}
+        </div>
+      {/if}
+    </div>
   </div>
 
   <div class="restaurant-content">
-    <!-- Header del restaurante -->
+    <!-- Header compacto -->
     <header class="restaurant-header">
-      <div class="restaurant-title-section">
+      <div class="title-row">
         <h3 class="restaurant-name">
           <a href="/{restaurant.username}" class="restaurant-link">
             {restaurant.name}
           </a>
         </h3>
         
-        <div class="restaurant-badges">
-          {#if restaurant.cuisineType?.[0]}
-            <span class="cuisine-badge">
-              <span class="badge-icon">🍽️</span>
-              {restaurant.cuisineType[0]}
-            </span>
-          {/if}
-          
-          {#if restaurant.priceRange}
-            <span 
-              class="price-badge"
-              style="color: {getPriceRangeColor(restaurant.priceRange)}"
-            >
-              <span class="badge-icon">💰</span>
-              {getPriceRangeText(restaurant.priceRange)}
-            </span>
-          {/if}
+        <button 
+          class="expand-btn"
+          class:expanded={showMoreInfo}
+          on:click={toggleMoreInfo}
+          title={showMoreInfo ? 'Ocultar detalles' : 'Ver más detalles'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="meta-row">
+        {#if restaurant.cuisineType?.[0]}
+          <span class="cuisine-tag">🍽️ {restaurant.cuisineType[0]}</span>
+        {/if}
+        
+        <div class="rating-compact">
+          <div class="stars-mini">
+            {#each renderStars(restaurant.analytics?.averageRating || 0) as star}
+              <span class="star-mini" class:filled={star.filled}>
+                {star.filled ? '⭐' : '☆'}
+              </span>
+            {/each}
+          </div>
+          <span class="reviews-count-mini">
+            ({restaurant.analytics?.reviewsCount || 0})
+          </span>
         </div>
       </div>
     </header>
 
-    <!-- Descripción -->
+    <!-- Descripción colapsable -->
     {#if restaurant.description}
-      <p class="restaurant-description">{restaurant.description}</p>
+      <p class="restaurant-description" class:expanded={showMoreInfo}>
+        {restaurant.description}
+      </p>
     {/if}
 
-    <!-- Metadatos del restaurante -->
-    <div class="restaurant-meta">
-      <div class="rating-display">
-        <div class="stars-container">
-          {#each renderStars(restaurant.analytics?.averageRating || 0) as star}
-            <span class="star" class:filled={star.filled}>
-              {star.filled ? '⭐' : '☆'}
-            </span>
-          {/each}
-        </div>
+    <!-- Info expandible -->
+    {#if showMoreInfo}
+      <div class="expanded-info" in:fly={{ y: -10, duration: 300 }}>
+        {#if restaurant.address}
+          <div class="info-item">
+            <span class="info-icon">📍</span>
+            <span class="info-text">{restaurant.address}</span>
+          </div>
+        {/if}
         
-        <span class="rating-text">
-          {restaurant.analytics?.averageRating?.toFixed(1) || 'N/A'}
-        </span>
-        
-        <span class="reviews-count">
-          ({restaurant.analytics?.reviewsCount || 0} reseñas)
-        </span>
-      </div>
-
-      {#if restaurant.address}
-        <div class="address-info">
-          <span class="address-icon">📍</span>
-          <span class="address-text">{restaurant.address}</span>
-        </div>
-      {/if}
-    </div>
-
-    <!-- Sistema de valoración y comentarios -->
-    {#if storeInitialized}
-      <div class="interaction-section">
-        <!-- Sistema de valoración -->
-        <RatingSystem 
-          restaurantId={restaurant.id!}
-          on:toast={handleToast}
-        />
-
-        <!-- Sistema de comentarios -->
-        <CommentsSection 
-          restaurantId={restaurant.id!}
-          restaurantName={restaurant.name}
-          commentsCount={restaurant.analytics?.commentsCount}
-          on:toast={handleToast}
-        />
+        <!-- Sección de interacción expandida -->
+        {#if storeInitialized}
+          <div class="interaction-section-expanded">
+            <RatingSystem 
+              restaurantId={restaurant.id!}
+              on:toast={handleToast}
+            />
+            <CommentsSection 
+              restaurantId={restaurant.id!}
+              restaurantName={restaurant.name}
+              commentsCount={restaurant.analytics?.commentsCount}
+              on:toast={handleToast}
+            />
+          </div>
+        {:else}
+          <div class="interaction-loading-mini">
+            <div class="loading-spinner-mini"></div>
+            <span>Cargando...</span>
+          </div>
+        {/if}
       </div>
     {:else}
-      <div class="interaction-loading">
-        <div class="loading-spinner-small"></div>
-        <span>Inicializando sistema de valoración...</span>
-      </div>
+      <!-- Versión compacta de interacción -->
+      {#if storeInitialized}
+        <div class="interaction-section-compact">
+          <RatingSystem 
+            restaurantId={restaurant.id!}
+            on:toast={handleToast}
+          />
+        </div>
+      {:else}
+        <div class="interaction-loading-mini">
+          <div class="loading-spinner-mini"></div>
+          <span>Cargando...</span>
+        </div>
+      {/if}
     {/if}
   </div>
 
-  <!-- Efecto de hover -->
+  <!-- Efecto de hover sutil -->
   {#if isHovered}
-    <div class="hover-overlay" in:fade={{ duration: 200 }}></div>
+    <div class="hover-glow" in:fade={{ duration: 200 }}></div>
   {/if}
 </article>
 
 <style>
   .restaurant-card {
     background: white;
-    border-radius: 20px;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     height: fit-content;
   }
 
   .restaurant-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
     border-color: var(--primary-color, #ff6b35);
   }
 
-  .restaurant-card.hovered {
-    transform: translateY(-8px) scale(1.02);
-  }
-
+  /* Imagen más compacta */
   .restaurant-image-container {
     position: relative;
     width: 100%;
-    height: 240px;
+    height: 160px; /* Reducido de 240px */
     overflow: hidden;
     background: #f8fafc;
   }
@@ -256,7 +272,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: all 0.5s ease;
+    transition: all 0.4s ease;
     opacity: 0;
   }
 
@@ -265,7 +281,7 @@
   }
 
   .restaurant-card:hover .restaurant-image {
-    transform: scale(1.1);
+    transform: scale(1.05); /* Reducido el scale */
   }
 
   .image-skeleton {
@@ -280,236 +296,239 @@
   }
 
   @keyframes loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   .restaurant-placeholder {
     width: 100%;
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #f8fafc, #e2e8f0);
     color: #94a3b8;
+    font-size: 2rem;
   }
 
-  .placeholder-icon {
-    margin-bottom: 12px;
-    opacity: 0.7;
-  }
-
-  .placeholder-text {
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-
-  .rating-badge {
+  /* Overlay mejorado y compacto */
+  .image-overlay {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px;
+    pointer-events: none;
+  }
+
+  .rating-badge-compact {
     background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 8px 12px;
-    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    padding: 4px 8px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     font-weight: 700;
+    font-size: 0.8rem;
     color: #0D1B2A;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
-  .rating-star {
-    font-size: 1rem;
+  .price-badge-compact {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border: 1px solid;
+    backdrop-filter: blur(8px);
   }
 
-  .rating-value {
-    font-size: 0.9rem;
-  }
-
+  /* Contenido más compacto */
   .restaurant-content {
-    padding: 24px;
+    padding: 16px; /* Reducido de 24px */
   }
 
   .restaurant-header {
-    margin-bottom: 16px;
+    margin-bottom: 12px; /* Reducido de 16px */
   }
 
-  .restaurant-title-section {
+  .title-row {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
   }
 
   .restaurant-name {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.25rem; /* Reducido de 1.5rem */
     font-weight: 700;
     line-height: 1.3;
+    flex: 1;
   }
 
   .restaurant-link {
     color: #0D1B2A;
     text-decoration: none;
     transition: color 0.3s ease;
-    position: relative;
-  }
-
-  .restaurant-link::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--primary-color, #ff6b35);
-    transition: width 0.3s ease;
   }
 
   .restaurant-link:hover {
     color: var(--primary-color, #ff6b35);
   }
 
-  .restaurant-link:hover::after {
-    width: 100%;
-  }
-
-  .restaurant-badges {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .cuisine-badge,
-  .price-badge {
+  .expand-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    white-space: nowrap;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-left: 12px;
   }
 
-  .cuisine-badge {
+  .expand-btn:hover {
+    background: var(--primary-color, #ff6b35);
+    color: white;
+    border-color: var(--primary-color, #ff6b35);
+  }
+
+  .expand-btn.expanded {
+    background: var(--primary-color, #ff6b35);
+    color: white;
+    border-color: var(--primary-color, #ff6b35);
+  }
+
+  .expand-btn.expanded svg {
+    transform: rotate(180deg);
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .cuisine-tag {
     background: linear-gradient(135deg, #f0fdf4, #dcfce7);
     color: #166534;
     border: 1px solid #bbf7d0;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
   }
 
-  .price-badge {
-    background: linear-gradient(135deg, #fefce8, #fef3c7);
-    border: 1px solid #fde047;
-    font-weight: 700;
+  .rating-compact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
-  .badge-icon {
-    font-size: 0.9rem;
+  .stars-mini {
+    display: flex;
+    gap: 1px;
   }
 
+  .star-mini {
+    font-size: 0.75rem;
+    color: #e2e8f0;
+  }
+
+  .star-mini.filled {
+    color: #fbbf24;
+  }
+
+  .reviews-count-mini {
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* Descripción compacta */
   .restaurant-description {
     color: #64748b;
-    font-size: 1rem;
-    line-height: 1.6;
-    margin: 0 0 20px 0;
+    font-size: 0.9rem; /* Reducido de 1rem */
+    line-height: 1.5;
+    margin: 0 0 12px 0;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2; /* Reducido de 3 */
     -webkit-box-orient: vertical;
     overflow: hidden;
+    transition: all 0.3s ease;
   }
 
-  .restaurant-meta {
-    margin-bottom: 24px;
-    padding: 16px 0;
+  .restaurant-description.expanded {
+    -webkit-line-clamp: unset;
+    max-height: none;
+  }
+
+  /* Info expandible */
+  .expanded-info {
     border-top: 1px solid #f1f5f9;
-    border-bottom: 1px solid #f1f5f9;
+    padding-top: 12px;
+    margin-top: 12px;
   }
 
-  .rating-display {
+  .info-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-  }
-
-  .stars-container {
-    display: flex;
-    gap: 2px;
-  }
-
-  .star {
-    font-size: 1.1rem;
-    color: #e2e8f0;
-    transition: all 0.2s ease;
-  }
-
-  .star.filled {
-    color: #fbbf24;
-    animation: starGlow 0.3s ease;
-  }
-
-  @keyframes starGlow {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-  }
-
-  .rating-text {
-    font-weight: 700;
-    color: #0D1B2A;
-    font-size: 1.1rem;
-  }
-
-  .reviews-count {
+    margin-bottom: 8px;
+    font-size: 0.85rem;
     color: #64748b;
-    font-size: 0.9rem;
   }
 
-  .address-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #64748b;
-    font-size: 0.9rem;
-  }
-
-  .address-icon {
+  .info-icon {
     font-size: 1rem;
   }
 
-  .address-text {
+  .info-text {
     line-height: 1.4;
   }
 
-  .interaction-section {
+  /* Secciones de interacción */
+  .interaction-section-compact {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .interaction-section-expanded {
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
-  .interaction-loading {
+  .interaction-loading-mini {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
+    gap: 8px;
+    padding: 8px 12px;
     background: #f8fafc;
-    border-radius: 12px;
+    border-radius: 8px;
     color: #64748b;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    margin-top: 8px;
   }
 
-  .loading-spinner-small {
-    width: 16px;
-    height: 16px;
+  .loading-spinner-mini {
+    width: 12px;
+    height: 12px;
     border: 2px solid #e2e8f0;
     border-top: 2px solid var(--primary-color, #ff6b35);
     border-radius: 50%;
@@ -521,62 +540,67 @@
     100% { transform: rotate(360deg); }
   }
 
-  .hover-overlay {
+  .hover-glow {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     background: linear-gradient(135deg, 
-      rgba(255, 107, 53, 0.05), 
-      rgba(13, 27, 42, 0.05));
+      rgba(255, 107, 53, 0.03), 
+      rgba(13, 27, 42, 0.03));
     pointer-events: none;
-    border-radius: 20px;
+    border-radius: 16px;
   }
 
-  /* Responsive Design */
+  /* Responsive optimizado para móvil */
   @media (max-width: 768px) {
     .restaurant-content {
-      padding: 20px;
+      padding: 14px; /* Más compacto en móvil */
     }
 
     .restaurant-name {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
     }
 
     .restaurant-image-container {
-      height: 200px;
+      height: 140px; /* Aún más compacto en móvil */
     }
 
-    .rating-badge {
-      top: 12px;
-      right: 12px;
-      padding: 6px 10px;
-    }
-
-    .restaurant-badges {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .restaurant-content {
-      padding: 16px;
-    }
-
-    .restaurant-image-container {
-      height: 180px;
-    }
-
-    .rating-display {
+    .meta-row {
       flex-direction: column;
       align-items: flex-start;
       gap: 8px;
     }
 
-    .interaction-section {
-      gap: 16px;
+    .title-row {
+      align-items: flex-start;
+    }
+
+    .expand-btn {
+      width: 28px;
+      height: 28px;
+      margin-left: 8px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .restaurant-content {
+      padding: 12px;
+    }
+
+    .restaurant-image-container {
+      height: 120px; /* Súper compacto en móviles pequeños */
+    }
+
+    .image-overlay {
+      padding: 8px;
+    }
+
+    .rating-badge-compact,
+    .price-badge-compact {
+      padding: 3px 6px;
+      font-size: 0.7rem;
     }
   }
 </style>

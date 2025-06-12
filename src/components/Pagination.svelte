@@ -17,6 +17,20 @@
 
   // Estado local
   let hoveredPage: number | null = null;
+  let isMobile = false;
+
+  // Detectar móvil
+  function checkMobile() {
+    if (typeof window !== 'undefined') {
+      isMobile = window.innerWidth < 768;
+    }
+  }
+
+  // Inicializar detección móvil
+  if (typeof window !== 'undefined') {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+  }
 
   function handlePageClick(page: number) {
     if (page === currentPage || loading) return;
@@ -33,10 +47,10 @@
     dispatch('pageChange', currentPage + 1);
   }
 
-  // Generar números de página para mostrar
+  // Generar números de página para mostrar (más compacto)
   function generatePageNumbers(): (number | string)[] {
     const pages: (number | string)[] = [];
-    const maxVisible = 7; // Máximo número de páginas visibles
+    const maxVisible = isMobile ? 5 : 7; // Menos páginas en móvil
     
     if (totalPages <= maxVisible) {
       // Si hay pocas páginas, mostrar todas
@@ -44,9 +58,9 @@
         pages.push(i);
       }
     } else {
-      // Lógica compleja para páginas con ellipsis
-      const start = Math.max(1, currentPage - 2);
-      const end = Math.min(totalPages, currentPage + 2);
+      // Lógica compacta para páginas con ellipsis
+      const start = Math.max(1, currentPage - (isMobile ? 1 : 2));
+      const end = Math.min(totalPages, currentPage + (isMobile ? 1 : 2));
       
       // Siempre mostrar la primera página
       if (start > 1) {
@@ -76,18 +90,31 @@
   $: pageNumbers = generatePageNumbers();
 
   function handleMouseEnter(page: number) {
-    hoveredPage = page;
+    if (!isMobile) {
+      hoveredPage = page;
+    }
   }
 
   function handleMouseLeave() {
     hoveredPage = null;
   }
+
+  // Navegación rápida para móvil
+  function jumpToPage() {
+    const page = prompt(`Ir a página (1-${totalPages}):`);
+    if (page) {
+      const pageNum = parseInt(page);
+      if (pageNum >= 1 && pageNum <= totalPages && pageNum !== currentPage) {
+        dispatch('pageChange', pageNum);
+      }
+    }
+  }
 </script>
 
-<nav class="pagination" in:fly={{ y: 20, duration: 400, easing: quintOut }}>
+<nav class="pagination" class:mobile={isMobile} in:fly={{ y: 15, duration: 350, easing: quintOut }}>
   <div class="pagination-container">
     
-    <!-- Botón anterior -->
+    <!-- Botón anterior compacto -->
     <button 
       class="pagination-btn prev-btn"
       class:disabled={!hasPrev || loading}
@@ -95,13 +122,15 @@
       on:click={handlePrevious}
       title="Página anterior"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span class="btn-text">Anterior</span>
+      {#if !isMobile}
+        <span class="btn-text">Anterior</span>
+      {/if}
     </button>
 
-    <!-- Números de página -->
+    <!-- Números de página compactos -->
     <div class="page-numbers">
       {#each pageNumbers as page, index (page)}
         {#if typeof page === 'number'}
@@ -114,19 +143,24 @@
             on:mouseenter={() => handleMouseEnter(page)}
             on:mouseleave={handleMouseLeave}
             title="Ir a la página {page}"
-            in:scale={{ duration: 200, delay: index * 50 }}
+            in:scale={{ duration: 150, delay: index * 30 }}
           >
             {page}
           </button>
         {:else}
-          <span class="ellipsis" in:scale={{ duration: 200, delay: index * 50 }}>
+          <button 
+            class="ellipsis-btn"
+            on:click={jumpToPage}
+            title="Saltar a página..."
+            in:scale={{ duration: 150, delay: index * 30 }}
+          >
             {page}
-          </span>
+          </button>
         {/if}
       {/each}
     </div>
 
-    <!-- Botón siguiente -->
+    <!-- Botón siguiente compacto -->
     <button 
       class="pagination-btn next-btn"
       class:disabled={!hasNext || loading}
@@ -134,24 +168,39 @@
       on:click={handleNext}
       title="Página siguiente"
     >
-      <span class="btn-text">Siguiente</span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {#if !isMobile}
+        <span class="btn-text">Siguiente</span>
+      {/if}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
   </div>
 
-  <!-- Información de página -->
-  <div class="page-info" in:fly={{ y: 10, duration: 300, delay: 200 }}>
+  <!-- Información de página compacta -->
+  <div class="page-info" in:fly={{ y: 8, duration: 250, delay: 150 }}>
     <span class="info-text">
-      Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
+      {#if isMobile}
+        {currentPage} / {totalPages}
+      {:else}
+        Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
+      {/if}
     </span>
+    
+    <!-- Salto rápido en desktop -->
+    {#if !isMobile && totalPages > 10}
+      <button class="jump-btn" on:click={jumpToPage} title="Saltar a página...">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 7H17V17M17 7L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    {/if}
   </div>
 
-  <!-- Loading overlay -->
+  <!-- Loading overlay más sutil -->
   {#if loading}
-    <div class="loading-overlay" in:scale={{ duration: 200 }}>
-      <div class="loading-spinner"></div>
+    <div class="loading-overlay" in:scale={{ duration: 150 }}>
+      <div class="loading-spinner-compact"></div>
     </div>
   {/if}
 </nav>
@@ -161,52 +210,58 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
-    padding: 32px;
+    gap: 12px; /* Reducido de 20px */
+    padding: 20px; /* Reducido de 32px */
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e2e8f0;
+    border-radius: 16px; /* Reducido de 20px */
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); /* Más sutil */
+    border: 1px solid #f1f5f9;
     position: relative;
-    max-width: 600px;
+    max-width: 500px; /* Reducido de 600px */
     margin: 0 auto;
+  }
+
+  .pagination.mobile {
+    padding: 16px;
+    border-radius: 12px;
+    gap: 10px;
   }
 
   .pagination-container {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px; /* Reducido de 16px */
     flex-wrap: wrap;
     justify-content: center;
   }
 
   .pagination-btn {
     background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0; /* Reducido de 2px */
     color: #475569;
-    padding: 12px 20px;
-    border-radius: 12px;
+    padding: 8px 12px; /* Reducido de 12px 20px */
+    border-radius: 8px; /* Reducido de 12px */
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem; /* Reducido de 0.95rem */
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px; /* Reducido de 8px */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
-    min-height: 48px;
+    min-height: 36px; /* Reducido de 48px */
   }
 
   .pagination-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
     color: white;
     border-color: var(--primary-color, #ff6b35);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(255, 107, 53, 0.4);
+    transform: translateY(-2px); /* Reducido de -3px */
+    box-shadow: 0 6px 16px rgba(255, 107, 53, 0.3); /* Reducido de 12px 24px */
   }
 
   .pagination-btn:active:not(:disabled) {
-    transform: translateY(-1px);
+    transform: translateY(0); /* Reducido de -1px */
   }
 
   .pagination-btn.disabled {
@@ -219,25 +274,26 @@
 
   .btn-text {
     font-weight: 700;
+    font-size: 0.8rem; /* Reducido */
   }
 
   .page-numbers {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px; /* Reducido de 8px */
     flex-wrap: wrap;
     justify-content: center;
   }
 
   .page-number {
     background: white;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0; /* Reducido de 2px */
     color: #64748b;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 36px; /* Reducido de 48px */
+    height: 36px;
+    border-radius: 8px; /* Reducido de 12px */
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.85rem; /* Reducido de 1rem */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -254,8 +310,8 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    transition: left 0.5s ease;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.4s ease; /* Reducido de 0.5s */
   }
 
   .page-number:hover:not(:disabled)::before {
@@ -266,8 +322,8 @@
   .page-number.hovered {
     border-color: var(--primary-color, #ff6b35);
     color: var(--primary-color, #ff6b35);
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+    transform: translateY(-2px) scale(1.02); /* Reducido de -3px y 1.05 */
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25); /* Reducido de 8px 20px */
     background: linear-gradient(135deg, #fff7ed, #fed7aa);
   }
 
@@ -275,17 +331,17 @@
     background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
     border-color: var(--primary-color, #ff6b35);
     color: white;
-    transform: scale(1.1);
-    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+    transform: scale(1.05); /* Reducido de 1.1 */
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35); /* Reducido de 8px 20px */
     animation: currentPagePulse 2s ease-in-out infinite;
   }
 
   @keyframes currentPagePulse {
     0%, 100% { 
-      box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
     }
     50% { 
-      box-shadow: 0 12px 28px rgba(255, 107, 53, 0.6);
+      box-shadow: 0 6px 18px rgba(255, 107, 53, 0.5); /* Reducido */
     }
   }
 
@@ -295,30 +351,42 @@
     transform: none;
   }
 
-  .ellipsis {
+  .ellipsis-btn {
     color: #94a3b8;
     font-weight: 700;
-    font-size: 1.2rem;
-    padding: 0 8px;
+    font-size: 1rem; /* Reducido de 1.2rem */
+    padding: 0 6px; /* Reducido de 8px */
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 48px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+  }
+
+  .ellipsis-btn:hover {
+    background: #f1f5f9;
+    color: var(--primary-color, #ff6b35);
+    transform: scale(1.1);
   }
 
   .page-info {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 24px;
+    gap: 8px;
+    padding: 8px 16px; /* Reducido de 12px 24px */
     background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 8px; /* Reducido de 12px */
   }
 
   .info-text {
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.85rem; /* Reducido de 0.95rem */
     font-weight: 500;
   }
 
@@ -327,25 +395,46 @@
     font-weight: 700;
   }
 
+  .jump-btn {
+    background: none;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    width: 24px; /* Reducido de 28px */
+    height: 24px;
+    border-radius: 4px; /* Reducido de 6px */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .jump-btn:hover {
+    background: var(--primary-color, #ff6b35);
+    color: white;
+    border-color: var(--primary-color, #ff6b35);
+    transform: scale(1.05);
+  }
+
   .loading-overlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
+    background: rgba(255, 255, 255, 0.8); /* Más transparente */
+    backdrop-filter: blur(2px); /* Reducido de 4px */
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 20px;
+    border-radius: 16px;
   }
 
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid #f1f5f9;
-    border-top: 3px solid var(--primary-color, #ff6b35);
+  .loading-spinner-compact {
+    width: 24px; /* Reducido de 32px */
+    height: 24px;
+    border: 2px solid #f1f5f9; /* Reducido de 3px */
+    border-top: 2px solid var(--primary-color, #ff6b35);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -355,7 +444,7 @@
     100% { transform: rotate(360deg); }
   }
 
-  /* Estados especiales para navegación rápida */
+  /* Estados especiales más sutiles */
   .pagination-btn.prev-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #0D1B2A, #1e293b);
     border-color: #0D1B2A;
@@ -366,9 +455,9 @@
     border-color: #0D1B2A;
   }
 
-  /* Micro-animaciones adicionales */
+  /* Animaciones más sutiles */
   .page-number:active:not(:disabled) {
-    transform: translateY(-1px) scale(1.02);
+    transform: translateY(0) scale(0.98); /* Reducido */
   }
 
   .pagination-btn:active:not(:disabled) {
@@ -376,32 +465,33 @@
   }
 
   @keyframes buttonPress {
-    0% { transform: translateY(-3px) scale(1); }
-    50% { transform: translateY(-1px) scale(0.98); }
-    100% { transform: translateY(-3px) scale(1); }
+    0% { transform: translateY(-2px) scale(1); }
+    50% { transform: translateY(0) scale(0.98); }
+    100% { transform: translateY(-2px) scale(1); }
   }
 
-  /* Responsive Design */
+  /* Responsive Design más compacto */
   @media (max-width: 768px) {
     .pagination {
-      padding: 24px 20px;
-      margin: 0 16px;
+      padding: 16px 12px;
+      margin: 0 12px;
+      border-radius: 12px;
     }
     
     .pagination-container {
-      gap: 12px;
+      gap: 6px;
     }
     
     .pagination-btn {
-      padding: 10px 16px;
-      font-size: 0.9rem;
-      min-height: 44px;
+      padding: 6px 10px; /* Reducido */
+      font-size: 0.8rem;
+      min-height: 32px; /* Reducido */
     }
     
     .page-number {
-      width: 44px;
-      height: 44px;
-      font-size: 0.9rem;
+      width: 32px; /* Reducido */
+      height: 32px;
+      font-size: 0.8rem;
     }
     
     .btn-text {
@@ -409,51 +499,46 @@
     }
     
     .page-info {
-      padding: 10px 20px;
+      padding: 6px 12px; /* Reducido */
     }
     
     .info-text {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
     }
   }
 
   @media (max-width: 480px) {
     .pagination {
-      padding: 20px 16px;
+      padding: 12px 8px;
+      border-radius: 10px;
     }
     
     .pagination-container {
-      gap: 8px;
-      flex-direction: column;
-    }
-    
-    .page-numbers {
-      order: -1;
-      margin-bottom: 16px;
-      gap: 6px;
+      gap: 4px;
     }
     
     .pagination-btn {
-      flex: 1;
+      min-width: 36px;
       justify-content: center;
-      min-width: 120px;
-    }
-    
-    .btn-text {
-      display: inline;
+      padding: 6px 8px;
     }
     
     .page-number {
-      width: 40px;
-      height: 40px;
-      font-size: 0.85rem;
+      width: 28px; /* Reducido */
+      height: 28px;
+      font-size: 0.75rem;
     }
     
-    /* Limitar número de páginas visibles en móvil */
+    .ellipsis-btn {
+      height: 28px;
+      font-size: 0.9rem;
+    }
+    
+    /* Limitar número de páginas visibles en móvil pequeño */
     .page-numbers {
       max-width: 100%;
       overflow-x: auto;
-      padding: 8px 0;
+      padding: 4px 0;
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
@@ -463,39 +548,47 @@
     }
   }
 
-  /* Efectos de hover mejorados */
+  /* Efectos de hover solo en dispositivos que lo soportan */
   @media (hover: hover) {
     .pagination-btn:hover:not(:disabled) {
-      animation: hoverFloat 0.3s ease forwards;
+      animation: hoverFloat 0.25s ease forwards; /* Reducido de 0.3s */
     }
     
     .page-number:hover:not(:disabled):not(.current) {
-      animation: hoverBounce 0.3s ease forwards;
+      animation: hoverBounce 0.25s ease forwards;
     }
   }
 
   @keyframes hoverFloat {
     0% { transform: translateY(0); }
-    100% { transform: translateY(-3px); }
+    100% { transform: translateY(-2px); }
   }
 
   @keyframes hoverBounce {
     0% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-2px) scale(1.02); }
-    100% { transform: translateY(-3px) scale(1.05); }
+    50% { transform: translateY(-1px) scale(1.01); }
+    100% { transform: translateY(-2px) scale(1.02); }
   }
 
   /* Accesibilidad mejorada */
   .pagination-btn:focus-visible,
-  .page-number:focus-visible {
-    outline: 3px solid rgba(255, 107, 53, 0.5);
-    outline-offset: 2px;
+  .page-number:focus-visible,
+  .jump-btn:focus-visible {
+    outline: 2px solid rgba(255, 107, 53, 0.5); /* Reducido de 3px */
+    outline-offset: 1px; /* Reducido de 2px */
   }
 
-  /* Estados de carga específicos */
-  .pagination.loading .pagination-btn,
-  .pagination.loading .page-number {
-    pointer-events: none;
-    opacity: 0.6;
+  /* Mejoras para usuarios que prefieren menos movimiento */
+  @media (prefers-reduced-motion: reduce) {
+    .pagination *,
+    .page-number::before {
+      animation: none;
+      transition: none;
+    }
+    
+    .pagination-btn:hover:not(:disabled),
+    .page-number:hover:not(:disabled) {
+      transform: none;
+    }
   }
 </style>
