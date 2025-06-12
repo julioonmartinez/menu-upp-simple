@@ -2,15 +2,26 @@ import { writable, derived, get } from 'svelte/store';
 import { 
   getDeviceId, 
   createAnonymousRestaurantRating, 
-  canUserRateRestaurant 
+  canUserRateRestaurant,
+  fetchRestaurantComments,
+  createAnonymousRestaurantComment 
 } from '../services/apiRatingService';
 import type { 
   RestaurantRatingCreate, 
   RestaurantSearchResponse, 
-  RestaurantSearchFilters 
+  RestaurantSearchFilters,
+  RestaurantComment,
+  RestaurantCommentCreate,
+  RestaurantCommentsResponse,  
 } from '../interfaces/restaurantRating';
 
 // === TIPOS PARA EL STORE ===
+interface CommentState {
+  comments: RestaurantCommentsResponse | null;
+  loading: boolean;
+  error: string | null;
+  commentsInProgress: Record<string, boolean>;
+}
 interface LocalRating {
   restaurantId: string;
   deviceId: string;
@@ -25,6 +36,7 @@ interface RatingState {
   localRatings: LocalRating[];
   lastError: string | null;
   initialized: boolean;
+  comments: CommentState;
 }
 
 interface SearchState {
@@ -48,7 +60,14 @@ function createRatingStore() {
     userRatings: {},
     localRatings: [],
     lastError: null,
-    initialized: false
+    initialized: false,
+    // NUEVO: Estado inicial de comentarios
+    comments: {
+      comments: null,
+      loading: false,
+      error: null,
+      commentsInProgress: {}
+    }
   };
 
   const { subscribe, set, update } = writable(initialState);
@@ -89,6 +108,119 @@ function createRatingStore() {
         lastError: null
       }));
     },
+    // Iniciar carga de comentarios
+    startLoadingComments: (restaurantId: string) => {
+      update(state => ({
+        ...state,
+        comments: {
+          ...state.comments,
+          loading: true,
+          error: null
+        }
+      }));
+    },
+    // Completar carga de comentarios (éxito)
+    completeLoadingComments: (commentsData: RestaurantCommentsResponse) => {
+      update(state => ({
+        ...state,
+        comments: {
+          ...state.comments,
+          loading: false,
+          comments: commentsData,
+          error: null
+        }
+      }));
+    },
+
+    // Fallo en carga de comentarios
+    failLoadingComments: (error: string) => {
+      update(state => ({
+        ...state,
+        comments: {
+          ...state.comments,
+          loading: false,
+          error,
+          comments: null
+        }
+      }));
+    },
+
+    // Iniciar proceso de crear comentario
+    startCreatingComment: (restaurantId: string) => {
+      update(state => ({
+        ...state,
+        comments: {
+          ...state.comments,
+          commentsInProgress: {
+            ...state.comments.commentsInProgress,
+            [restaurantId]: true
+          }
+        },
+        lastError: null
+      }));
+    },
+
+    // Finalizar proceso de crear comentario (éxito)
+    completeCreatingComment: (restaurantId: string, newComment: RestaurantComment) => {
+      update(state => {
+        const currentComments = state.comments.comments;
+        let updatedComments = currentComments;
+        
+        if (currentComments) {
+          // Añadir el nuevo comentario al inicio de la lista
+          updatedComments = {
+            ...currentComments,
+            comments: [newComment, ...currentComments.comments],
+            pagination: {
+              ...currentComments.pagination,
+              total: currentComments.pagination.total + 1
+            }
+          };
+        }
+
+        return {
+          ...state,
+          comments: {
+            ...state.comments,
+            commentsInProgress: {
+              ...state.comments.commentsInProgress,
+              [restaurantId]: false
+            },
+            comments: updatedComments
+          },
+          lastError: null
+        };
+      });
+    },
+
+    // Finalizar proceso de crear comentario (error)
+    failCreatingComment: (restaurantId: string, error: string) => {
+      update(state => ({
+        ...state,
+        comments: {
+          ...state.comments,
+          commentsInProgress: {
+            ...state.comments.commentsInProgress,
+            [restaurantId]: false
+          }
+        },
+        lastError: error
+      }));
+    },
+
+    // Limpiar comentarios
+    clearComments: () => {
+      update(state => ({
+        ...state,
+        comments: {
+          comments: null,
+          loading: false,
+          error: null,
+          commentsInProgress: {}
+        }
+      }));
+    },
+
 
     // Finalizar proceso de valoración (éxito)
     completeRating: (restaurantId: string, rating: number) => {
@@ -270,6 +402,24 @@ export const searchStore = createSearchStore();
 
 // === STORES DERIVADOS ===
 
+// Estado de carga de comentarios
+export const isLoadingComments = derived(
+  ratingStore,
+  $ratingStore => $ratingStore.comments.loading
+);
+
+// Comentarios del restaurante actual
+export const restaurantComments = derived(
+  ratingStore,
+  $ratingStore => $ratingStore.comments.comments
+);
+
+// Error de comentarios
+export const commentsError = derived(
+  ratingStore,
+  $ratingStore => $ratingStore.comments.error
+);
+
 // Device ID reactivo
 export const deviceId = derived(
   ratingStore,
@@ -304,6 +454,11 @@ export const searchResults = derived(
 export const hasSearchResults = derived(
   searchStore,
   $searchStore => $searchStore.results && $searchStore.results.restaurants.length > 0
+);
+// Verificar si está creando comentario para un restaurante específico
+export const isCreatingComment = derived(
+  ratingStore,
+  $ratingStore => (restaurantId: string) => $ratingStore.comments.commentsInProgress[restaurantId] || false
 );
 
 // === ACCIONES PRINCIPALES ===
@@ -384,6 +539,78 @@ export function getUserRatingForRestaurant(restaurantId: string): number {
   return ratingStore.getUserRating(restaurantId);
 }
 
+/**
+ * Acción para cargar comentarios de un restaurante
+ */
+export async function loadRestaurantComments(
+  restaurantId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<boolean> {
+  try {
+    ratingStore.startLoadingComments(restaurantId);
+    
+    const commentsData = await fetchRestaurantComments(restaurantId, page, limit, true);
+    ratingStore.completeLoadingComments(commentsData);
+    
+    return true;
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error cargando comentarios';
+    ratingStore.failLoadingComments(errorMessage);
+    return false;
+  }
+}
+
+/**
+ * Acción para crear un comentario anónimo de restaurante
+ */
+export async function createRestaurantCommentAnonymously(
+  restaurantId: string,
+  commentData: RestaurantCommentCreate
+): Promise<boolean> {
+  try {
+    // Verificar inicialización
+    const ratingState = get(ratingStore);
+    if (!ratingState.initialized) {
+      ratingStore.init();
+      // Esperar un tick para que se complete la inicialización
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    const state = get(ratingStore);
+    
+    if (state.comments.commentsInProgress[restaurantId]) {
+      throw new Error('Comentario en progreso');
+    }
+
+    if (!state.deviceId) {
+      throw new Error('Device ID no disponible');
+    }
+
+    // Iniciar proceso
+    ratingStore.startCreatingComment(restaurantId);
+
+    // Crear comentario
+    const newComment = await createAnonymousRestaurantComment(restaurantId, commentData, state.deviceId);
+
+    // Completar proceso
+    ratingStore.completeCreatingComment(restaurantId, newComment);
+    
+    // Si el comentario incluye rating, actualizar también las estadísticas
+    if (commentData.rating) {
+      searchStore.updateRestaurantStats(restaurantId, commentData.rating);
+    }
+
+    return true;
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    ratingStore.failCreatingComment(restaurantId, errorMessage);
+    return false;
+  }
+}
+
 // === FUNCIONES HELPER PARA LOCALSTORAGE ===
 
 function getStoredLocalRatings(): LocalRating[] {
@@ -417,6 +644,7 @@ function saveLocalRatings(ratings: LocalRating[]): void {
 export const testUtils = {
   resetStores: () => {
     ratingStore.reset();
+    ratingStore.clearComments(); // NUEVO
     searchStore.clear();
   },
   getStoreState: () => ({

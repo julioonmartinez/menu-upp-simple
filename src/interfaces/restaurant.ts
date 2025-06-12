@@ -92,6 +92,7 @@ export interface Restaurant {
     favoritesCount?: number;
     reviewsCount?: number;
     averageRating?: number;
+    commentsCount?: number; // NUEVO
   };
 }
 

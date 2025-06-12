@@ -116,5 +116,45 @@ export interface RestaurantWithRatings extends Restaurant {
     visitsCount?: number;
     ordersCount?: number;
     favoritesCount?: number;
+    commentsCount?: number; // NUEVO
+  };
+}
+
+export interface RestaurantComment {
+  id: string;
+  restaurantId: string;
+  userId?: string;
+  deviceId?: string;
+  comment: string;
+  rating?: number;
+  timestamp: string;
+  anonymous: boolean;
+  isEdited?: boolean;
+  editedAt?: string;
+}
+
+export interface RestaurantCommentCreate {
+  comment: string;
+  rating?: number;
+}
+
+export interface RestaurantCommentUpdate {
+  comment?: string;
+  rating?: number;
+}
+
+export interface RestaurantCommentsResponse {
+  comments: RestaurantComment[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+  stats: {
+    total_registered: number;
+    total_anonymous: number;
   };
 }

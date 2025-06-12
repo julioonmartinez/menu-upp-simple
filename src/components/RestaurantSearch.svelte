@@ -12,13 +12,21 @@
     isInitialized,
     rateRestaurantAnonymously,
     canUserRate,
-    getUserRatingForRestaurant
+    getUserRatingForRestaurant,
+    // NUEVO: Importar funciones de comentarios
+    isLoadingComments,
+    restaurantComments,
+    commentsError,
+    isCreatingComment,
+    loadRestaurantComments,
+    createRestaurantCommentAnonymously
   } from '../stores/ratingStore';
   
   import { searchRestaurants } from '../services/apiRatingService';
   
   import type { 
-    RestaurantSearchFilters
+    RestaurantSearchFilters,
+    RestaurantCommentCreate
   } from '../interfaces/restaurantRating';
 
   // Detección de browser para Astro
@@ -35,6 +43,10 @@
     sortOrder: -1
   });
 
+  // NUEVO: Estado para comentarios
+  let commentForms = $state<Record<string, { comment: string; rating: string; showForm: boolean }>>({});
+  let selectedRestaurantForComments = $state<string | null>(null);
+
   // Valores derivados usando los stores
   let loading = $derived($isSearching);
   let results = $derived($searchResults);
@@ -42,6 +54,11 @@
   let isEmpty = $derived(!results && !$searchStore.error && !loading);
   let error = $derived($searchStore.error);
   let storeInitialized = $derived($isInitialized);
+  
+  // NUEVO: Valores derivados para comentarios
+  let loadingComments = $derived($isLoadingComments);
+  let comments = $derived($restaurantComments);
+  let commentsErrorMsg = $derived($commentsError);
 
   // Inicializar desde URL params y store
   onMount(() => {
@@ -157,7 +174,90 @@
     }
   }
 
+  // NUEVO: Funciones para comentarios
+  function initCommentForm(restaurantId: string) {
+    if (!commentForms[restaurantId]) {
+      commentForms[restaurantId] = {
+        comment: '',
+        rating: '',
+        showForm: false
+      };
+    }
+  }
+
+  function toggleCommentForm(restaurantId: string) {
+    initCommentForm(restaurantId);
+    commentForms[restaurantId].showForm = !commentForms[restaurantId].showForm;
+    
+    // Si se abre el formulario, cargar comentarios
+    if (commentForms[restaurantId].showForm) {
+      loadCommentsForRestaurant(restaurantId);
+    }
+  }
+
+  async function loadCommentsForRestaurant(restaurantId: string) {
+    selectedRestaurantForComments = restaurantId;
+    const success = await loadRestaurantComments(restaurantId);
+    
+    if (!success) {
+      console.error('Error cargando comentarios');
+    }
+  }
+
+  async function submitComment(restaurantId: string) {
+    if (!storeInitialized) {
+      alert('Sistema no inicializado. Inténtalo de nuevo.');
+      return;
+    }
+
+    const form = commentForms[restaurantId];
+    if (!form || !form.comment.trim()) {
+      alert('Por favor escribe un comentario');
+      return;
+    }
+
+    if (form.comment.trim().length < 3) {
+      alert('El comentario debe tener al menos 3 caracteres');
+      return;
+    }
+
+    const commentData: RestaurantCommentCreate = {
+      comment: form.comment.trim()
+    };
+
+    // Agregar rating si se proporcionó
+    if (form.rating && parseFloat(form.rating) > 0) {
+      commentData.rating = parseFloat(form.rating);
+    }
+
+    const success = await createRestaurantCommentAnonymously(restaurantId, commentData);
+    
+    if (success) {
+      // Limpiar formulario
+      form.comment = '';
+      form.rating = '';
+      alert('¡Comentario enviado correctamente!');
+    } else {
+      const storeError = $ratingStore.lastError;
+      alert(storeError || 'Error al enviar el comentario. Inténtalo de nuevo.');
+    }
+  }
+
+  function formatTimeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'hace unos segundos';
+    if (diffInSeconds < 3600) return `hace ${Math.floor(diffInSeconds / 60)} minutos`;
+    if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+    if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+    
+    return date.toLocaleDateString();
+  }
+
   function renderStars(rating: number) {
+    console.log(rating)
     return Array.from({ length: 5 }, (_, i) => ({
       filled: i < Math.floor(rating),
       number: i + 1
@@ -177,6 +277,11 @@
   // Helper para verificar si está valorando (usa el store)
   function isRatingInProgress(restaurantId: string): boolean {
     return $ratingStore.ratingsInProgress[restaurantId] || false;
+  }
+
+  // NUEVO: Helper para verificar si está creando comentario
+  function isCommentInProgress(restaurantId: string): boolean {
+    return $isCreatingComment(restaurantId);
   }
 </script>
 
@@ -357,6 +462,108 @@
                       <p class="rating-initializing">Inicializando sistema de valoración...</p>
                     </div>
                   {/if}
+
+                  <!-- NUEVO: Sistema de comentarios anónimos -->
+                  {#if storeInitialized}
+                    <div class="comments-section">
+                      <div class="comments-header">
+                        <button 
+                          class="comments-toggle-btn"
+                          on:click={() => toggleCommentForm(restaurant.id!)}
+                        >
+                          💬 Ver comentarios
+                          {#if restaurant.analytics?.commentsCount}
+                            ({restaurant.analytics.commentsCount})
+                          {/if}
+                        </button>
+                      </div>
+
+                      {#if commentForms[restaurant.id!]?.showForm}
+                        <div class="comments-container">
+                          
+                          <!-- Formulario para nuevo comentario -->
+                          <div class="comment-form">
+                            <h5>Deja tu comentario:</h5>
+                            <textarea
+                              bind:value={commentForms[restaurant.id!].comment}
+                              placeholder="Comparte tu experiencia en este restaurante..."
+                              maxlength="500"
+                              rows="3"
+                              disabled={isCommentInProgress(restaurant.id!)}
+                            ></textarea>
+                            
+                            <div class="comment-form-footer">
+                              <div class="rating-input">
+                                <label>Valoración (opcional):</label>
+                                <select bind:value={commentForms[restaurant.id!].rating} disabled={isCommentInProgress(restaurant.id!)}>
+                                  <option value="">Sin valoración</option>
+                                  <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                                  <option value="4">⭐⭐⭐⭐ (4)</option>
+                                  <option value="3">⭐⭐⭐ (3)</option>
+                                  <option value="2">⭐⭐ (2)</option>
+                                  <option value="1">⭐ (1)</option>
+                                </select>
+                              </div>
+                              
+                              <button 
+                                class="submit-comment-btn"
+                                on:click={() => submitComment(restaurant.id!)}
+                                disabled={isCommentInProgress(restaurant.id!) || !commentForms[restaurant.id!]?.comment?.trim()}
+                              >
+                                {isCommentInProgress(restaurant.id!) ? 'Enviando...' : 'Enviar comentario'}
+                              </button>
+                            </div>
+                          </div>
+
+                          <!-- Lista de comentarios -->
+                          <div class="comments-list">
+                            {#if loadingComments && selectedRestaurantForComments === restaurant.id}
+                              <p class="loading-comments">Cargando comentarios...</p>
+                            {:else if commentsErrorMsg && selectedRestaurantForComments === restaurant.id}
+                              <p class="comments-error">Error: {commentsErrorMsg}</p>
+                            {:else if comments && selectedRestaurantForComments === restaurant.id}
+                              {#if comments.comments.length > 0}
+                                <h5>Comentarios ({comments.pagination.total}):</h5>
+                                {#each comments.comments as comment (comment.id)}
+                                  <div class="comment-item">
+                                    <div class="comment-header">
+                                      <span class="comment-author">
+                                        {comment.anonymous ? 'Usuario Anónimo' : 'Usuario Registrado'}
+                                      </span>
+                                      <span class="comment-time">{formatTimeAgo(comment.timestamp)}</span>
+                                      {#if comment.rating}
+                                        <span class="comment-rating">
+
+                                            {#each renderStars(Number(comment.rating)) as star}
+                                              <span class="star {star.filled ? 'filled' : ''}">
+                                                {star.filled ? '⭐' : '☆'}
+                                              </span>
+                                            {/each}
+                                          </span>
+
+                                      {/if}
+                                    </div>
+                                    <p class="comment-text">{comment.comment}</p>
+                                    {#if comment.isEdited}
+                                      <small class="comment-edited">editado</small>
+                                    {/if}
+                                  </div>
+                                {/each}
+                                
+                                {#if comments.pagination.total_pages > 1}
+                                  <div class="comments-pagination">
+                                    <small>Mostrando página {comments.pagination.page} de {comments.pagination.total_pages}</small>
+                                  </div>
+                                {/if}
+                              {:else}
+                                <p class="no-comments">Aún no hay comentarios. ¡Sé el primero en comentar!</p>
+                              {/if}
+                            {/if}
+                          </div>
+                        </div>
+                      {/if}
+                    </div>
+                  {/if}
                 </div>
               </div>
             {/each}
@@ -404,6 +611,7 @@
 </main>
 
 <style>
+  /* Estilos existentes... */
   .search-page {
     padding: 20px 0;
   }
@@ -650,6 +858,176 @@
     margin: 5px 0;
   }
 
+  /* NUEVO: Estilos para comentarios */
+  .comments-section {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    margin-top: 15px;
+  }
+
+  .comments-toggle-btn {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .comments-toggle-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .comments-container {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .comment-form h5 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #495057;
+  }
+
+  .comment-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+  }
+
+  .comment-form textarea:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  .comment-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    gap: 15px;
+  }
+
+  .rating-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rating-input label {
+    font-size: 12px;
+    color: #6c757d;
+    white-space: nowrap;
+  }
+
+  .rating-input select {
+    padding: 5px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+
+  .submit-comment-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+  }
+
+  .submit-comment-btn:hover:not(:disabled) {
+    background: #218838;
+  }
+
+  .submit-comment-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+  }
+
+  .comments-list {
+    margin-top: 20px;
+  }
+
+  .comments-list h5 {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    color: #495057;
+  }
+
+  .comment-item {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 3px solid #dee2e6;
+  }
+
+  .comment-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  .comment-author {
+    font-weight: bold;
+    color: #495057;
+  }
+
+  .comment-time {
+    color: #6c757d;
+  }
+
+  .comment-rating {
+    margin-left: auto;
+  }
+
+  .comment-text {
+    color: #495057;
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .comment-edited {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .loading-comments,
+  .comments-error,
+  .no-comments {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .comments-error {
+    color: #dc3545;
+  }
+
+  .comments-pagination {
+    text-align: center;
+    margin-top: 15px;
+    color: #6c757d;
+  }
+
   .pagination {
     display: flex;
     justify-content: center;
@@ -728,6 +1106,15 @@
     .pagination {
       flex-direction: column;
       gap: 15px;
+    }
+
+    .comment-form-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .rating-input {
+      justify-content: space-between;
     }
   }
 </style>

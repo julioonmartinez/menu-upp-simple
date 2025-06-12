@@ -7,7 +7,11 @@ import type {
   RestaurantSearchFilters,
   RestaurantSearchResponse,
   RestaurantRanking,
-  FeaturedRestaurantsResponse 
+  FeaturedRestaurantsResponse,
+  RestaurantComment,
+  RestaurantCommentCreate,
+  RestaurantCommentUpdate,
+  RestaurantCommentsResponse  
 } from '../interfaces/restaurantRating';
 import { debugApiConfiguration, fetchRestaurantByUsername } from './apiService';
 
@@ -707,12 +711,17 @@ export async function fetchRestaurantWithRatings(username: string) {
 }
 
 // ===== FUNCIÓN PARA DEBUG DE CONFIGURACIÓN =====
+/**
+ * Actualizar el debugRestaurantRatingsApi para incluir comentarios
+ */
 export function debugRestaurantRatingsApi() {
   return {
     ...debugApiConfiguration(),
     features: {
       restaurantRatings: true,
       anonymousRatings: true,
+      restaurantComments: true, // NUEVO
+      anonymousComments: true,  // NUEVO
       ratingStats: true,
       restaurantSearch: true,
       topRatedRestaurants: true,
@@ -724,6 +733,9 @@ export function debugRestaurantRatingsApi() {
       ratings: `${getBaseUrl()}/restaurants/{id}/ratings`,
       createRating: `${getBaseUrl()}/restaurants/{id}/ratings`,
       anonymousRating: `${getBaseUrl()}/anonymous/restaurants/{id}/rate`,
+      comments: `${getBaseUrl()}/restaurants/{id}/comments`, // NUEVO
+      createComment: `${getBaseUrl()}/restaurants/{id}/comments`, // NUEVO
+      anonymousComment: `${getBaseUrl()}/anonymous/restaurants/{id}/comments`, // NUEVO
       stats: `${getBaseUrl()}/restaurants/{id}/rating-stats`,
       search: `${getBaseUrl()}/restaurants/search`,
       topRated: `${getBaseUrl()}/restaurants/top-rated`,
@@ -736,4 +748,155 @@ export function debugRestaurantRatingsApi() {
     }
   };
 }
+
+/**
+ * Obtiene los comentarios de un restaurante específico
+ */
+export async function fetchRestaurantComments(
+  restaurantId: string,
+  page: number = 1,
+  limit: number = 20,
+  includeAnonymous: boolean = true
+): Promise<RestaurantCommentsResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/comments?page=${page}&limit=${limit}&include_anonymous=${includeAnonymous}`;
+  
+  console.log('💬 Fetching restaurant comments:', { restaurantId, page, limit, includeAnonymous });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      timeout: 10000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching restaurant comments: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !Array.isArray(data.comments)) {
+      console.error('❌ Invalid comments data structure:', data);
+      throw new Error('Invalid comments data format');
+    }
+    
+    console.log('✅ Successfully fetched restaurant comments:', data.comments.length);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching restaurant comments:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea un comentario para un restaurante (usuario autenticado)
+ */
+export async function createRestaurantComment(
+  restaurantId: string,
+  commentData: RestaurantCommentCreate,
+  token: string
+): Promise<RestaurantComment> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/comments`;
+  
+  console.log('💬 Creating restaurant comment:', { restaurantId, hasRating: !!commentData.rating });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(commentData),
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error creating comment:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error creating comment: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully created restaurant comment');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error creating restaurant comment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea un comentario anónimo para un restaurante
+ */
+export async function createAnonymousRestaurantComment(
+  restaurantId: string,
+  commentData: RestaurantCommentCreate,
+  deviceId: string
+): Promise<RestaurantComment> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/anonymous/restaurants/${restaurantId}/comments`;
+  
+  console.log('💬 Creating anonymous restaurant comment:', { restaurantId, hasRating: !!commentData.rating, deviceId });
+  
+  try {
+    // Validación adicional para Svelte
+    if (!restaurantId || !deviceId) {
+      throw new Error('Restaurant ID and Device ID are required');
+    }
+    
+    if (!commentData.comment || commentData.comment.trim().length < 3) {
+      throw new Error('Comment must be at least 3 characters long');
+    }
+    
+    if (commentData.rating !== undefined && (commentData.rating < 1 || commentData.rating > 5)) {
+      throw new Error('Rating must be between 1 and 5');
+    }
+
+    const response = await fetchWithStandardConfig(url, {
+      method: 'POST',
+      headers: getAnonymousHeaders(deviceId),
+      body: JSON.stringify(commentData),
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error creating anonymous comment:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      
+      // Manejo específico de errores para mejor UX
+      if (response.status === 429) {
+        throw new Error('Has alcanzado el límite de comentarios. Inténtalo más tarde.');
+      } else if (response.status === 400) {
+        throw new Error('Datos de comentario inválidos.');
+      }
+      
+      throw new Error(`Error creating anonymous comment: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully created anonymous restaurant comment');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error creating anonymous restaurant comment:', error);
+    throw error;
+  }
+}
+
+
 
