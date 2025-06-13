@@ -31,7 +31,7 @@
   // Detección de browser para Astro
   const isBrowser = typeof window !== 'undefined';
 
-  // Estado del componente más compacto
+  // Estado del componente
   let searchFilters = $state<RestaurantSearchFilters>({});
   let showResults = $state(false);
   let toastMessage = $state('');
@@ -39,6 +39,9 @@
   let showToast = $state(false);
   let isMobile = $state(false);
   let isScrolled = $state(false);
+  
+  // Nuevo estado para los tipos de búsqueda
+  let activeSearchType = $state<'restaurants' | 'dishes' | 'routes'>('restaurants');
 
   // Valores derivados
   let loading = $derived($isSearching);
@@ -188,38 +191,124 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
+
+  // Funciones para cambiar tipo de búsqueda (solo visual por ahora)
+  function handleSearchTypeChange(type: 'restaurants' | 'dishes' | 'routes') {
+    activeSearchType = type;
+    // Aquí irá la lógica para cambiar entre tipos de búsqueda
+    console.log('Cambiando a:', type);
+  }
+
+  // Configuración de tipos de búsqueda
+  const searchTypes: { id:'restaurants' | 'dishes' | 'routes', label:string, icon:string, placeholder:string, description:string}[]  = [
+    {
+      id: 'restaurants',
+      label: 'Restaurantes',
+      icon: '🍽️',
+      placeholder: 'Buscar restaurantes...',
+      description: 'Encuentra los mejores restaurantes cerca de ti'
+    },
+    {
+      id: 'dishes',
+      label: 'Platillos',
+      icon: '🍕',
+      placeholder: 'Buscar platillos...',
+      description: 'Descubre platos deliciosos en cualquier lugar'
+    },
+    {
+      id: 'routes',
+      label: 'Rutas',
+      icon: '🗺️',
+      placeholder: 'Planear ruta gastronómica...',
+      description: 'Crea tu ruta culinaria perfecta'
+    }
+  ];
+
+  let currentSearchType = $derived(() => searchTypes.find(type => type.id === activeSearchType) || searchTypes[0]);
 </script>
 
 <main class="search-page" class:mobile={isMobile}>
-  <div class="container" class:mobile={isMobile}>
-    <!-- Hero Section compacto -->
-    <section class="hero-section" class:mobile={isMobile} in:fly={{ y: 20, duration: 600, easing: quintOut }}>
-      <div class="hero-content" class:mobile={isMobile}>
+  <!-- Hero Section estilo Kayak -->
+  <section class="hero-section" class:mobile={isMobile}>
+    <div class="hero-background">
+      <div class="hero-overlay"></div>
+    </div>
+    
+    <div class="hero-container" class:mobile={isMobile}>
+      
+      <!-- Título principal -->
+      <div class="hero-header" in:fly={{ y: 20, duration: 600, easing: quintOut }}>
         <h1 class="hero-title" class:mobile={isMobile}>
-          <span class="gradient-text">Descubre</span> restaurantes
+          <span class="gradient-text">Descubre</span> sabores
           {#if isMobile}
-            <br><span class="subtitle-mobile">cerca de ti</span>
+            <br><span class="subtitle-mobile">increíbles</span>
           {:else}
             increíbles
           {/if}
         </h1>
         {#if !isMobile}
           <p class="hero-subtitle">
-            Explora, valora y comenta sobre los mejores lugares para comer
+            {currentSearchType().description}
           </p>
         {/if}
       </div>
-    </section>
 
-    <!-- Search Form compacto -->
-    <section class="search-section" in:fly={{ y: 30, duration: 600, delay: 150, easing: quintOut }}>
-      <SearchForm 
-        on:search={handleFormSubmit}
-        {loading}
-        initialFilters={searchFilters}
-      />
-    </section>
+      <!-- Navegación de tipos de búsqueda -->
+      <div class="search-navigation" class:mobile={isMobile} in:fly={{ y: 30, duration: 600, delay: 200, easing: quintOut }}>
+        <div class="nav-tabs">
+          {#each searchTypes as searchType, index}
+            <button
+              class="nav-tab"
+              class:active={activeSearchType === searchType.id}
+              class:mobile={isMobile}
+              onclick={() => handleSearchTypeChange(searchType.id)}
+              in:fly={{ x: -20, duration: 400, delay: index * 100 }}
+            >
+              <span class="tab-icon">{searchType.icon}</span>
+              <span class="tab-label">{searchType.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
 
+      <!-- Formulario de búsqueda integrado -->
+      <div class="search-form-hero" class:mobile={isMobile} in:fly={{ y: 40, duration: 600, delay: 300, easing: quintOut }}>
+        <div class="search-card">
+          <SearchForm 
+            on:search={handleFormSubmit}
+            {loading}
+            initialFilters={searchFilters}
+            placeholder={currentSearchType().placeholder}
+            searchType={activeSearchType}
+          />
+        </div>
+      </div>
+
+      <!-- Búsquedas populares -->
+      {#if !showResults}
+        <div class="popular-searches-hero" class:mobile={isMobile} in:fade={{ duration: 500, delay: 400 }}>
+          <span class="popular-label">Búsquedas populares:</span>
+          <div class="popular-tags">
+            {#each ['Pizza', 'Sushi', 'Tacos', 'Hamburguesas', 'Italiana', 'Mexicana'] as tag, index}
+              <button 
+                class="popular-tag-hero"
+                onclick={() => {
+                  searchFilters = { search: tag };
+                  handleSearch({ search: tag }, 1);
+                }}
+                in:fly={{ x: -15, duration: 300, delay: 500 + (index * 75) }}
+              >
+                {tag}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+  </section>
+
+  <!-- Contenedor de resultados -->
+  <div class="results-container" class:mobile={isMobile}>
     <!-- Results Section optimizada -->
     {#if showResults}
       <section class="results-section" in:fade={{ duration: 500, delay: 200 }}>
@@ -234,7 +323,7 @@
                 <p>{error}</p>
                 <button 
                   class="retry-btn"
-                  on:click={() => handleSearch(searchFilters, 1)}
+                  onclick={() => handleSearch(searchFilters, 1)}
                 >
                   Reintentar
                 </button>
@@ -290,7 +379,6 @@
                   <RestaurantCard 
                     {restaurant}
                     {storeInitialized}
-                    
                     on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
                   />
                 </div>
@@ -327,7 +415,7 @@
               </p>
               <button 
                 class="clear-filters-btn"
-                on:click={() => {
+                onclick={() => {
                   searchFilters = {};
                   showResults = false;
                 }}
@@ -338,29 +426,6 @@
           </div>
         {/if}
       </section>
-    {:else}
-      <!-- Initial Welcome State compacto -->
-      <section class="welcome-section" class:mobile={isMobile} in:fade={{ duration: 600, delay: 300 }}>
-        <div class="welcome-card" class:mobile={isMobile}>
-          <div class="welcome-icon">🍽️</div>
-          <h3 class:mobile={isMobile}>
-            {isMobile ? '¿Listos?' : '¿Listos para una aventura culinaria?'}
-          </h3>
-          <p class:mobile={isMobile}>
-            {isMobile 
-              ? 'Usa la búsqueda para descubrir restaurantes cerca de ti' 
-              : 'Usa el formulario de búsqueda para descubrir restaurantes increíbles cerca de ti'
-            }
-          </p>
-          <div class="feature-tags" class:mobile={isMobile}>
-            <span class="feature-tag">🌟 Valoraciones</span>
-            <span class="feature-tag">💬 Comentarios</span>
-            {#if !isMobile}
-              <span class="feature-tag">📍 Ubicaciones</span>
-            {/if}
-          </div>
-        </div>
-      </section>
     {/if}
   </div>
 
@@ -368,7 +433,7 @@
   {#if isMobile && isScrolled}
     <button 
       class="scroll-top-btn"
-      on:click={scrollToTop}
+      onclick={scrollToTop}
       in:scale={{ duration: 300 }}
       out:scale={{ duration: 200 }}
       title="Ir arriba"
@@ -392,93 +457,257 @@
 <style>
   .search-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: #f8fafc;
     padding: 0;
   }
 
-  .search-page.mobile {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  }
-
-  .container {
-    max-width: 1200px; /* Reducido de 1400px */
-    margin: 0 auto;
-    padding: 0 20px; /* Reducido de 24px */
-  }
-
-  .container.mobile {
-    padding: 0 12px; /* Reducido para móvil */
-  }
-
-  /* Hero Section compacto */
+  /* Hero Section estilo Kayak */
   .hero-section {
-    padding: 60px 0 40px 0; /* Reducido de 80px 0 60px 0 */
-    text-align: center;
+    position: relative;
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    overflow: hidden;
   }
 
   .hero-section.mobile {
-    padding: 40px 0 30px 0; /* Aún más compacto en móvil */
+    min-height: 80vh;
+    padding: 0;
   }
 
-  .hero-content {
-    max-width: 700px; /* Reducido de 800px */
+  .hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+   background: linear-gradient(135deg, rgba(248, 250, 252, 0.3) 0%, rgba(226, 232, 240, 0.2) 100%);
+  }
+
+  .hero-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 0 20px;
+    text-align: center;
+    width: 100%;
   }
 
-  .hero-content.mobile {
-    max-width: 100%;
+  .hero-container.mobile {
+    padding: 0 16px;
+  }
+
+  /* Header del hero */
+  .hero-header {
+    margin-bottom: 40px;
   }
 
   .hero-title {
-    font-size: clamp(2rem, 5vw, 3.5rem); /* Reducido de 2.5rem, 5vw, 4rem */
+    font-size: clamp(2.5rem, 6vw, 4rem);
     font-weight: 800;
     line-height: 1.1;
-    margin: 0 0 20px 0; /* Reducido de 24px */
-    color: #0D1B2A;
+    margin: 0 0 16px 0;
+   color: #0f172a;
   }
 
   .hero-title.mobile {
-    font-size: clamp(1.75rem, 6vw, 2.5rem);
-    margin: 0 0 16px 0;
-    line-height: 1.2;
+    font-size: clamp(2rem, 7vw, 3rem);
+    margin: 0 0 12px 0;
   }
 
   .subtitle-mobile {
     font-size: 0.85em;
     font-weight: 600;
-    color: #64748b;
+    opacity: 0.9;
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
+   background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .hero-subtitle {
-    font-size: 1.1rem; /* Reducido de 1.25rem */
+    font-size: 1.2rem;
     color: #64748b;
     margin: 0;
-    line-height: 1.5; /* Reducido de 1.6 */
+    line-height: 1.5;
+    max-width: 600px;
+    margin: 0 auto;
   }
 
-  /* Search Section */
-  .search-section {
-    margin-bottom: 50px; /* Reducido de 60px */
+  /* Navegación de tipos de búsqueda */
+  .search-navigation {
+    margin-bottom: 40px;
   }
 
-  /* Results Section compacta */
+  .search-navigation.mobile {
+    margin-bottom: 30px;
+  }
+
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 6px;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+   color: #64748b;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  .nav-tab.mobile {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    gap: 6px;
+  }
+
+  .nav-tab:hover {
+   color: #374151;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-tab.active {
+    background: white;
+   color: var(--primary-color, #ff6b35);
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .tab-icon {
+    font-size: 1.1rem;
+  }
+
+  .tab-icon.mobile {
+    font-size: 1rem;
+  }
+
+  .tab-label {
+    white-space: nowrap;
+  }
+
+  /* Formulario de búsqueda en hero */
+  .search-form-hero {
+    margin-bottom: 40px;
+  }
+
+  .search-form-hero.mobile {
+    margin-bottom: 30px;
+  }
+
+  .search-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 8px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Búsquedas populares en hero */
+  .popular-searches-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .popular-searches-hero.mobile {
+    gap: 12px;
+  }
+
+  .popular-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .popular-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    max-width: 600px;
+  }
+
+  .popular-tag-hero {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .popular-tag-hero:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  }
+
+  /* Contenedor de resultados */
+  .results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .results-container.mobile {
+    padding: 0 12px;
+  }
+
+  /* Results Section */
   .results-section {
-    margin-bottom: 60px; /* Reducido de 80px */
+    margin: 60px 0;
   }
 
   .results-header {
-    margin-bottom: 30px; /* Reducido de 40px */
-    padding: 24px; /* Reducido de 32px */
+    margin-bottom: 30px;
+    padding: 24px;
     background: white;
-    border-radius: 16px; /* Reducido de 20px */
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); /* Más sutil */
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     border: 1px solid #f1f5f9;
   }
 
@@ -489,11 +718,11 @@
   }
 
   .results-count h2 {
-    margin: 0 0 6px 0; /* Reducido de 8px */
+    margin: 0 0 6px 0;
     color: #0D1B2A;
     display: flex;
     align-items: baseline;
-    gap: 10px; /* Reducido de 12px */
+    gap: 10px;
     flex-wrap: wrap;
   }
 
@@ -505,7 +734,7 @@
   }
 
   .count-number {
-    font-size: 2rem; /* Reducido de 2.5rem */
+    font-size: 2rem;
     font-weight: 800;
     color: var(--primary-color, #ff6b35);
   }
@@ -515,7 +744,7 @@
   }
 
   .count-text {
-    font-size: 1.25rem; /* Reducido de 1.5rem */
+    font-size: 1.25rem;
     font-weight: 600;
   }
 
@@ -526,14 +755,14 @@
   .page-info {
     margin: 0;
     color: #64748b;
-    font-size: 0.9rem; /* Reducido de 1rem */
+    font-size: 0.9rem;
   }
 
   .restaurants-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* Reducido de 400px */
-    gap: 24px; /* Reducido de 32px */
-    margin-bottom: 40px; /* Reducido de 60px */
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
   }
 
   .restaurants-grid.mobile {
@@ -547,11 +776,11 @@
     justify-content: center;
   }
 
-  /* Loading State compacto */
+  /* Loading State */
   .loading-container {
     display: flex;
     justify-content: center;
-    padding: 60px 15px; /* Reducido de 80px 20px */
+    padding: 60px 15px;
   }
 
   .loading-container.mobile {
@@ -560,12 +789,12 @@
 
   .loading-card {
     background: white;
-    padding: 40px 30px; /* Reducido de 60px 40px */
-    border-radius: 20px; /* Reducido de 24px */
+    padding: 40px 30px;
+    border-radius: 20px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Más sutil */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid #f1f5f9;
-    max-width: 350px; /* Reducido de 400px */
+    max-width: 350px;
     width: 100%;
   }
 
@@ -575,13 +804,13 @@
   }
 
   .loading-spinner {
-    width: 40px; /* Reducido de 48px */
+    width: 40px;
     height: 40px;
-    border: 3px solid #f1f5f9; /* Reducido de 4px */
+    border: 3px solid #f1f5f9;
     border-top: 3px solid var(--primary-color, #ff6b35);
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 20px; /* Reducido de 24px */
+    margin: 0 auto 20px;
   }
 
   .loading-spinner.mobile {
@@ -596,9 +825,9 @@
   }
 
   .loading-card h3 {
-    margin: 0 0 10px 0; /* Reducido de 12px */
+    margin: 0 0 10px 0;
     color: #0D1B2A;
-    font-size: 1.25rem; /* Reducido de 1.5rem */
+    font-size: 1.25rem;
     font-weight: 700;
   }
 
@@ -610,14 +839,14 @@
   .loading-card p {
     margin: 0;
     color: #64748b;
-    font-size: 0.9rem; /* Reducido de 1rem */
+    font-size: 0.9rem;
   }
 
-  /* Error State compacto */
+  /* Error State */
   .error-container {
     display: flex;
     justify-content: center;
-    padding: 60px 15px; /* Reducido de 80px 20px */
+    padding: 60px 15px;
   }
 
   .error-container.mobile {
@@ -626,12 +855,12 @@
 
   .error-card {
     background: white;
-    padding: 36px 24px; /* Reducido de 48px 32px */
-    border-radius: 20px; /* Reducido de 24px */
+    padding: 36px 24px;
+    border-radius: 20px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.08); /* Más sutil */
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.08);
     border: 2px solid #fecaca;
-    max-width: 450px; /* Reducido de 500px */
+    max-width: 450px;
     width: 100%;
   }
 
@@ -641,46 +870,46 @@
   }
 
   .error-icon {
-    font-size: 2.5rem; /* Reducido de 3rem */
-    margin-bottom: 16px; /* Reducido de 20px */
+    font-size: 2.5rem;
+    margin-bottom: 16px;
   }
 
   .error-content h3 {
-    margin: 0 0 10px 0; /* Reducido de 12px */
+    margin: 0 0 10px 0;
     color: #dc2626;
-    font-size: 1.25rem; /* Reducido de 1.5rem */
+    font-size: 1.25rem;
     font-weight: 700;
   }
 
   .error-content p {
-    margin: 0 0 20px 0; /* Reducido de 24px */
+    margin: 0 0 20px 0;
     color: #64748b;
-    line-height: 1.5; /* Reducido de 1.6 */
+    line-height: 1.5;
   }
 
   .retry-btn {
     background: var(--primary-color, #ff6b35);
     color: white;
     border: none;
-    padding: 10px 20px; /* Reducido de 12px 24px */
-    border-radius: 10px; /* Reducido de 12px */
+    padding: 10px 20px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.9rem; /* Reducido de 1rem */
+    font-size: 0.9rem;
   }
 
   .retry-btn:hover {
     background: #e55a2b;
-    transform: translateY(-1px); /* Reducido de -2px */
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25); /* Reducido de 8px 20px */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
   }
 
-  /* Empty State compacto */
+  /* Empty State */
   .empty-state {
     display: flex;
     justify-content: center;
-    padding: 60px 15px; /* Reducido de 80px 20px */
+    padding: 60px 15px;
   }
 
   .empty-state.mobile {
@@ -689,12 +918,12 @@
 
   .empty-card {
     background: white;
-    padding: 40px 30px; /* Reducido de 60px 40px */
-    border-radius: 20px; /* Reducido de 24px */
+    padding: 40px 30px;
+    border-radius: 20px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Más sutil */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid #f1f5f9;
-    max-width: 450px; /* Reducido de 500px */
+    max-width: 450px;
     width: 100%;
   }
 
@@ -704,21 +933,21 @@
   }
 
   .empty-icon {
-    font-size: 3.5rem; /* Reducido de 4rem */
-    margin-bottom: 20px; /* Reducido de 24px */
+    font-size: 3.5rem;
+    margin-bottom: 20px;
   }
 
   .empty-card h3 {
-    margin: 0 0 12px 0; /* Reducido de 16px */
+    margin: 0 0 12px 0;
     color: #0D1B2A;
-    font-size: 1.25rem; /* Reducido de 1.5rem */
+    font-size: 1.25rem;
     font-weight: 700;
   }
 
   .empty-card p {
-    margin: 0 0 24px 0; /* Reducido de 32px */
+    margin: 0 0 24px 0;
     color: #64748b;
-    line-height: 1.5; /* Reducido de 1.6 */
+    line-height: 1.5;
   }
 
   .empty-card p.mobile {
@@ -731,95 +960,18 @@
     background: #0D1B2A;
     color: white;
     border: none;
-    padding: 12px 24px; /* Reducido de 14px 28px */
-    border-radius: 10px; /* Reducido de 12px */
+    padding: 12px 24px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.9rem; /* Reducido de 1rem */
+    font-size: 0.9rem;
   }
 
   .clear-filters-btn:hover {
     background: #1e293b;
-    transform: translateY(-1px); /* Reducido de -2px */
-    box-shadow: 0 4px 12px rgba(13, 27, 42, 0.25); /* Reducido de 8px 20px */
-  }
-
-  /* Welcome Section compacta */
-  .welcome-section {
-    padding: 60px 15px; /* Reducido de 80px 20px */
-    display: flex;
-    justify-content: center;
-  }
-
-  .welcome-section.mobile {
-    padding: 40px 10px;
-  }
-
-  .welcome-card {
-    background: white;
-    padding: 40px 30px; /* Reducido de 60px 40px */
-    border-radius: 20px; /* Reducido de 24px */
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Más sutil */
-    border: 1px solid #f1f5f9;
-    max-width: 550px; /* Reducido de 600px */
-    width: 100%;
-  }
-
-  .welcome-card.mobile {
-    padding: 30px 20px;
-    border-radius: 16px;
-  }
-
-  .welcome-icon {
-    font-size: 3.5rem; /* Reducido de 4rem */
-    margin-bottom: 20px; /* Reducido de 24px */
-  }
-
-  .welcome-card h3 {
-    margin: 0 0 12px 0; /* Reducido de 16px */
-    color: #0D1B2A;
-    font-size: 1.5rem; /* Reducido de 1.75rem */
-    font-weight: 700;
-  }
-
-  .welcome-card h3.mobile {
-    font-size: 1.25rem;
-  }
-
-  .welcome-card p {
-    margin: 0 0 24px 0; /* Reducido de 32px */
-    color: #64748b;
-    line-height: 1.5; /* Reducido de 1.6 */
-    font-size: 1rem; /* Reducido de 1.1rem */
-  }
-
-  .welcome-card p.mobile {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin: 0 0 20px 0;
-  }
-
-  .feature-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; /* Reducido de 12px */
-    justify-content: center;
-  }
-
-  .feature-tags.mobile {
-    gap: 8px;
-  }
-
-  .feature-tag {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
-    color: white;
-    padding: 6px 12px; /* Reducido de 8px 16px */
-    border-radius: 16px; /* Reducido de 20px */
-    font-size: 0.8rem; /* Reducido de 0.9rem */
-    font-weight: 600;
-    white-space: nowrap;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 27, 42, 0.25);
   }
 
   /* Scroll to top button */
@@ -853,16 +1005,12 @@
 
   /* Responsive adicional */
   @media (max-width: 480px) {
-    .container {
+    .hero-container {
+      padding: 0 12px;
+    }
+    
+    .results-container {
       padding: 0 8px;
-    }
-    
-    .hero-section {
-      padding: 30px 0 20px 0;
-    }
-    
-    .search-section {
-      margin-bottom: 30px;
     }
     
     .scroll-top-btn {
@@ -871,5 +1019,19 @@
       bottom: 16px;
       right: 16px;
     }
+
+    .nav-tabs {
+  max-width: 100%;
+  padding: 4px; /* REDUCIDO */
+}
+
+.nav-tab {
+  padding: 8px 10px; /* MÁS COMPACTO */
+  min-width: 60px; /* ANCHO MÍNIMO */
+}
+
+.tab-label {
+  font-size: 0.75rem; /* MÁS PEQUEÑO en móvil */
+}
   }
 </style>

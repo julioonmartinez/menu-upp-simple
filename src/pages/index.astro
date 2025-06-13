@@ -4,9 +4,81 @@ import RestaurantSearch from '../components/RestaurantSearch.svelte'
 import MenuuppLayout from '../layouts/MenuuppLayout.astro';
 ---
 
-<MenuuppLayout title="Buscar Restaurantes">
+<MenuuppLayout 
+  title="Buscar Restaurantes - Menupp"
+  description="Descubre los mejores restaurantes cerca de ti. Explora, valora y comenta sobre lugares increíbles para comer."
+  showHeaderShadow={false}
+  transparentHeader={false}
+>
+  <!-- El header ya está incluido en el layout -->
   <RestaurantSearch client:load />
 </MenuuppLayout>
 
+<!-- Opcional: Scripts adicionales para funcionalidad del header -->
+<script>
+  // Ejemplo de cómo conectar el contador de favoritos
+  // Este script se ejecutará en el cliente
+  
+  // Simular actualización del contador de favoritos
+  function updateFavoritesCount() {
+    // Aquí conectarías con tu store de favoritos real
+    const favoritesCount = localStorage.getItem('favoriteItems') 
+      ? JSON.parse(localStorage.getItem('favoriteItems')).length 
+      : 0;
+    
+    // Enviar evento personalizado para actualizar el header
+    window.dispatchEvent(new CustomEvent('favoritesCountUpdate', {
+      detail: { count: favoritesCount }
+    }));
+  }
+  
+  // Actualizar contador al cargar la página
+  document.addEventListener('DOMContentLoaded', updateFavoritesCount);
+  
+  // Escuchar cambios en favoritos (si tienes eventos globales)
+  window.addEventListener('favoritesChanged', updateFavoritesCount);
+  
+  // Opcional: Analytics tracking para interacciones del header
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('button');
+    if (target) {
+      if (target.classList.contains('brand-button')) {
+        // Track logo clicks
+        window.menupp?.track('header_logo_click');
+      } else if (target.classList.contains('favorites-btn')) {
+        // Track favorites button clicks
+        window.menupp?.track('header_favorites_click');
+      } else if (target.classList.contains('login-btn')) {
+        // Track login button clicks
+        window.menupp?.track('header_login_click');
+      }
+    }
+  });
+</script>
 
----
+<style>
+  /* Estilos específicos para la página de búsqueda si son necesarios */
+  
+  /* El contenido principal ya tiene el espaciado correcto gracias al layout */
+  
+  /* Opcional: Animación de entrada para el contenido */
+  :global(.search-page) {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Ajustes responsive si son necesarios */
+  @media (max-width: 768px) {
+    /* El header ya se ajusta automáticamente */
+  }
+</style>
