@@ -241,7 +241,7 @@
       <!-- Título principal -->
       <div class="hero-header" in:fly={{ y: 20, duration: 600, easing: quintOut }}>
         <h1 class="hero-title" class:mobile={isMobile}>
-          <span class="gradient-text">Descubre</span> sabores
+          <span class="gradient-text">Comparte</span> sabores
           {#if isMobile}
             <br><span class="subtitle-mobile">increíbles</span>
           {:else}

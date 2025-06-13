@@ -106,7 +106,7 @@
 
     <!-- Indicadores de mensaje (solo desktop) -->
     {#if !isMobile}
-      <div class="message-indicators">
+      <!-- <div class="message-indicators">
         {#each promotionalMessages as _, i}
           <button 
             class="indicator-dot"
@@ -118,7 +118,7 @@
             aria-label="Ver mensaje {i + 1}"
           ></button>
         {/each}
-      </div>
+      </div> -->
     {/if}
   </div>
 </div>

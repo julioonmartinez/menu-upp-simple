@@ -57,6 +57,51 @@
   100% { background-position: -200% 0; }
 }
 
+.comments-button-mini {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.comments-button-mini:hover {
+  background: var(--primary-color, #ff6b35);
+  color: white;
+  border-color: var(--primary-color, #ff6b35);
+  transform: translateY(-1px);
+}
+
+.comments-icon {
+  font-size: 0.8rem;
+}
+
+.comments-text {
+  font-size: 0.75rem;
+}
+
+.comments-count-mini {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1px 4px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  text-align: center;
+}
+
+.comments-button-mini:hover .comments-count-mini {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .restaurant-placeholder {
   width: 100%;
   height: 100%;
@@ -269,7 +314,8 @@
 .interaction-section-expanded {
   margin-top: 16px;
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
+  justify-content: flex-end;
   gap: 16px;
 }
 

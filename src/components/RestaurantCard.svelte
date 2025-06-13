@@ -12,6 +12,8 @@
 
   // Importar los estilos
   import './ RestaurantCard.css';
+    import CommentsModal from './CommentsModal.svelte';
+    import { canUserRate } from '../stores/ratingStore';
 
 
   // Props
@@ -27,6 +29,8 @@
   let imageError = $state(false);
   let isHovered = $state(false);
   let showMoreInfo = $state(false);
+  let showCommentsModal = $state(false);
+
 
   // Función para formatear el tiempo
   function formatTimeAgo(dateString: string): string {
@@ -90,6 +94,14 @@
   function toggleMoreInfo() {
     showMoreInfo = !showMoreInfo;
   }
+
+  function openCommentsModal() {
+    showCommentsModal = true;
+  }
+
+  function closeCommentsModal() {
+    showCommentsModal = false;
+  }
 </script>
 
 <article 
@@ -151,8 +163,14 @@
             {restaurant.name}
           </a>
         </h3>
-        
-        <button 
+       
+        {#if storeInitialized && !canUserRate(restaurant.id) }
+              <RatingSystem 
+            restaurantId={restaurant.id!}
+            on:toast={handleToast}
+          />
+            {/if}
+        <!-- <button 
           class="expand-btn"
           class:expanded={showMoreInfo}
           onclick={toggleMoreInfo}
@@ -162,7 +180,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-        </button>
+        </button> -->
       </div>
 
       <div class="meta-row">
@@ -170,18 +188,19 @@
           <span class="cuisine-tag">🍽️ {restaurant.cuisineType[0]}</span>
         {/if}
         
-        <div class="rating-compact">
+        <!-- <div class="rating-compact">
           <div class="stars-mini">
-            {#each renderStars(restaurant.analytics?.averageRating || 0) as star}
-              <span class="star-mini" class:filled={star.filled}>
-                {star.filled ? '⭐' : '☆'}
-              </span>
-            {/each}
+            {#if storeInitialized}
+              <RatingSystem 
+            restaurantId={restaurant.id!}
+            on:toast={handleToast}
+          />
+            {/if}
           </div>
           <span class="reviews-count-mini">
             ({restaurant.analytics?.reviewsCount || 0})
           </span>
-        </div>
+        </div> -->
       </div>
     </header>
 
@@ -193,7 +212,7 @@
     {/if}
 
     <!-- Info expandible -->
-    {#if showMoreInfo}
+  
       <div class="expanded-info" in:fly={{ y: -10, duration: 300 }}>
         {#if restaurant.address}
           <div class="info-item">
@@ -205,16 +224,24 @@
         <!-- Sección de interacción expandida -->
         {#if storeInitialized}
           <div class="interaction-section-expanded">
-            <RatingSystem 
-              restaurantId={restaurant.id!}
-              on:toast={handleToast}
-            />
-            <CommentsSection 
-              restaurantId={restaurant.id!}
-              restaurantName={restaurant.name}
-              commentsCount={restaurant.analytics?.commentsCount}
-              on:toast={handleToast}
-            />
+           {#if canUserRate(restaurant.id)}
+             <RatingSystem 
+            restaurantId={restaurant.id!}
+            on:toast={handleToast}
+          />
+           {/if}
+            <!-- Botón de comentarios -->
+        <button 
+          class="comments-button-mini"
+          onclick={openCommentsModal}
+          title="Ver comentarios"
+        >
+          <span class="comments-icon">💬</span>
+          <!-- <span class="comments-text">Comentarios</span> -->
+          {#if restaurant.analytics?.commentsCount && restaurant.analytics.commentsCount > 0}
+            <span class="comments-count-mini">{restaurant.analytics.commentsCount}</span>
+          {/if}
+        </button>
           </div>
         {:else}
           <div class="interaction-loading-mini">
@@ -223,9 +250,9 @@
           </div>
         {/if}
       </div>
-    {:else}
+ 
       <!-- Versión compacta de interacción -->
-      {#if storeInitialized}
+      <!-- {#if storeInitialized}
         <div class="interaction-section-compact">
           <RatingSystem 
             restaurantId={restaurant.id!}
@@ -237,8 +264,8 @@
           <div class="loading-spinner-mini"></div>
           <span>Cargando...</span>
         </div>
-      {/if}
-    {/if}
+      {/if} -->
+    
   </div>
 
   <!-- Efecto de hover sutil -->
@@ -246,3 +273,14 @@
     <div class="hover-glow" in:fade={{ duration: 200 }}></div>
   {/if}
 </article>
+
+<!-- Modal de comentarios -->
+{#if showCommentsModal}
+  <CommentsModal 
+    restaurantId={restaurant.id!}
+    restaurantName={restaurant.name}
+    commentsCount={restaurant.analytics?.commentsCount}
+    onClose={closeCommentsModal}
+    on:toast={handleToast}
+  />
+{/if}
