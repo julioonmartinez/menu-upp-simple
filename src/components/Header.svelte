@@ -1,27 +1,47 @@
 <script lang="ts">
+  // Header.svelte - Navegación principal
   import { onMount } from 'svelte';
-  import { fly, fade, scale } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing';
-
+  import { fade, fly } from 'svelte/transition';
+  
   // Props
-  const { showShadow = false, transparent = false } = $props();
+  export let showShadow = false;
+  export let transparent = false;
 
-  // Estado local
-  let isScrolled = $state(false);
-  let isMobile = $state(false);
-  let showLoginModal = $state(false);
-  let favoritesCount = $state(0); // Esto se conectaría con tu store de favoritos
+  // Estado del componente
+  let isScrolled = false;
+  let isMobile = false;
+  let showMobileMenu = false;
+  let favoritesCount = 0;
 
-  // Detectar scroll y móvil
+  // Detectar scroll
   function handleScroll() {
     if (typeof window !== 'undefined') {
       isScrolled = window.scrollY > 10;
     }
   }
 
+  // Detectar tamaño de pantalla
   function checkMobile() {
     if (typeof window !== 'undefined') {
       isMobile = window.innerWidth < 768;
+    }
+  }
+
+  // Alternar menú móvil
+  function toggleMobileMenu() {
+    showMobileMenu = !showMobileMenu;
+  }
+
+  // Navegación
+  function navigateHome() {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+  }
+
+  function navigateSearch() {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/buscar';
     }
   }
 
@@ -32,482 +52,461 @@
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', checkMobile);
     
+    // Escuchar actualizaciones del contador de favoritos
+    window.addEventListener('favoritesCountUpdate', (e) => {
+      const customEvent = e as CustomEvent<{ count: number }>;
+      favoritesCount = customEvent.detail?.count || 0;
+    });
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', checkMobile);
     };
   });
-
-  // Handlers
-  function handleLogin() {
-    showLoginModal = true;
-    // Aquí conectarías con tu sistema de autenticación
-    console.log('Abrir modal de login');
-  }
-
-  function handleFavorites() {
-    // Aquí navegarías a la página de favoritos o abrirías un panel
-    console.log('Navegar a favoritos');
-  }
-
-  function handleHome() {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
-    }
-  }
-
-  function closeLoginModal() {
-    showLoginModal = false;
-  }
 </script>
 
-<!-- Font Awesome CDN -->
-<svelte:head>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</svelte:head>
-
 <header 
-  class="header"
+  class="main-header"
   class:scrolled={isScrolled || showShadow}
   class:transparent
   class:mobile={isMobile}
 >
-  <div class="header-container">
-    <!-- Logo/Brand -->
-    <button 
-      class="brand-button"
-      on:click={handleHome}
-      aria-label="Ir al inicio"
-    >
-      <div class="brand-content">
-        <div class="brand-icon">
-          <i class="fas fa-utensils"></i>
-        </div>
-        <span class="brand-text">MENU<span style="color: var(--primary-color);" >UPP</span></span>
-      </div>
-    </button>
-
-    <!-- Navigation Actions -->
-    <nav class="nav-actions" role="navigation">
-      <!-- Favorites Button -->
+  <nav class="nav-container">
+    <div class="nav-content">
+      <!-- Logo/Brand -->
       <button 
-        class="nav-btn favorites-btn"
-        on:click={handleFavorites}
-        aria-label="Ver favoritos"
-        title="Mis favoritos"
+        class="brand-button"
+        onclick={navigateHome}
+        aria-label="Ir a inicio"
       >
-        <div class="btn-icon">
-          <i class="fas fa-heart"></i>
-          {#if favoritesCount > 0}
-            <span 
-              class="badge"
-              in:scale={{ duration: 300, delay: 100 }}
-            >
-              {favoritesCount > 99 ? '99+' : favoritesCount}
-            </span>
-          {/if}
+        <div class="brand-logo">
+          <span class="brand-text">Menu</span><span class="brand-accent">Upp</span>
         </div>
-        {#if !isMobile}
-          <span class="btn-text">Guardados</span>
-        {/if}
       </button>
 
-      <!-- Login Button -->
-      <button 
-        class="nav-btn login-btn"
-        on:click={handleLogin}
-        aria-label="Iniciar sesión"
-        title="Iniciar sesión"
-      >
-        <div class="btn-icon">
-          <i class="fas fa-user"></i>
-        </div>
-        {#if !isMobile}
-          <span class="btn-text">Entrar</span>
-        {/if}
-      </button>
-    </nav>
-  </div>
-
-  <!-- Modal de Login (placeholder) -->
-  {#if showLoginModal}
-    <div 
-      class="modal-overlay"
-      on:click={closeLoginModal}
-      in:fade={{ duration: 200 }}
-      out:fade={{ duration: 150 }}
-    >
-      <div 
-        class="modal-content"
-        on:click|stopPropagation
-        in:fly={{ y: 50, duration: 300, easing: quintOut }}
-        out:fly={{ y: 30, duration: 200 }}
-      >
-        <div class="modal-header">
-          <h3>Iniciar Sesión</h3>
+      <!-- Navigation Links - Desktop -->
+      {#if !isMobile}
+        <div class="nav-links">
           <button 
-            class="modal-close"
-            on:click={closeLoginModal}
-            aria-label="Cerrar modal"
+            class="nav-link"
+            onclick={navigateHome}
           >
-            <i class="fas fa-times"></i>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 9L12 2L21 9V20C21 20.5523 20.4477 21 20 21H4C3.44772 21 3 20.5523 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Inicio</span>
+          </button>
+          
+          <button 
+            class="nav-link"
+            onclick={navigateSearch}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Buscar</span>
           </button>
         </div>
-        <div class="modal-body">
-          <p>¡Próximamente! Sistema de autenticación en desarrollo.</p>
-          <button class="btn-primary" on:click={closeLoginModal}>
-            Entendido
+      {/if}
+
+      <!-- Actions -->
+      <div class="nav-actions">
+        <!-- Favorites -->
+        <button 
+          class="action-btn favorites-btn"
+          title="Favoritos"
+          aria-label="Ver favoritos"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.84 4.61C20.3292 4.099 19.7228 3.69364 19.0554 3.41708C18.3879 3.14052 17.6725 2.99817 16.95 2.99817C16.2275 2.99817 15.5121 3.14052 14.8446 3.41708C14.1772 3.69364 13.5708 4.099 13.06 4.61L12 5.67L10.94 4.61C9.9083 3.5783 8.50903 2.9987 7.05 2.9987C5.59096 2.9987 4.19169 3.5783 3.16 4.61C2.1283 5.6417 1.5487 7.04097 1.5487 8.5C1.5487 9.95903 2.1283 11.3583 3.16 12.39L4.22 13.45L12 21.23L19.78 13.45L20.84 12.39C21.351 11.8792 21.7563 11.2728 22.0329 10.6053C22.3095 9.93789 22.4518 9.22248 22.4518 8.5C22.4518 7.77752 22.3095 7.06211 22.0329 6.39467C21.7563 5.72723 21.351 5.1208 20.84 4.61V4.61Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {#if favoritesCount > 0}
+            <span class="badge" in:fade={{ duration: 200 }}>{favoritesCount}</span>
+          {/if}
+        </button>
+
+        <!-- Mobile Menu Toggle -->
+        {#if isMobile}
+          <button 
+            class="mobile-menu-btn"
+            onclick={toggleMobileMenu}
+            aria-label="Abrir menú"
+          >
+            <div class="hamburger" class:active={showMobileMenu}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </button>
-        </div>
+        {/if}
       </div>
     </div>
-  {/if}
+
+    <!-- Mobile Menu -->
+    {#if isMobile && showMobileMenu}
+      <div 
+        class="mobile-menu"
+        in:fly={{ y: -10, duration: 300 }}
+        out:fly={{ y: -10, duration: 200 }}
+      >
+        <button 
+          class="mobile-nav-link"
+          onclick={() => { navigateHome(); toggleMobileMenu(); }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9L12 2L21 9V20C21 20.5523 20.4477 21 20 21H4C3.44772 21 3 20.5523 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Inicio</span>
+        </button>
+        
+        <button 
+          class="mobile-nav-link"
+          onclick={() => { navigateSearch(); toggleMobileMenu(); }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Buscar</span>
+        </button>
+      </div>
+    {/if}
+  </nav>
 </header>
 
 <style>
-  .header {
+  /* Header Base */
+  .main-header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: 1000;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     height: 60px;
-    display: flex;
-    align-items: center;
   }
 
-  .header.mobile {
+  .main-header.transparent {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .main-header.scrolled {
+    background: rgba(255, 255, 255, 0.98);
+    border-bottom-color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .main-header.mobile {
     height: 56px;
   }
 
-  .header.scrolled {
-    background: rgba(255, 255, 255, 0.98);
-    border-bottom-color: #f1f5f9;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-  }
-
-  .header.transparent {
-    background: transparent;
-    backdrop-filter: none;
-  }
-
-  .header-container {
-    width: 100%;
+  /* Navigation Container */
+  .nav-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 16px;
+    padding: 0 1rem;
+    height: 100%;
+  }
+
+  .nav-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 100%;
   }
 
-  /* Brand/Logo */
+  /* Brand */
   .brand-button {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 8px 0;
-    display: flex;
-    align-items: center;
+    padding: 0.5rem;
     transition: all 0.3s ease;
-    border-radius: 12px;
+    border-radius: 8px;
   }
 
   .brand-button:hover {
-    transform: translateY(-1px);
+    background: rgba(255, 107, 53, 0.1);
   }
 
-  .brand-content {
+  .brand-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
-  }
-
-  .brand-icon {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.1rem;
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
-    transition: all 0.3s ease;
-  }
-
-  .header.mobile .brand-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-    border-radius: 10px;
-  }
-
-  .brand-button:hover .brand-icon {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(255, 107, 53, 0.35);
+    font-size: 1.5rem;
+    font-weight: 800;
   }
 
   .brand-text {
-    font-size: 1.5rem;
-    font-weight: 800;
     color: #0D1B2A;
-    letter-spacing: -0.02em;
-    user-select: none;
   }
 
-  .header.mobile .brand-text {
-    font-size: 1.3rem;
+  .brand-accent {
+    color: var(--primary-color, #ff6b35);
   }
 
-  /* Navigation Actions */
-  .nav-actions {
+  /* Navigation Links */
+  .nav-links {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
   }
 
-  .nav-btn {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 10px 14px;
-    cursor: pointer;
+  .nav-link {
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: none;
     color: #64748b;
     font-weight: 600;
     font-size: 0.9rem;
-    min-height: 44px;
-    position: relative;
-  }
-
-  .header.mobile .nav-btn {
-    padding: 10px 12px;
     border-radius: 10px;
-    min-height: 40px;
-  }
-
-  .nav-btn:hover {
-    background: #f8fafc;
-    border-color: var(--primary-color, #ff6b35);
-    color: var(--primary-color, #ff6b35);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
-  }
-
-  .nav-btn:active {
-    transform: translateY(0);
-  }
-
-  .btn-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-  }
-
-  .header.mobile .btn-icon {
-    font-size: 1rem;
-  }
-
-  .btn-text {
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-
-  /* Badge para contador de favoritos */
-  .badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background: var(--primary-color, #ff6b35);
-    color: white;
-    border-radius: 10px;
-    padding: 2px 6px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
-    border: 2px solid white;
-  }
-
-  /* Botones específicos */
-  .favorites-btn:hover .btn-icon i {
-    color: #ef4444;
-  }
-
-  .login-btn {
-    background: linear-gradient(135deg, #0D1B2A, #1e293b);
-    color: white;
-    border: none;
-  }
-
-  .login-btn:hover {
-    background: linear-gradient(135deg, #1e293b, #334155);
-    box-shadow: 0 6px 16px rgba(13, 27, 42, 0.25);
-  }
-
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .modal-content {
-    background: white;
-    border-radius: 16px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    color: #0D1B2A;
-    font-size: 1.2rem;
-    font-weight: 700;
-  }
-
-  .modal-close {
-    background: none;
-    border: none;
-    color: #64748b;
-    font-size: 1.2rem;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    text-decoration: none;
   }
 
-  .modal-close:hover {
-    background: #f1f5f9;
-    color: #374151;
+  .nav-link:hover {
+    background: #f8fafc;
+    color: var(--primary-color, #ff6b35);
+    transform: translateY(-1px);
   }
 
-  .modal-body {
-    padding: 20px;
-    text-align: center;
+  /* Actions */
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .modal-body p {
-    margin: 0 0 20px 0;
-    color: #64748b;
-    line-height: 1.5;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
-    color: white;
+  .action-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
     border: none;
-    padding: 12px 24px;
+    background: none;
+    color: #64748b;
     border-radius: 10px;
-    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
   }
 
-  .btn-primary:hover {
+  .action-btn:hover {
+    background: #f8fafc;
+    color: var(--primary-color, #ff6b35);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  }
+
+  /* Badge */
+  .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--primary-color, #ff6b35);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+  }
+
+  /* Mobile Menu Button */
+  .mobile-menu-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-menu-btn:hover {
+    background: #f8fafc;
+  }
+
+  /* Hamburger */
+  .hamburger {
+    width: 20px;
+    height: 16px;
+    position: relative;
+    transform: rotate(0deg);
+    transition: 0.3s ease-in-out;
+  }
+
+  .hamburger span {
+    display: block;
+    position: absolute;
+    height: 2px;
+    width: 100%;
+    background: #64748b;
+    border-radius: 2px;
+    opacity: 1;
+    left: 0;
+    transform: rotate(0deg);
+    transition: 0.25s ease-in-out;
+  }
+
+  .hamburger span:nth-child(1) {
+    top: 0px;
+  }
+
+  .hamburger span:nth-child(2) {
+    top: 7px;
+  }
+
+  .hamburger span:nth-child(3) {
+    top: 14px;
+  }
+
+  .hamburger.active span:nth-child(1) {
+    top: 7px;
+    transform: rotate(135deg);
+  }
+
+  .hamburger.active span:nth-child(2) {
+    opacity: 0;
+    left: -20px;
+  }
+
+  .hamburger.active span:nth-child(3) {
+    top: 7px;
+    transform: rotate(-135deg);
+  }
+
+  /* Mobile Menu */
+  .mobile-menu {
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mobile-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: none;
+    background: none;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+  }
+
+  .mobile-nav-link:hover {
+    background: #f8fafc;
+    color: var(--primary-color, #ff6b35);
   }
 
   /* Responsive adjustments */
   @media (max-width: 480px) {
-    .header-container {
-      padding: 0 12px;
+    .nav-container {
+      padding: 0 0.75rem;
     }
 
-    .nav-actions {
-      gap: 6px;
+    .brand-logo {
+      font-size: 1.25rem;
     }
 
-    .brand-text {
-      font-size: 1.2rem;
-    }
-
-    .modal-content {
-      margin: 20px;
-      max-width: calc(100vw - 40px);
-    }
-
-    .modal-header,
-    .modal-body {
-      padding: 16px;
+    .action-btn {
+      width: 40px;
+      height: 40px;
     }
   }
 
-  /* Modo oscuro */
+  /* Dark mode support */
   @media (prefers-color-scheme: dark) {
-    .header {
+    .main-header {
       background: rgba(15, 23, 42, 0.95);
+      border-bottom-color: #334155;
     }
 
-    .header.scrolled {
+    .main-header.scrolled {
       background: rgba(15, 23, 42, 0.98);
-      border-bottom-color: #334155;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .brand-text {
       color: #f8fafc;
     }
 
-    .nav-btn {
-      background: #1e293b;
-      border-color: #334155;
+    .nav-link,
+    .action-btn,
+    .mobile-nav-link {
       color: #94a3b8;
     }
 
-    .nav-btn:hover {
-      background: #334155;
-      color: var(--primary-color, #ff6b35);
-    }
-
-    .modal-content {
+    .nav-link:hover,
+    .action-btn:hover,
+    .mobile-nav-link:hover {
       background: #1e293b;
     }
 
-    .modal-header {
-      border-bottom-color: #334155;
+    .mobile-menu {
+      background: #0f172a;
+      border-top-color: #334155;
     }
 
-    .modal-header h3 {
-      color: #f8fafc;
+    .hamburger span {
+      background: #94a3b8;
+    }
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .main-header {
+      border-bottom: 2px solid #000;
     }
 
-    .modal-body p {
-      color: #94a3b8;
+    .nav-link,
+    .action-btn {
+      border: 1px solid transparent;
+    }
+
+    .nav-link:hover,
+    .action-btn:hover {
+      border-color: var(--primary-color, #ff6b35);
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .main-header,
+    .nav-link,
+    .action-btn,
+    .mobile-menu-btn,
+    .hamburger,
+    .hamburger span {
+      transition: none;
+    }
+
+    .nav-link:hover,
+    .action-btn:hover {
+      transform: none;
     }
   }
 </style>

@@ -1,0 +1,41 @@
+---
+// src/pages/buscar.astro
+import RestaurantSearch from '../components/RestaurantSearch.svelte'
+import MenuuppLayout from '../layouts/MenuuppLayout.astro';
+---
+
+<MenuuppLayout 
+  title="Buscar Restaurantes y Platillos - Menupp"
+  description="Busca y descubre los mejores restaurantes y platillos cerca de ti. Explora, filtra y encuentra exactamente lo que buscas."
+  showHeaderShadow={false}
+  transparentHeader={false}
+>
+  <RestaurantSearch client:load />
+</MenuuppLayout>
+
+<style>
+  /* Estilos específicos para la página de búsqueda si son necesarios */
+  
+  /* El contenido principal ya tiene el espaciado correcto gracias al layout */
+  
+  /* Animación de entrada para el contenido */
+  :global(.search-page) {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Ajustes responsive */
+  @media (max-width: 768px) {
+    /* El header ya se ajusta automáticamente */
+  }
+</style>

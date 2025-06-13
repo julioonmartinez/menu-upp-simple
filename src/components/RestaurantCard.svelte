@@ -15,7 +15,6 @@
     import CommentsModal from './CommentsModal.svelte';
     import { canUserRate } from '../stores/ratingStore';
 
-
   // Props
   const { restaurant, storeInitialized } = $props<{ restaurant: RestaurantSearchResult; storeInitialized: boolean }>();
 
@@ -30,7 +29,6 @@
   let isHovered = $state(false);
   let showMoreInfo = $state(false);
   let showCommentsModal = $state(false);
-
 
   // Función para formatear el tiempo
   function formatTimeAgo(dateString: string): string {
@@ -102,6 +100,16 @@
   function closeCommentsModal() {
     showCommentsModal = false;
   }
+
+  // Nueva función para navegar al restaurante
+  function navigateToRestaurant(event: Event) {
+    // Prevenir propagación si se hace click en elementos interactivos
+    const target = event.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('.rating-system')) {
+      return;
+    }
+    window.location.href = `/${restaurant.username}`;
+  }
 </script>
 
 <article 
@@ -112,7 +120,7 @@
   in:fly={{ y: 20, duration: 400, easing: quintOut }}
 >
   <!-- Imagen del restaurante con overlay de info -->
-  <div class="restaurant-image-container">
+  <div class="restaurant-image-container" onclick={navigateToRestaurant}>
     {#if restaurant.image || restaurant.imageProfile}
       <img 
         src={restaurant.image || restaurant.imageProfile} 
@@ -151,6 +159,18 @@
           {getPriceRangeText(restaurant.priceRange)}
         </div>
       {/if}
+
+      <!-- Botón flotante "Ver restaurante" que aparece en hover -->
+      {#if isHovered}
+        <div class="view-restaurant-overlay" in:fade={{ duration: 200 }}>
+          <button class="view-restaurant-btn-overlay">
+            <span>Ver restaurante</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      {/if}
     </div>
   </div>
 
@@ -165,42 +185,17 @@
         </h3>
        
         {#if storeInitialized && !canUserRate(restaurant.id) }
-              <RatingSystem 
+          <RatingSystem 
             restaurantId={restaurant.id!}
             on:toast={handleToast}
           />
-            {/if}
-        <!-- <button 
-          class="expand-btn"
-          class:expanded={showMoreInfo}
-          onclick={toggleMoreInfo}
-          title={showMoreInfo ? 'Ocultar detalles' : 'Ver más detalles'}
-          aria-label={showMoreInfo ? 'Ocultar detalles' : 'Ver más detalles'}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button> -->
+        {/if}
       </div>
 
       <div class="meta-row">
         {#if restaurant.cuisineType?.[0]}
           <span class="cuisine-tag">🍽️ {restaurant.cuisineType[0]}</span>
         {/if}
-        
-        <!-- <div class="rating-compact">
-          <div class="stars-mini">
-            {#if storeInitialized}
-              <RatingSystem 
-            restaurantId={restaurant.id!}
-            on:toast={handleToast}
-          />
-            {/if}
-          </div>
-          <span class="reviews-count-mini">
-            ({restaurant.analytics?.reviewsCount || 0})
-          </span>
-        </div> -->
       </div>
     </header>
 
@@ -212,60 +207,52 @@
     {/if}
 
     <!-- Info expandible -->
-  
-      <div class="expanded-info" in:fly={{ y: -10, duration: 300 }}>
-        {#if restaurant.address}
-          <div class="info-item">
-            <span class="info-icon">📍</span>
-            <span class="info-text">{restaurant.address}</span>
-          </div>
-        {/if}
-        
-        <!-- Sección de interacción expandida -->
-        {#if storeInitialized}
-          <div class="interaction-section-expanded">
-           {#if canUserRate(restaurant.id)}
-             <RatingSystem 
-            restaurantId={restaurant.id!}
-            on:toast={handleToast}
-          />
-           {/if}
-            <!-- Botón de comentarios -->
-        <button 
-          class="comments-button-mini"
-          onclick={openCommentsModal}
-          title="Ver comentarios"
-        >
-          <span class="comments-icon">💬</span>
-          <!-- <span class="comments-text">Comentarios</span> -->
-          {#if restaurant.analytics?.commentsCount && restaurant.analytics.commentsCount > 0}
-            <span class="comments-count-mini">{restaurant.analytics.commentsCount}</span>
+    <div class="expanded-info" in:fly={{ y: -10, duration: 300 }}>
+      {#if restaurant.address}
+        <div class="info-item">
+          <span class="info-icon">📍</span>
+          <span class="info-text">{restaurant.address}</span>
+        </div>
+      {/if}
+      
+      <!-- Sección de interacción expandida -->
+      {#if storeInitialized}
+        <div class="interaction-section-expanded">
+          {#if canUserRate(restaurant.id)}
+            <RatingSystem 
+              restaurantId={restaurant.id!}
+              on:toast={handleToast}
+            />
           {/if}
-        </button>
-          </div>
-        {:else}
-          <div class="interaction-loading-mini">
-            <div class="loading-spinner-mini"></div>
-            <span>Cargando...</span>
-          </div>
-        {/if}
-      </div>
- 
-      <!-- Versión compacta de interacción -->
-      <!-- {#if storeInitialized}
-        <div class="interaction-section-compact">
-          <RatingSystem 
-            restaurantId={restaurant.id!}
-            on:toast={handleToast}
-          />
+          <!-- Botón de comentarios -->
+          <button 
+            class="comments-button-mini"
+            onclick={openCommentsModal}
+            title="Ver comentarios"
+          >
+            <span class="comments-icon">💬</span>
+            {#if restaurant.analytics?.commentsCount && restaurant.analytics.commentsCount > 0}
+              <span class="comments-count-mini">{restaurant.analytics.commentsCount}</span>
+            {/if}
+          </button>
         </div>
       {:else}
         <div class="interaction-loading-mini">
           <div class="loading-spinner-mini"></div>
           <span>Cargando...</span>
         </div>
-      {/if} -->
-    
+      {/if}
+    </div>
+
+    <!-- Botón principal "Ver restaurante" al final de la tarjeta -->
+    <div class="card-actions">
+      <a href="/{restaurant.username}" class="view-restaurant-btn">
+        <span>Ver restaurante</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
   </div>
 
   <!-- Efecto de hover sutil -->
@@ -284,3 +271,122 @@
     on:toast={handleToast}
   />
 {/if}
+
+<style>
+  /* Estilos para la imagen clickeable */
+  .restaurant-image-container {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.3s ease;
+  }
+
+  .restaurant-image-container:hover {
+    transform: scale(1.02);
+  }
+
+  /* Overlay para el botón flotante */
+  .view-restaurant-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .view-restaurant-btn-overlay {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .view-restaurant-btn-overlay:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.05);
+  }
+
+  /* Estilos para el botón principal al final */
+  .card-actions {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .view-restaurant-btn {
+    width: 100%;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  }
+
+  .view-restaurant-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.4);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+  }
+
+  .view-restaurant-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .view-restaurant-btn {
+      padding: 16px 20px;
+      font-size: 16px;
+      /* Tamaño mínimo para touch en móviles */
+      min-height: 44px;
+    }
+
+    .view-restaurant-btn-overlay {
+      padding: 14px 24px;
+      font-size: 15px;
+    }
+
+    .restaurant-image-container:hover {
+      transform: none; /* Evitar transformaciones en móvil */
+    }
+  }
+
+  /* Hover en desktop */
+  @media (hover: hover) {
+    .restaurant-card:hover .restaurant-image-container {
+      transform: scale(1.02);
+    }
+  }
+
+  /* Estados de accesibilidad */
+  .view-restaurant-btn:focus,
+  .view-restaurant-btn-overlay:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  .view-restaurant-btn:focus-visible,
+  .view-restaurant-btn-overlay:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+</style>
