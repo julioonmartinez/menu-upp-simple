@@ -4,23 +4,24 @@
   import { quintOut } from 'svelte/easing';
   
   import type { RestaurantSearchFilters } from '../interfaces/restaurantRating';
+  import type { DishSearchFilters } from '../interfaces/dishRating';
 
   // Props
   const { 
     loading, 
     initialFilters, 
-    placeholder = 'Buscar restaurantes...',
+    placeholder = 'Buscar...',
     searchType = 'restaurants'
   } = $props<{
     loading: boolean;
-    initialFilters: RestaurantSearchFilters;
+    initialFilters: RestaurantSearchFilters | DishSearchFilters;
     placeholder?: string;
-    searchType?: string;
+    searchType?: 'restaurants' | 'dishes' | 'routes';
   }>();
 
   // Dispatcher
   const dispatch = createEventDispatcher<{
-    search: RestaurantSearchFilters
+    search: RestaurantSearchFilters | DishSearchFilters
   }>();
 
   // Estado del formulario más compacto
@@ -28,11 +29,16 @@
     search: '',
     minRating: '',
     maxRating: '',
-    cuisineType: '',
-    priceRange: '',
+    // Campos compartidos
     sortBy: 'rating',
     sortOrder: -1,
-    showAdvancedFilters: false
+    showAdvancedFilters: false,
+    // Campos específicos de restaurantes
+    cuisineType: '',
+    priceRange: '',
+    // Campos específicos de platillos
+    categoryId: '',
+    restaurantId: ''
   });
 
   // Estados de interacción
@@ -48,32 +54,64 @@
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    if (initialFilters) {
-      searchForm.search = initialFilters.search || '';
-      searchForm.minRating = initialFilters.minRating?.toString() || '';
-      searchForm.maxRating = initialFilters.maxRating?.toString() || '';
-      searchForm.cuisineType = initialFilters.cuisineType || '';
-      searchForm.priceRange = initialFilters.priceRange || '';
-      searchForm.sortBy = initialFilters.sortBy || 'rating';
-      searchForm.sortOrder = initialFilters.sortOrder || -1;
-    }
+    // Inicializar desde filtros según el tipo
+    initializeFromFilters();
 
     return () => window.removeEventListener('resize', checkMobile);
   });
 
+  // NUEVA FUNCIÓN: Inicializar desde filtros según el tipo
+  function initializeFromFilters() {
+    if (initialFilters) {
+      searchForm.search = initialFilters.search || '';
+      searchForm.minRating = initialFilters.minRating?.toString() || '';
+      searchForm.maxRating = initialFilters.maxRating?.toString() || '';
+      searchForm.sortBy = initialFilters.sortBy || 'rating';
+      searchForm.sortOrder = initialFilters.sortOrder || -1;
+
+      // Campos específicos de restaurantes
+      if (searchType === 'restaurants') {
+        const restaurantFilters = initialFilters as RestaurantSearchFilters;
+        searchForm.cuisineType = restaurantFilters.cuisineType || '';
+        searchForm.priceRange = restaurantFilters.priceRange || '';
+      }
+      // Campos específicos de platillos
+      else if (searchType === 'dishes') {
+        const dishFilters = initialFilters as DishSearchFilters;
+        searchForm.categoryId = dishFilters.categoryId || '';
+        searchForm.restaurantId = dishFilters.restaurantId || '';
+      }
+    }
+  }
+
+  // NUEVA FUNCIÓN: Construir filtros según el tipo
+  function buildFilters(): RestaurantSearchFilters | DishSearchFilters {
+    const baseFilters: any = {};
+    
+    if (searchForm.search.trim()) baseFilters.search = searchForm.search.trim();
+    if (searchForm.minRating) baseFilters.minRating = parseFloat(searchForm.minRating);
+    if (searchForm.maxRating) baseFilters.maxRating = parseFloat(searchForm.maxRating);
+    if (searchForm.sortBy) baseFilters.sortBy = searchForm.sortBy;
+    baseFilters.sortOrder = parseInt(searchForm.sortOrder.toString()) === 1 ? 1 : -1;
+
+    // Campos específicos según el tipo
+    if (searchType === 'restaurants') {
+      if (searchForm.cuisineType) baseFilters.cuisineType = searchForm.cuisineType;
+      if (searchForm.priceRange) baseFilters.priceRange = searchForm.priceRange;
+      return baseFilters as RestaurantSearchFilters;
+    } else if (searchType === 'dishes') {
+      if (searchForm.categoryId) baseFilters.categoryId = searchForm.categoryId;
+      if (searchForm.restaurantId) baseFilters.restaurantId = searchForm.restaurantId;
+      return baseFilters as DishSearchFilters;
+    }
+
+    return baseFilters;
+  }
+
   function handleSubmit(event: Event) {
     event.preventDefault();
-    
-    const filters: RestaurantSearchFilters = {};
-    
-    if (searchForm.search.trim()) filters.search = searchForm.search.trim();
-    if (searchForm.minRating) filters.minRating = parseFloat(searchForm.minRating);
-    if (searchForm.maxRating) filters.maxRating = parseFloat(searchForm.maxRating);
-    if (searchForm.cuisineType) filters.cuisineType = searchForm.cuisineType;
-    if (searchForm.priceRange) filters.priceRange = searchForm.priceRange;
-    if (searchForm.sortBy) filters.sortBy = searchForm.sortBy;
-    filters.sortOrder = searchForm.sortOrder;
-
+    const filters = buildFilters();
+    console.log('🔍 Ejecutando búsqueda:', { searchType, filters });
     dispatch('search', filters);
   }
 
@@ -82,11 +120,13 @@
       search: '',
       minRating: '',
       maxRating: '',
-      cuisineType: '',
-      priceRange: '',
       sortBy: 'rating',
       sortOrder: -1,
-      showAdvancedFilters: false
+      showAdvancedFilters: false,
+      cuisineType: '',
+      priceRange: '',
+      categoryId: '',
+      restaurantId: ''
     };
   }
 
@@ -102,7 +142,7 @@
     isFormFocused = false;
   }
 
-  // Sugerencias contextuales basadas en el tipo de búsqueda
+  // FUNCIÓN MEJORADA: Sugerencias contextuales basadas en el tipo de búsqueda
   const getContextualSuggestions = () => {
     switch (searchType) {
       case 'dishes':
@@ -140,18 +180,69 @@
     handleSubmit(new Event('submit'));
   }
 
-  // Contar filtros activos
-  const activeFiltersCount = $derived(() =>
-    [
+  // FUNCIÓN MEJORADA: Contar filtros activos según el tipo
+  const activeFiltersCount = $derived(() => {
+    const baseFilters = [
       searchForm.minRating,
-      searchForm.maxRating,
-      searchForm.cuisineType,
-      searchForm.priceRange
-    ].filter(Boolean).length
-  );
+      searchForm.maxRating
+    ].filter(Boolean).length;
+
+    if (searchType === 'restaurants') {
+      return baseFilters + [
+        searchForm.cuisineType,
+        searchForm.priceRange
+      ].filter(Boolean).length;
+    } else if (searchType === 'dishes') {
+      return baseFilters + [
+        searchForm.categoryId,
+        searchForm.restaurantId
+      ].filter(Boolean).length;
+    }
+
+    return baseFilters;
+  });
 
   // Obtener el placeholder dinámico
-  const dynamicPlaceholder = $derived(() => placeholder || 'Buscar restaurantes...');
+  const dynamicPlaceholder = $derived(() => placeholder || 'Buscar...');
+
+  // NUEVA FUNCIÓN: Obtener opciones de ordenamiento según el tipo
+  const getSortOptions = () => {
+    switch (searchType) {
+      case 'dishes':
+        return [
+          { value: 'rating', label: '⭐ Valoración' },
+          { value: 'name', label: '📝 Nombre' },
+          { value: 'price', label: '💰 Precio' },
+          { value: 'comments', label: '💬 Comentarios' },
+          { value: 'favorites', label: '❤️ Favoritos' }
+        ];
+      case 'restaurants':
+        return [
+          { value: 'rating', label: '⭐ Valoración' },
+          { value: 'name', label: '📝 Nombre' },
+          { value: 'analytics.reviewsCount', label: '💬 Reseñas' }
+        ];
+      default:
+        return [
+          { value: 'rating', label: '⭐ Valoración' },
+          { value: 'name', label: '📝 Nombre' }
+        ];
+    }
+  };
+
+  // Reactivo para reagir a cambios en searchType
+  $effect(() => {
+    if (searchType) {
+      // Limpiar campos específicos del tipo anterior
+      searchForm.cuisineType = '';
+      searchForm.priceRange = '';
+      searchForm.categoryId = '';
+      searchForm.restaurantId = '';
+      
+      // Reinicializar desde filtros si es necesario
+      initializeFromFilters();
+    }
+  });
 </script>
 
 <div class="search-form-container-hero" class:focused={isFormFocused}>
@@ -194,51 +285,20 @@
             </button>
           {/if}
         </div>
+        
         <!-- Búsquedas populares rápidas -->
-<div class="popular-searches-quick">
-  {#each getContextualSuggestions() as search, index}
-    <button 
-      type="button"
-      class="popular-quick-btn"
-      onclick={() => handlePopularSearch(search.text)}
-    >
-      <span class="popular-emoji">{search.emoji}</span>
-      <span class="popular-text">{search.text}</span>
-    </button>
-  {/each}
-</div>
-        <!-- Filtros rápidos -->
-        <!-- <div class="quick-filters-hero">
-          <button 
-            type="button"
-            class="quick-filter-btn-hero"
-            class:active={searchForm.minRating === '4.0'}
-            onclick={() => searchForm.minRating = searchForm.minRating === '4.0' ? '' : '4.0'}
-          >
-            <span class="filter-icon">⭐</span>
-            <span class="filter-text">4.0+</span>
-          </button>
-          
-          <button 
-            type="button"
-            class="quick-filter-btn-hero"
-            class:active={searchForm.priceRange === 'low'}
-            onclick={() => searchForm.priceRange = searchForm.priceRange === 'low' ? '' : 'low'}
-          >
-            <span class="filter-icon">💵</span>
-            <span class="filter-text">Económico</span>
-          </button>
-          
-          <button 
-            type="button"
-            class="quick-filter-btn-hero"
-            class:active={searchForm.cuisineType === 'italiana'}
-            onclick={() => searchForm.cuisineType = searchForm.cuisineType === 'italiana' ? '' : 'italiana'}
-          >
-            <span class="filter-icon">🍝</span>
-            <span class="filter-text">Italiana</span>
-          </button>
-        </div> -->
+        <div class="popular-searches-quick">
+          {#each getContextualSuggestions() as search, index}
+            <button 
+              type="button"
+              class="popular-quick-btn"
+              onclick={() => handlePopularSearch(search.text)}
+            >
+              <span class="popular-emoji">{search.emoji}</span>
+              <span class="popular-text">{search.text}</span>
+            </button>
+          {/each}
+        </div>
       </div>
 
       <div class="search-actions-hero">
@@ -292,7 +352,7 @@
         out:fly={{ y: -20, duration: 250, easing: quintOut }}
       >
         <div class="filters-grid-hero" class:mobile-grid={isMobile}>
-          <!-- Valoración -->
+          <!-- Valoración - Común para ambos tipos -->
           <div class="filter-group-hero">
             <label class="filter-label-hero">⭐ Valoración</label>
             <select bind:value={searchForm.minRating} class="filter-select-hero">
@@ -304,38 +364,78 @@
             </select>
           </div>
 
-          <!-- Tipo de cocina -->
-          <div class="filter-group-hero">
-            <label class="filter-label-hero">🍽️ Cocina</label>
-            <select bind:value={searchForm.cuisineType} class="filter-select-hero">
-              <option value="">Todos</option>
-              <option value="mexicana">🌮 Mexicana</option>
-              <option value="italiana">🍝 Italiana</option>
-              <option value="asiática">🍜 Asiática</option>
-              <option value="americana">🍔 Americana</option>
-              <option value="española">🥘 Española</option>
-              <option value="japonesa">🍣 Japonesa</option>
-            </select>
-          </div>
+          <!-- FILTROS ESPECÍFICOS PARA RESTAURANTES -->
+          {#if searchType === 'restaurants'}
+            <!-- Tipo de cocina -->
+            <div class="filter-group-hero">
+              <label class="filter-label-hero">🍽️ Cocina</label>
+              <select bind:value={searchForm.cuisineType} class="filter-select-hero">
+                <option value="">Todos</option>
+                <option value="mexicana">🌮 Mexicana</option>
+                <option value="italiana">🍝 Italiana</option>
+                <option value="asiática">🍜 Asiática</option>
+                <option value="americana">🍔 Americana</option>
+                <option value="española">🥘 Española</option>
+                <option value="japonesa">🍣 Japonesa</option>
+                <option value="china">🥟 China</option>
+                <option value="francesa">🥖 Francesa</option>
+                <option value="india">🍛 India</option>
+              </select>
+            </div>
 
-          <!-- Precio -->
-          <div class="filter-group-hero">
-            <label class="filter-label-hero">💰 Precio</label>
-            <select bind:value={searchForm.priceRange} class="filter-select-hero">
-              <option value="">Cualquiera</option>
-              <option value="low">💵 Económico</option>
-              <option value="medium">💶 Medio</option>
-              <option value="high">💷 Alto</option>
-            </select>
-          </div>
+            <!-- Precio -->
+            <div class="filter-group-hero">
+              <label class="filter-label-hero">💰 Precio</label>
+              <select bind:value={searchForm.priceRange} class="filter-select-hero">
+                <option value="">Cualquiera</option>
+                <option value="low">💵 Económico</option>
+                <option value="medium">💶 Medio</option>
+                <option value="high">💷 Alto</option>
+              </select>
+            </div>
+          {/if}
 
-          <!-- Ordenar -->
+          <!-- FILTROS ESPECÍFICOS PARA PLATILLOS -->
+          {#if searchType === 'dishes'}
+            <!-- Categoría -->
+            <div class="filter-group-hero">
+              <label class="filter-label-hero">🏷️ Categoría</label>
+              <input 
+                type="text" 
+                bind:value={searchForm.categoryId}
+                placeholder="ID de categoría"
+                class="filter-input-hero"
+              />
+            </div>
+
+            <!-- Restaurante -->
+            <div class="filter-group-hero">
+              <label class="filter-label-hero">🏪 Restaurante</label>
+              <input 
+                type="text" 
+                bind:value={searchForm.restaurantId}
+                placeholder="ID de restaurante"
+                class="filter-input-hero"
+              />
+            </div>
+          {/if}
+
+          <!-- Ordenar - Común pero con opciones diferentes -->
           <div class="filter-group-hero">
             <label class="filter-label-hero">📊 Ordenar</label>
             <select bind:value={searchForm.sortBy} class="filter-select-hero">
-              <option value="rating">⭐ Valoración</option>
-              <option value="name">📝 Nombre</option>
-              <option value="analytics.reviewsCount">💬 Reseñas</option>
+              {#each getSortOptions() as option}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </div>
+
+          <!-- Orden - Común -->
+          <div class="filter-group-hero">
+            <label class="filter-label-hero">🔄 Orden</label>
+            <select bind:value={searchForm.sortOrder} class="filter-select-hero">
+              <option value={-1}>Descendente (Mayor a menor)</option>
+              <option value={1}>Ascendente (Menor a mayor)</option>
             </select>
           </div>
         </div>
@@ -396,7 +496,6 @@
     transform: translateY(-2px);
   }
 
-  /* Búsqueda principal */
   .search-main-hero {
     padding: 20px;
     display: flex;
@@ -478,14 +577,13 @@
     transform: scale(1.1);
   }
 
-  /* Filtros rápidos */
-  .quick-filters-hero {
+  .popular-searches-quick {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
   }
 
-  .quick-filter-btn-hero {
+  .popular-quick-btn {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -500,8 +598,7 @@
     transition: all 0.3s ease;
   }
 
-  .quick-filter-btn-hero:hover,
-  .quick-filter-btn-hero.active {
+  .popular-quick-btn:hover {
     background: var(--primary-color, #ff6b35);
     color: white;
     border-color: var(--primary-color, #ff6b35);
@@ -509,15 +606,14 @@
     box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
   }
 
-  .filter-icon {
+  .popular-emoji {
     font-size: 0.9rem;
   }
 
-  .filter-text {
+  .popular-text {
     white-space: nowrap;
   }
 
-  /* Acciones de búsqueda */
   .search-actions-hero {
     display: flex;
     flex-direction: column;
@@ -619,44 +715,6 @@
     animation: spin 1s linear infinite;
   }
 
-  .popular-searches-quick {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.popular-quick-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  color: #64748b;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.popular-quick-btn:hover {
-  background: var(--primary-color, #ff6b35);
-  color: white;
-  border-color: var(--primary-color, #ff6b35);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
-}
-
-.popular-emoji {
-  font-size: 0.9rem;
-}
-
-.popular-text {
-  white-space: nowrap;
-}
-
-  /* Filtros avanzados */
   .advanced-filters-hero {
     border-top: 1px solid #f1f5f9;
     padding: 20px;
@@ -713,7 +771,27 @@
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
   }
 
-  /* Acciones de filtros */
+  /* NUEVO: Estilos para inputs de filtros */
+  .filter-input-hero {
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.9rem;
+    color: #0D1B2A;
+    transition: all 0.3s ease;
+  }
+
+  .filter-input-hero:focus {
+    outline: none;
+    border-color: var(--primary-color, #ff6b35);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  }
+
+  .filter-input-hero::placeholder {
+    color: #9ca3af;
+  }
+
   .filter-actions-hero {
     display: flex;
     gap: 12px;
@@ -778,7 +856,6 @@
     100% { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
-  /* Responsive */
   @media (max-width: 768px) {
     .search-main-hero {
       flex-direction: column;
@@ -797,9 +874,6 @@
       min-height: 48px;
     }
 
-    .quick-filters-hero {
-      justify-content: center;
-    }
     .popular-searches-quick {
       justify-content: center;
     }
@@ -826,18 +900,18 @@
     }
 
     .search-input-hero {
-      font-size: 16px; /* Previene zoom en iOS */
+      font-size: 16px;
     }
 
     .filters-grid-hero.mobile-grid {
       grid-template-columns: 1fr;
     }
 
-    .quick-filters-hero {
+    .popular-searches-quick {
       gap: 6px;
     }
 
-    .quick-filter-btn-hero {
+    .popular-quick-btn {
       padding: 6px 10px;
       font-size: 0.8rem;
     }

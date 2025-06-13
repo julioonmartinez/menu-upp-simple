@@ -1,8 +1,6 @@
 <!-- RatingDisplaySvelte.svelte: Componente principal optimizado -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade, fly } from 'svelte/transition';
-  import type { Dish } from '../../interfaces/dish';
   import { favoritesStore } from '../../stores/favoritesStore';
   
   // Props
@@ -297,7 +295,7 @@
     min-height: 32px;
     display: flex;
     align-items: center;
-    width: 100%;
+    max-width: 100%;
   }
   
   .pill-container {
@@ -309,6 +307,7 @@
     font-size: 0.875rem; /* text-sm */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* transition-all duration-300 */
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* box-sizing: border-box; */
   }
 
   .pill-container:hover {
@@ -318,7 +317,7 @@
   }
 
   .pill-container.min-width {
-    min-width: 120px; /* min-w-[120px] */
+    min-width: 100px;
   }
 
   .star-rating {
@@ -341,6 +340,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 0;
+    min-height: 0;
   }
 
   .star-button:hover {
@@ -500,4 +501,9 @@
       transform: scale(1.02); 
     }
   }
+  /* Descomenta uno por uno hasta que se solucione */
+
+
+  
 </style>
+

@@ -1,4 +1,5 @@
 <script lang="ts">
+  //CardDishSvelte.svelte
   import { onMount, createEventDispatcher } from 'svelte';
   import type { CartItem, Dish, DishOption } from '../../interfaces/dish';
   import RatingDisplay from '../microcomponentes/RatingDisplay.svelte';
@@ -14,7 +15,7 @@
   export let index: number;
   export let storeMode: boolean = false;
   export let backgroundColor = '#FFFFFF';
-  export let primaryColor = '#2b2b2b';
+  export let primaryColor = '#ff6b35';
   export let secondaryColor = '#FF4500';
   
   // Variable reactiva para la calificación del usuario

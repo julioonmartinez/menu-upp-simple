@@ -13,7 +13,7 @@
   }
 
   .modal-backdrop.mobile {
-    padding: 10px;
+    padding: 0 10px;
     align-items: flex-end;
   }
 
