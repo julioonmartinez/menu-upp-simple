@@ -27,6 +27,7 @@
     RestaurantSearchFilters,
     RestaurantSearchResponse
   } from '../interfaces/restaurantRating';
+    import ResultsHeader from './ResultsHeader.svelte';
 
   // Detección de browser para Astro
   const isBrowser = typeof window !== 'undefined';
@@ -235,7 +236,8 @@
     </div>
     
     <div class="hero-container" class:mobile={isMobile}>
-      
+      <div class="hero-content-wrapper">
+  <div class="hero-main-content">
       <!-- Título principal -->
       <div class="hero-header" in:fly={{ y: 20, duration: 600, easing: quintOut }}>
         <h1 class="hero-title" class:mobile={isMobile}>
@@ -252,7 +254,41 @@
           </p>
         {/if}
       </div>
-
+    </div>
+<div class="hero-carousel" class:mobile={isMobile}>
+    <div class="carousel-container">
+      <div class="carousel-column">
+        <div class="carousel-item" style="--delay: 0s">
+          <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop" alt="Pizza deliciosa" />
+        </div>
+        <div class="carousel-item" style="--delay: 2s">
+          <img src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop" alt="Restaurante elegante" />
+        </div>
+        <div class="carousel-item" style="--delay: 4s">
+          <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop" alt="Hamburguesa gourmet" />
+        </div>
+        <div class="carousel-item" style="--delay: 6s">
+          <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop" alt="Menú del chef" />
+        </div>
+      </div>
+      
+      <div class="carousel-column carousel-column-2">
+        <div class="carousel-item" style="--delay: 1s">
+          <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop" alt="Platillo gourmet" />
+        </div>
+        <div class="carousel-item" style="--delay: 3s">
+          <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop" alt="Interior restaurante" />
+        </div>
+        <div class="carousel-item" style="--delay: 5s">
+          <img src="https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop" alt="Sushi fresco" />
+        </div>
+        <div class="carousel-item" style="--delay: 7s">
+          <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop" alt="Mesa de restaurante" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
       <!-- Navegación de tipos de búsqueda -->
       <div class="search-navigation" class:mobile={isMobile} in:fly={{ y: 30, duration: 600, delay: 200, easing: quintOut }}>
         <div class="nav-tabs">
@@ -350,21 +386,12 @@
         <!-- Results compactos -->
         {#if hasResults && !loading}
           <div class="search-results" in:fly={{ y: 20, duration: 500, easing: quintOut }}>
-            <div class="results-header" class:mobile={isMobile}>
-              <div class="results-count">
-                <h2 class:mobile={isMobile}>
-                  <span class="count-number" class:mobile={isMobile}>{results?.pagination.total}</span>
-                  <span class="count-text" class:mobile={isMobile}>
-                    {isMobile ? 'encontrados' : 'restaurantes encontrados'}
-                  </span>
-                </h2>
-                {#if !isMobile}
-                  <p class="page-info">
-                    Página {results?.pagination.page} de {results?.pagination.total_pages}
-                  </p>
-                {/if}
-              </div>
-            </div>
+            <ResultsHeader 
+          totalResults={results?.pagination.total || 0}
+          currentPage={results?.pagination.page || 1}
+          totalPages={results?.pagination.total_pages || 1}
+          {isMobile}
+        />
             
             <div class="restaurants-grid" class:mobile={isMobile}>
               {#each results?.restaurants! as restaurant, index (restaurant.id)}
@@ -503,6 +530,7 @@
     padding: 0 20px;
     text-align: center;
     width: 100%;
+    align-items: stretch;
   }
 
   .hero-container.mobile {
@@ -549,6 +577,122 @@
     max-width: 600px;
     margin: 0 auto;
   }
+  /* Layout del hero con carousel */
+.hero-content-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  width: 100%;
+}
+
+.hero-main-content {
+  position: relative;
+  flex: 1;
+  max-width: 700px;
+  z-index: 3;
+}
+
+/* Carousel vertical */
+.hero-carousel {
+  display: none; /* Oculto por defecto */
+  flex-shrink: 0;
+  width: 300px;
+  height: 500px;
+  position: absolute;
+  top: -160px;
+  right: 80px;
+  /* overflow: hidden; */
+  border-radius: 20px;
+}
+
+.carousel-container {
+  display: flex;
+  gap: 12px;
+  height: 100%;
+}
+
+.carousel-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+ animation: slideUpDown 15s ease-in-out infinite;
+}
+
+.carousel-column-2 {
+  animation: slideDownUp 15s ease-in-out infinite;
+}
+
+.carousel-item {
+  flex-shrink: 0;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  animation: fadeInCarousel 1s ease-out var(--delay) forwards;
+}
+
+.carousel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.carousel-item:hover img {
+  transform: scale(1.05);
+}
+
+/* Animaciones del carousel */
+@keyframes slideUpDown {
+  0%, 10% { transform: translateY(0); }
+  40%, 60% { transform: translateY(-40%); }
+  90%, 100% { transform: translateY(0); }
+}
+
+@keyframes slideDownUp {
+  0%, 10% { transform: translateY(-40%); }
+  40%, 60% { transform: translateY(0); }
+  90%, 100% { transform: translateY(-40%); }
+}
+
+@keyframes fadeInCarousel {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mostrar carousel solo en pantallas anchas */
+@media (min-width: 1200px) {
+  .hero-content-wrapper{
+    /* justify-content: space-between; */
+  }
+  .hero-carousel {
+    display: block;
+  }
+  
+  .hero-container {
+    max-width: 1400px; /* Ampliar contenedor */
+  }
+}
+
+/* Ajustes responsive */
+@media (max-width: 1199px) {
+  .hero-content-wrapper {
+    justify-content: center;
+  }
+  
+  .hero-main-content {
+    max-width: 100%;
+  }
+}
 
   /* Navegación de tipos de búsqueda */
   .search-navigation {
