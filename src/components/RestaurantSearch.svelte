@@ -1,4 +1,5 @@
 <script lang="ts">
+  //RestaurantSearch.svelte
   import { onMount } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
@@ -289,6 +290,7 @@
                   <RestaurantCard 
                     {restaurant}
                     {storeInitialized}
+                    
                     on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
                   />
                 </div>

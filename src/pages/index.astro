@@ -1,3 +1,12 @@
 ---
+// src/pages/index.astro
+import RestaurantSearch from '../components/RestaurantSearch.svelte'
+import MenuuppLayout from '../layouts/MenuuppLayout.astro';
+---
+
+<MenuuppLayout title="Buscar Restaurantes">
+  <RestaurantSearch client:load />
+</MenuuppLayout>
+
 
 ---
