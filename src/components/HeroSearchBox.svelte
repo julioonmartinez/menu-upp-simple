@@ -12,7 +12,7 @@
   import type { DishWithRatings } from '../interfaces/dishRating';
 
   // Props
-  const { isMobile = false } = $props();
+  const { isMobile = false, onDishSelect } = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -40,6 +40,9 @@
   // Estados de interacción
   let isInputFocused = $state(false);
   let hasSearched = $state(false);
+
+  // onDishSelect prop is now accessed via $props()
+  // (already destructured above)
 
   onMount(() => {
     // Cerrar dropdown al hacer clic afuera
@@ -237,10 +240,16 @@
   }
 
   function handleDishClick(dish: DishWithRatings) {
-    // Ir a búsqueda con el nombre del platillo
-    const params = new URLSearchParams({ search: dish.name });
-    window.location.href = `/buscar?${params.toString()}`;
+  if (onDishSelect) {
+    // Si se proporciona callback, usarlo (cuando se usa desde HomePage)
+    onDishSelect(dish);
+  } else {
+    // Si no, manejar internamente (cuando se usa standalone)
+    const selectedDish = dish;
+    const showDishModal = true;
   }
+  closeDropdown();
+}
 
   function highlightMatch(text: string, query: string): string {
     if (!query.trim()) return text;

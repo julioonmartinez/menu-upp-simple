@@ -9,6 +9,9 @@
   import CardDishSvelte from './Cards/CardDishSvelte.svelte';
   import Toast from './Toast.svelte';
   import HeroSearchBox from './HeroSearchBox.svelte';
+
+  import DishModal from './DishModal.svelte';
+  import type { DishWithRatings } from '../interfaces/dishRating';
   
   // Stores
   import { 
@@ -50,6 +53,10 @@
     featuredRestaurants: true,
     mostCommentedDishes: true
   });
+
+  // Agregar estos estados después de las variables existentes:
+let showDishModal = $state(false);
+let selectedDish = $state<DishWithRatings | null>(null);
   
   let data = $state({
     topRestaurants: [] as RestaurantRanking[],
@@ -79,10 +86,20 @@
     }
   }
 
+
   onMount(() => {
+    ratingStore.init();
+dishRatingStore.init();
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
+    // NUEVO: Listener para eventos de toast del modal
+  const handleToastEvent = (event: Event) => {
+    const customEvent = event as CustomEvent<{ message: string; type: 'success' | 'error' | 'info' }>;
+    showToastMessage(customEvent.detail.message, customEvent.detail.type);
+  };
+
+  window.addEventListener('showToast', handleToastEvent as EventListener);
     // Inicializar stores
     ratingStore.init();
     dishRatingStore.init();
@@ -92,8 +109,19 @@
     
     return () => {
       window.removeEventListener('resize', checkMobile);
+       window.removeEventListener('showToast', handleToastEvent);
     };
   });
+  // Funciones para manejar el modal:
+function openDishModal(dish: DishWithRatings) {
+  selectedDish = dish;
+  showDishModal = true;
+}
+
+function closeDishModal() {
+  showDishModal = false;
+  selectedDish = null;
+}
 
   async function loadAllData() {
     await Promise.all([
@@ -243,7 +271,7 @@
         
         <div class="hero-cta" in:fly={{ y: 20, duration: 500, delay: 200 }}>
           <!-- Búsqueda directa con autocomplete -->
-          <HeroSearchBox {isMobile} />
+          <HeroSearchBox {isMobile} onDishSelect={openDishModal} />
           
           <div class="hero-stats" in:fade={{ duration: 400, delay: 400 }}>
             <div class="stat-item">
@@ -481,6 +509,14 @@
       on:close={hideToast}
     />
   {/if}
+  <!-- Modal del Platillo -->
+{#if selectedDish}
+  <DishModal 
+    dish={selectedDish}
+    bind:isOpen={showDishModal}
+    on:close={closeDishModal}
+  />
+{/if}
 </main>
 
 <style>

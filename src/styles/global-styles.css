@@ -570,3 +570,19 @@ button:disabled {
   }
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
+
+.modal-backdrop {
+  z-index: 9999 !important;
+}
+
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 0.5rem;
+  }
+}
+
+

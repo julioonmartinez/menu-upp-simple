@@ -15,6 +15,8 @@
   
   import type { RestaurantCommentCreate } from '../interfaces/restaurantRating';
 
+  //CommentsModal.slvete
+
   // Props
   const { restaurantId, restaurantName, commentsCount, onClose } = $props<{
     restaurantId: string;
