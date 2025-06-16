@@ -264,9 +264,10 @@
   
   .dishes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
+    flex-shrink: 1;
   }
   
   .dish-wrapper {
@@ -377,8 +378,10 @@
   }
   
   @media (max-width: 480px) {
+    
     .dishes-grid {
       gap: 1rem;
+      grid-template-columns: 1fr;
     }
   }
 </style>

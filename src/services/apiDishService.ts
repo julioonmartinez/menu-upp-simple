@@ -458,6 +458,8 @@ export async function fetchTopRatedDishes(
       validItems: validatedData.length,
       filtered: data.length - validatedData.length
     });
+    console.log(validatedData)
+    
     
     return validatedData;
     

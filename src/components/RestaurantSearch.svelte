@@ -1,13 +1,13 @@
 <script lang="ts">
-  //RestaurantSearch.svelte - INTEGRADO CON BÚSQUEDA DE PLATILLOS
+  //RestaurantSearch.svelte - CON LOGO NAVEGACIÓN Y SIN CONFLICTOS DE HEADER
   import { onMount } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  
+  import './RestaunrantSearch.css'
   // Componentes modulares
   import SearchForm from './SearchForm.svelte';
   import RestaurantCard from './RestaurantCard.svelte';
-  import DishCard from './DishCard.svelte'; // NUEVO COMPONENTE
+  import DishCardCompact from '../components/Cards/CardDishCompact.svelte';
   import Pagination from './Pagination.svelte';
   import Toast from './Toast.svelte';
   import ResultsHeader from './ResultsHeader.svelte';
@@ -23,9 +23,9 @@
     isInitialized,
   } from '../stores/ratingStore';
   
-  import { searchRestaurants } from '../services/apiRatingService';
+  import { searchRestaurants, fetchTopRatedRestaurants } from '../services/apiRatingService';
   
-  // Stores y servicios PLATILLOS - NUEVO
+  // Stores y servicios PLATILLOS
   import { 
     dishRatingStore, 
     dishSearchStore, 
@@ -47,20 +47,27 @@
     DishSearchFilters,
     DishSearchResponse
   } from '../interfaces/dishRating';
-    import CardDishSvelte from './Cards/CardDishSvelte.svelte';
+  import CardDishCompact from './Cards/CardDishCompact.svelte';
+    import RestaurantCardCompact from './RestaurantCardCompact.svelte';
 
   // Detección de browser para Astro
   const isBrowser = typeof window !== 'undefined';
 
   // Estados del componente
   let restaurantSearchFilters = $state<RestaurantSearchFilters>({});
-  let dishSearchFilters = $state<DishSearchFilters>({}); // NUEVO
+  let dishSearchFilters = $state<DishSearchFilters>({});
   let showResults = $state(false);
   let toastMessage = $state('');
   let toastType = $state<'success' | 'error' | 'info'>('info');
   let showToast = $state(false);
-  let isMobile = $state(false); // Solo para lógica JS
+  let isMobile = $state(false);
   let isScrolled = $state(false);
+  let showInitialData = $state(true);
+  
+  // Estados para datos iniciales
+  let topRestaurants = $state<any[]>([]);
+  let topDishesData = $state<any[]>([]);
+  let loadingInitialData = $state(true);
   
   // Estado para los tipos de búsqueda
   let activeSearchType = $state<'restaurants' | 'dishes' | 'routes'>('restaurants');
@@ -71,7 +78,7 @@
   let hasRestaurantResults = $derived($hasSearchResults);
   let restaurantStoreInitialized = $derived($isInitialized);
 
-  // Valores derivados PLATILLOS - NUEVO
+  // Valores derivados PLATILLOS
   let dishLoading = $derived($isDishSearching);
   let dishResults = $derived($dishSearchResults);
   let hasDishResults = $derived($hasDishSearchResults);
@@ -135,7 +142,7 @@
     }
   });
 
-  // Detectar móvil solo para lógica JS (mantener para scroll y comportamientos)
+  // Detectar móvil y scroll
   function checkMobile() {
     if (isBrowser) {
       isMobile = window.innerWidth < 768;
@@ -144,7 +151,39 @@
 
   function handleScroll() {
     if (isBrowser) {
-      isScrolled = window.scrollY > 100;
+      isScrolled = window.scrollY > 120;
+    }
+  }
+
+  // Cargar datos iniciales
+  async function loadInitialData() {
+    console.log('🏠 Cargando datos iniciales...');
+    loadingInitialData = true;
+    
+    try {
+      const [restaurantsResult, dishesResult] = await Promise.allSettled([
+        fetchTopRatedRestaurants(8, 1),
+        fetchTopRatedDishes(8, 1)
+      ]);
+
+      if (restaurantsResult.status === 'fulfilled') {
+        topRestaurants = restaurantsResult.value;
+        console.log('✅ Top restaurantes cargados:', topRestaurants.length);
+      } else {
+        console.warn('⚠️ Error cargando top restaurantes:', restaurantsResult.reason);
+      }
+
+      if (dishesResult.status === 'fulfilled') {
+        topDishesData = dishesResult.value;
+        console.log('✅ Top platillos cargados:', topDishesData.length);
+      } else {
+        console.warn('⚠️ Error cargando top platillos:', dishesResult.reason);
+      }
+
+    } catch (error) {
+      console.error('❌ Error cargando datos iniciales:', error);
+    } finally {
+      loadingInitialData = false;
     }
   }
 
@@ -157,14 +196,19 @@
       window.addEventListener('resize', checkMobile);
       window.addEventListener('scroll', handleScroll, { passive: true });
       
-      // Inicializar ambos stores
+      // Inicializar stores
       ratingStore.init();
       dishRatingStore.init();
       
-      initializeFromUrl();
+      // Verificar si hay parámetros de búsqueda en la URL
+      const hasUrlParams = initializeFromUrl();
       
-      // Cargar datos iniciales para dishes
-      loadInitialDishData();
+      // Si NO hay parámetros, cargar datos iniciales
+      if (!hasUrlParams) {
+        loadInitialData();
+      } else {
+        showInitialData = false;
+      }
       
       return () => {
         window.removeEventListener('resize', checkMobile);
@@ -173,30 +217,18 @@
     }
   });
 
-  // NUEVA FUNCIÓN: Cargar datos iniciales de platillos
-  async function loadInitialDishData() {
-    try {
-      console.log('🏆 Cargando platillos mejor valorados iniciales...');
-      const topRated = await fetchTopRatedDishes(12, 3);
-      dishSearchStore.loadTopRated(topRated);
-      console.log('✅ Datos iniciales de platillos cargados:', topRated.length);
-    } catch (error) {
-      console.warn('⚠️ Error cargando datos iniciales de platillos:', error);
-    }
-  }
-
-  function initializeFromUrl() {
-    if (!isBrowser) return;
+  function initializeFromUrl(): boolean {
+    if (!isBrowser) return false;
     
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Detectar tipo de búsqueda desde URL
     const searchType = urlParams.get('type') as 'restaurants' | 'dishes' | 'routes';
     if (searchType && ['restaurants', 'dishes', 'routes'].includes(searchType)) {
       activeSearchType = searchType;
     }
 
-    // Inicializar filtros según el tipo
+    let hasSearchParams = false;
+
     if (activeSearchType === 'restaurants') {
       const filters: RestaurantSearchFilters = {};
       if (urlParams.get('search')) filters.search = urlParams.get('search')!;
@@ -208,6 +240,7 @@
       filters.sortOrder = parseInt(urlParams.get('sortOrder') || '-1');
 
       restaurantSearchFilters = filters;
+      hasSearchParams = Object.keys(filters).some(key => filters[key as keyof typeof filters] !== undefined && filters[key as keyof typeof filters] !== '');
     } else if (activeSearchType === 'dishes') {
       const filters: DishSearchFilters = {};
       if (urlParams.get('search')) filters.search = urlParams.get('search')!;
@@ -219,10 +252,9 @@
       filters.sortOrder = parseInt(urlParams.get('sortOrder') || '-1');
 
       dishSearchFilters = filters;
+      hasSearchParams = Object.keys(filters).some(key => filters[key as keyof typeof filters] !== undefined && filters[key as keyof typeof filters] !== '');
     }
 
-    // Si hay parámetros, ejecutar búsqueda automáticamente
-    const hasSearchParams = urlParams.has('search') && urlParams.get('search')?.trim();
     if (hasSearchParams) {
       setTimeout(() => {
         if (activeSearchType === 'restaurants') {
@@ -232,9 +264,10 @@
         }
       }, 100);
     }
+
+    return hasSearchParams;
   }
 
-  // NUEVA FUNCIÓN: Manejar búsqueda de restaurantes
   async function handleRestaurantSearch(filters: RestaurantSearchFilters, pageNum: number = 1) {
     if (restaurantLoading || !isBrowser) return;
     
@@ -243,13 +276,13 @@
       
       searchStore.startSearch(filters, pageNum);
       showResults = true;
+      showInitialData = false;
       
       const results = await searchRestaurants(filters, pageNum, isMobile ? 10 : 20);
       searchStore.completeSearch(results);
       
       updateUrl(filters, pageNum, 'restaurants');
       
-      // Scroll suave a resultados en móvil
       if (isMobile && pageNum === 1) {
         setTimeout(() => {
           const resultsElement = document.querySelector('.search-results');
@@ -276,7 +309,6 @@
     }
   }
 
-  // NUEVA FUNCIÓN: Manejar búsqueda de platillos
   async function handleDishSearch(filters: DishSearchFilters, pageNum: number = 1) {
     if (dishLoading || !isBrowser) return;
     
@@ -285,13 +317,13 @@
       
       dishSearchStore.startSearch(filters, pageNum);
       showResults = true;
+      showInitialData = false;
       
       const results = await searchDishes(filters, pageNum, isMobile ? 10 : 20);
       dishSearchStore.completeSearch(results);
       
       updateUrl(filters, pageNum, 'dishes');
       
-      // Scroll suave a resultados en móvil
       if (isMobile && pageNum === 1) {
         setTimeout(() => {
           const resultsElement = document.querySelector('.search-results');
@@ -318,13 +350,11 @@
     }
   }
 
-  // FUNCIÓN MODIFICADA: updateUrl para manejar diferentes tipos
   function updateUrl(filters: RestaurantSearchFilters | DishSearchFilters, page: number = 1, type: string) {
     if (!isBrowser) return;
     
     const params = new URLSearchParams();
     
-    // Agregar tipo de búsqueda
     params.set('type', type);
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -341,7 +371,6 @@
     window.history.pushState({}, '', newUrl);
   }
 
-  // FUNCIÓN MODIFICADA: Manejar cambio de páginas
   async function handlePageChange(page: number) {
     if (activeSearchType === 'restaurants') {
       await handleRestaurantSearch(restaurantSearchFilters, page);
@@ -360,7 +389,6 @@
     showToast = false;
   }
 
-  // FUNCIÓN MODIFICADA: Manejar envío del formulario
   function handleFormSubmit(event: CustomEvent<RestaurantSearchFilters | DishSearchFilters>) {
     if (activeSearchType === 'restaurants') {
       restaurantSearchFilters = event.detail as RestaurantSearchFilters;
@@ -371,39 +399,41 @@
     }
   }
 
-  // Función para scroll al inicio
   function scrollToTop() {
     if (isBrowser) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
-  // FUNCIÓN MODIFICADA: Cambiar tipo de búsqueda con funcionalidad
   function handleSearchTypeChange(type: 'restaurants' | 'dishes' | 'routes') {
     console.log('🔄 Cambiando tipo de búsqueda a:', type);
     
-    // Limpiar resultados anteriores
     showResults = false;
     searchStore.clear();
     dishSearchStore.clear();
     
-    // Cambiar tipo activo
     activeSearchType = type;
     
-    // Limpiar filtros según el tipo anterior y nuevo
     restaurantSearchFilters = {};
     dishSearchFilters = {};
     
-    // Actualizar URL sin parámetros de búsqueda
+    showInitialData = true;
+    
     updateUrl({}, 1, type);
     
-    // Mostrar toast informativo
     const typeNames = {
       restaurants: 'restaurantes',
       dishes: 'platillos',
       routes: 'rutas gastronómicas'
     };
     showToastMessage(`Cambiando a búsqueda de ${typeNames[type]}`, 'info');
+  }
+
+  // NUEVA FUNCIÓN: Navegar al inicio
+  function goToHome() {
+    if (isBrowser) {
+      window.location.href = '/';
+    }
   }
 
   // Configuración de tipos de búsqueda
@@ -413,27 +443,19 @@
       label: 'Restaurantes',
       icon: '🍽️',
       placeholder: 'Buscar restaurantes...',
-      description: 'Encuentra los mejores restaurantes cerca de ti'
+      description: 'Encuentra los mejores restaurantes'
     },
     {
       id: 'dishes',
       label: 'Platillos',
       icon: '🍕',
       placeholder: 'Buscar platillos...',
-      description: 'Descubre platos deliciosos en cualquier lugar'
+      description: 'Descubre platos deliciosos'
     },
-    // {
-    //   id: 'routes',
-    //   label: 'Rutas',
-    //   icon: '🗺️',
-    //   placeholder: 'Planear ruta gastronómica...',
-    //   description: 'Crea tu ruta culinaria perfecta'
-    // }
   ];
 
   let currentSearchType = $derived(() => searchTypes.find(type => type.id === activeSearchType) || searchTypes[0]);
 
-  // NUEVA FUNCIÓN: Obtener filtros actuales según el tipo
   let currentFilters = $derived(() => {
     switch (activeSearchType) {
       case 'dishes':
@@ -447,94 +469,130 @@
 </script>
 
 <main class="search-page">
-  <!-- Hero Section estilo Kayak -->
-  <section class="hero-section">
-    <div class="hero-background">
-      <div class="hero-overlay"></div>
-    </div>
-    
+ 
+  <!-- Hero Section más compacto -->
+  <section class="hero-section" class:compact={isScrolled}>
     <div class="hero-container">
-      <div class="hero-content-wrapper">
-        <div class="hero-main-content">
-          <!-- Título principal comentado en el original, lo mantengo así -->
-        </div>
-        
-        <div class="hero-carousel">
-          <div class="carousel-container">
-            <div class="carousel-column">
-              <div class="carousel-item" style="--delay: 0s">
-                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop" alt="Pizza deliciosa" />
-              </div>
-              <div class="carousel-item" style="--delay: 2s">
-                <img src="https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop" alt="Restaurante elegante" />
-              </div>
-              <div class="carousel-item" style="--delay: 4s">
-                <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop" alt="Hamburguesa gourmet" />
-              </div>
-              <div class="carousel-item" style="--delay: 6s">
-                <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop" alt="Menú del chef" />
-              </div>
-            </div>
-            
-            <div class="carousel-column carousel-column-2">
-              <div class="carousel-item" style="--delay: 1s">
-                <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop" alt="Platillo gourmet" />
-              </div>
-              <div class="carousel-item" style="--delay: 3s">
-                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop" alt="Interior restaurante" />
-              </div>
-              <div class="carousel-item" style="--delay: 5s">
-                <img src="https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop" alt="Sushi fresco" />
-              </div>
-              <div class="carousel-item" style="--delay: 7s">
-                <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop" alt="Mesa de restaurante" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Navegación de tipos de búsqueda -->
-      <div class="search-navigation" in:fly={{ y: 30, duration: 600, delay: 200, easing: quintOut }}>
-        <div class="nav-tabs">
-          {#each searchTypes as searchType, index}
-            <button
-              class="nav-tab"
-              class:active={activeSearchType === searchType.id}
-              onclick={() => handleSearchTypeChange(searchType.id)}
-              in:fly={{ x: -20, duration: 400, delay: index * 100 }}
-            >
-              <span class="tab-icon">{searchType.icon}</span>
-              <span class="tab-label">{searchType.label}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-      
-      <div class="hero-header" in:fly={{ y: 20, duration: 600, easing: quintOut }}>
-        <p class="hero-subtitle">
-          {currentSearchType().description}
-        </p>
-      </div>
-
-      <!-- Formulario de búsqueda integrado -->
-      <div class="search-form-hero" in:fly={{ y: 40, duration: 600, delay: 300, easing: quintOut }}>
-        <div class="search-card">
-          <SearchForm 
-            on:search={handleFormSubmit}
-            loading={loading()}
-            initialFilters={currentFilters()}
-            placeholder={currentSearchType().placeholder}
-            searchType={activeSearchType}
-          />
-        </div>
+      <!-- Formulario de búsqueda -->
+      <div class="search-form-hero" in:fly={{ y: 20, duration: 600, delay: 200, easing: quintOut }}>
+        <SearchForm 
+          on:search={handleFormSubmit}
+          loading={loading()}
+          initialFilters={currentFilters()}
+          placeholder={currentSearchType().placeholder}
+          searchType={activeSearchType}
+          {searchTypes}
+          onSearchTypeChange={handleSearchTypeChange}
+        />
       </div>
     </div>
   </section>
 
-  <!-- Contenedor de resultados -->
-  <div class="results-container">
-    <!-- Results Section optimizada -->
+  <!-- Header fijo al hacer scroll -->
+  {#if isScrolled}
+    <header 
+      class="fixed-header"
+      in:fly={{ y: -80, duration: 400, easing: quintOut }}
+      out:fly={{ y: -80, duration: 300, easing: quintOut }}
+    >
+      <div class="header-container">
+        <SearchForm 
+          on:search={handleFormSubmit}
+          loading={loading()}
+          initialFilters={currentFilters()}
+          placeholder={currentSearchType().placeholder}
+          searchType={activeSearchType}
+          {searchTypes}
+          onSearchTypeChange={handleSearchTypeChange}
+          compact={true}
+        />
+      </div>
+    </header>
+  {/if}
+
+  <!-- Contenedor principal de contenido -->
+  <div class="main-content">
+    
+    <!-- Datos iniciales: Top Restaurantes y Platillos -->
+    {#if showInitialData && !loadingInitialData && (topRestaurants.length > 0 || topDishesData.length > 0)}
+      <section class="initial-data-section" in:fade={{ duration: 500 }}>
+        
+        <!-- Top Restaurantes -->
+        {#if topRestaurants.length > 0}
+          <div class="section-block" in:fly={{ y: 20, duration: 500, delay: 100 }}>
+            <div class="section-header">
+              <h2>🏆 Restaurantes Mejor Valorados</h2>
+              <p>Los restaurantes con las mejores valoraciones</p>
+            </div>
+            
+            <div class="restaurants-grid">
+              {#each topRestaurants as restaurant, index (restaurant.id)}
+                <div 
+                  in:fly={{ 
+                    y: 20, 
+                    duration: 400, 
+                    delay: index * 80,
+                    easing: quintOut 
+                  }}
+                >
+                  <!-- <RestaurantCard 
+                    {restaurant}
+                    storeInitialized={restaurantStoreInitialized}
+                    on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                  /> -->
+                  <RestaurantCardCompact 
+                  {restaurant}
+                    storeInitialized={restaurantStoreInitialized}
+                    on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                  />
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Top Platillos -->
+        {#if topDishesData.length > 0}
+          <div class="section-block" in:fly={{ y: 20, duration: 500, delay: 200 }}>
+            <div class="section-header">
+              <h2>⭐ Platillos Mejor Valorados</h2>
+              <p>Los platillos más deliciosos según nuestros usuarios</p>
+            </div>
+            
+            <div class="dishes-grid">
+              {#each topDishesData as dish, index (dish.id)}
+                <div 
+                  in:fly={{ 
+                    y: 20, 
+                    duration: 400, 
+                    delay: index * 80,
+                    easing: quintOut 
+                  }}
+                >
+                  <CardDishCompact 
+                    item={dish}
+                    index={index} storeMode={false}
+                  />
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </section>
+    {/if}
+
+    <!-- Loading inicial -->
+    {#if showInitialData && loadingInitialData}
+      <section class="loading-initial" in:fade={{ duration: 300 }}>
+        <div class="loading-card">
+          <div class="loading-spinner"></div>
+          <h3>Cargando contenido destacado...</h3>
+          <p>Preparando los mejores restaurantes y platillos para ti</p>
+        </div>
+      </section>
+    {/if}
+
+    <!-- Resultados de búsqueda -->
     {#if showResults}
       <section class="results-section" in:fade={{ duration: 500, delay: 200 }}>
         
@@ -571,7 +629,7 @@
               <h3>
                 {isMobile 
                   ? 'Buscando...' 
-                  : `Buscando ${activeSearchType === 'dishes' ? 'platillos' : 'restaurantes'} increíbles...`}
+                  : `Buscando ${activeSearchType === 'dishes' ? 'platillos' : 'restaurantes'}...`}
               </h3>
               <p class="loading-subtitle">Esto tomará solo unos segundos</p>
             </div>
@@ -583,12 +641,12 @@
           <div class="search-results" in:fly={{ y: 20, duration: 500, easing: quintOut }}>
             <!-- RESULTADOS DE RESTAURANTES -->
             {#if activeSearchType === 'restaurants' && restaurantResults}
-              <ResultsHeader 
+              <!-- <ResultsHeader 
                 totalResults={restaurantResults.pagination.total || 0}
                 currentPage={restaurantResults.pagination.page || 1}
                 totalPages={restaurantResults.pagination.total_pages || 1}
                 {isMobile}
-              />
+              /> -->
               
               <div class="restaurants-grid">
                 {#each restaurantResults.restaurants as restaurant, index (restaurant.id)}
@@ -600,16 +658,15 @@
                       easing: quintOut 
                     }}
                   >
-                    <RestaurantCard 
-                      {restaurant}
-                      storeInitialized={storeInitialized()}
-                      on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
-                    />
+                     <RestaurantCardCompact 
+                  {restaurant}
+                    storeInitialized={restaurantStoreInitialized}
+                    on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                  />
                   </div>
                 {/each}
               </div>
 
-              <!-- Pagination para restaurantes -->
               {#if restaurantResults.pagination.total_pages > 1}
                 <div class="pagination-container" in:fade={{ duration: 300, delay: 400 }}>
                   <Pagination 
@@ -624,14 +681,14 @@
               {/if}
             {/if}
 
-            <!-- RESULTADOS DE PLATILLOS - NUEVO -->
+            <!-- RESULTADOS DE PLATILLOS -->
             {#if activeSearchType === 'dishes' && dishResults}
-              <ResultsHeader 
+              <!-- <ResultsHeader 
                 totalResults={dishResults.pagination.total || 0}
                 currentPage={dishResults.pagination.page || 1}
                 totalPages={dishResults.pagination.total_pages || 1}
                 {isMobile}
-              />
+              /> -->
               
               <div class="dishes-grid">
                 {#each dishResults.dishes as dish, index (dish.id)}
@@ -643,12 +700,11 @@
                       easing: quintOut 
                     }}
                   >
-                    <CardDishSvelte item={dish} index={index} storeMode={false}   />
+                    <CardDishCompact item={dish} index={index} storeMode={false} />
                   </div>
                 {/each}
               </div>
 
-              <!-- Pagination para platillos -->
               {#if dishResults.pagination.total_pages > 1}
                 <div class="pagination-container" in:fade={{ duration: 300, delay: 400 }}>
                   <Pagination 
@@ -686,41 +742,11 @@
                     dishSearchFilters = {};
                   }
                   showResults = false;
+                  showInitialData = true;
                 }}
               >
-                Limpiar filtros
+                Ver contenido destacado
               </button>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Top Dishes cuando no hay búsqueda activa y estamos en dishes -->
-        {#if !showResults && activeSearchType === 'dishes' && topDishes.length > 0}
-          <div class="top-dishes" in:fade={{ duration: 500 }}>
-            <div class="top-dishes-header">
-              <h2>🏆 Platillos Mejor Valorados</h2>
-              <p>Los platillos con las mejores valoraciones de nuestros usuarios</p>
-            </div>
-            
-            <div class="dishes-grid">
-              {#each topDishes as ranking, index (ranking.dish?.id )}
-                <div 
-                  in:fly={{ 
-                    y: 20, 
-                    duration: 400, 
-                    delay: index * 100,
-                    easing: quintOut 
-                  }}
-                >
-                  <DishCard 
-                    dish={ranking}
-                    storeInitialized={storeInitialized()}
-                    isTopDish={true}
-                    position={ranking.position}
-                    on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
-                  />
-                </div>
-              {/each}
             </div>
           </div>
         {/if}
@@ -728,7 +754,7 @@
     {/if}
   </div>
 
-  <!-- Scroll to top button para móvil -->
+  <!-- Scroll to top button -->
   {#if isMobile && isScrolled}
     <button 
       class="scroll-top-btn"
@@ -752,659 +778,3 @@
     />
   {/if}
 </main>
-
-<style>
-  /* Estilos base mejorados con media queries */
-  .search-page {
-    min-height: 100vh;
-    background: #f8fafc;
-    padding: 0;
-  }
-
-  .hero-section {
-    position: relative;
-    /* min-height: 40vh; */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
-    overflow: hidden;
-    padding: 2rem 0;
-  }
-
-  @media (max-width: 768px) {
-    .hero-section {
-      min-height: 40vh;
-      padding: 2rem 0;
-    }
-  }
-
-  .hero-background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
-  }
-
-  .hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(248, 250, 252, 0.3) 0%, rgba(226, 232, 240, 0.2) 100%);
-  }
-
-  .hero-container {
-    position: relative;
-    z-index: 2;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 5rem 20px;
-    text-align: center;
-    width: 100%;
-    align-items: stretch;
-  }
-
-  @media (max-width: 768px) {
-    .hero-container {
-      padding: 0 12px;
-    }
-  }
-
-  .hero-content-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 60px;
-    width: 100%;
-  }
-
-  .hero-main-content {
-    position: relative;
-    flex: 1;
-    max-width: 700px;
-    z-index: 3;
-  }
-
-  .hero-carousel {
-    display: none;
-    flex-shrink: 0;
-    width: 300px;
-    height: 500px;
-    position: absolute;
-    top: -160px;
-    right: 80px;
-    border-radius: 20px;
-  }
-
-  .carousel-container {
-    display: flex;
-    gap: 12px;
-    height: 100%;
-  }
-
-  .carousel-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    animation: slideUpDown 15s ease-in-out infinite;
-  }
-
-  .carousel-column-2 {
-    animation: slideDownUp 15s ease-in-out infinite;
-  }
-
-  .carousel-item {
-    flex-shrink: 0;
-    height: 180px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    opacity: 0;
-    animation: fadeInCarousel 1s ease-out var(--delay) forwards;
-  }
-
-  .carousel-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-
-  .carousel-item:hover img {
-    transform: scale(1.05);
-  }
-
-  @keyframes slideUpDown {
-    0%, 10% { transform: translateY(0); }
-    40%, 60% { transform: translateY(-40%); }
-    90%, 100% { transform: translateY(0); }
-  }
-
-  @keyframes slideDownUp {
-    0%, 10% { transform: translateY(-40%); }
-    40%, 60% { transform: translateY(0); }
-    90%, 100% { transform: translateY(-40%); }
-  }
-
-  @keyframes fadeInCarousel {
-    from {
-      opacity: 0;
-      transform: translateY(20px) scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .hero-carousel {
-      display: block;
-    }
-    
-    .hero-container {
-      max-width: 1400px;
-    }
-  }
-
-  @media (max-width: 1199px) {
-    .hero-content-wrapper {
-      justify-content: center;
-    }
-    
-    .hero-main-content {
-      max-width: 100%;
-    }
-  }
-
-  .hero-header {
-    margin-bottom: 20px;
-  }
-
-  .hero-title {
-    font-size: clamp(2rem, 7vw, 4rem);
-    font-weight: 800;
-    line-height: 1.1;
-    margin: 0 0 16px 0;
-    color: #0f172a;
-  }
-
-  @media (max-width: 768px) {
-    .hero-title {
-      font-size: clamp(2rem, 7vw, 3rem);
-      margin: 0 0 12px 0;
-    }
-  }
-
-  .subtitle-mobile {
-    font-size: 0.85em;
-    font-weight: 600;
-    opacity: 0.9;
-  }
-
-  .gradient-text {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .hero-subtitle {
-    font-size: 1.2rem;
-    color: #64748b;
-    margin: 0;
-    line-height: 1.5;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .search-navigation {
-    margin-bottom: 20px;
-  }
-
-  @media (max-width: 768px) {
-    .search-navigation {
-      margin-bottom: 30px;
-    }
-  }
-
-  .nav-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 0;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    padding: 6px;
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    max-width: 400px;
-    margin: 0 auto;
-  }
-
-  .nav-tab {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 10px 12px;
-    border: none;
-    background: transparent;
-    color: #64748b;
-    font-weight: 600;
-    font-size: 0.9rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    flex-direction: column;
-  }
-
-  @media (max-width: 768px) {
-    .nav-tab {
-      padding: 8px 10px;
-      font-size: 0.75rem;
-      gap: 6px;
-      min-width: 60px;
-    }
-  }
-
-  .nav-tab:hover {
-    color: #374151;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .nav-tab.active {
-    background: white;
-    color: var(--primary-color, #ff6b35);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .tab-icon {
-    font-size: 1.1rem;
-  }
-
-  @media (max-width: 768px) {
-    .tab-icon {
-      font-size: 1rem;
-    }
-  }
-
-  .tab-label {
-    white-space: nowrap;
-  }
-
-  .search-form-hero {
-    margin-bottom: 40px;
-  }
-
-  @media (max-width: 768px) {
-    .search-form-hero {
-      margin-bottom: 30px;
-    }
-  }
-
-
-
-  .results-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-
-  @media (max-width: 768px) {
-    .results-container {
-      padding: 0 8px;
-    }
-  }
-
-  .results-section {
-    margin: 60px 0;
-  }
-
-  .restaurants-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 24px;
-    margin-bottom: 40px;
-  }
-
-  @media (max-width: 768px) {
-    .restaurants-grid {
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 30px;
-    }
-  }
-
-  /* ESTILOS PARA GRIDS DE RESULTADOS */
-  .dishes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 24px;
-    margin-bottom: 40px;
-  }
-
-  @media (max-width: 768px) {
-    .dishes-grid {
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 30px;
-    }
-  }
-
-  .top-dishes {
-    margin: 60px 0;
-  }
-
-  .top-dishes-header {
-    text-align: center;
-    margin-bottom: 40px;
-  }
-
-  .top-dishes-header h2 {
-    margin: 0 0 8px 0;
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: #0D1B2A;
-  }
-
-  .top-dishes-header p {
-    margin: 0;
-    color: #64748b;
-    font-size: 1rem;
-  }
-
-  .pagination-container {
-    display: flex;
-    justify-content: center;
-  }
-
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    padding: 60px 15px;
-  }
-
-  @media (max-width: 768px) {
-    .loading-container {
-      padding: 40px 10px;
-    }
-  }
-
-  .loading-card {
-    background: white;
-    padding: 40px 30px;
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid #f1f5f9;
-    max-width: 350px;
-    width: 100%;
-  }
-
-  @media (max-width: 768px) {
-    .loading-card {
-      padding: 30px 20px;
-      border-radius: 16px;
-    }
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #f1f5f9;
-    border-top: 3px solid var(--primary-color, #ff6b35);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-  }
-
-  @media (max-width: 768px) {
-    .loading-spinner {
-      width: 32px;
-      height: 32px;
-      margin: 0 auto 16px;
-    }
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .loading-card h3 {
-    margin: 0 0 10px 0;
-    color: #0D1B2A;
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-
-  @media (max-width: 768px) {
-    .loading-card h3 {
-      font-size: 1.1rem;
-      margin: 0 0 8px 0;
-    }
-  }
-
-  .loading-card p {
-    margin: 0;
-    color: #64748b;
-    font-size: 0.9rem;
-  }
-
-  /* Mostrar solo en desktop */
-  .loading-subtitle {
-    display: block;
-  }
-
-  @media (max-width: 768px) {
-    .loading-subtitle {
-      display: none;
-    }
-  }
-
-  .error-container {
-    display: flex;
-    justify-content: center;
-    padding: 60px 15px;
-  }
-
-  @media (max-width: 768px) {
-    .error-container {
-      padding: 40px 10px;
-    }
-  }
-
-  .error-card {
-    background: white;
-    padding: 36px 24px;
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.08);
-    border: 2px solid #fecaca;
-    max-width: 450px;
-    width: 100%;
-  }
-
-  @media (max-width: 768px) {
-    .error-card {
-      padding: 24px 16px;
-      border-radius: 16px;
-    }
-  }
-
-  .error-icon {
-    font-size: 2.5rem;
-    margin-bottom: 16px;
-  }
-
-  .error-content h3 {
-    margin: 0 0 10px 0;
-    color: #dc2626;
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-
-  .error-content p {
-    margin: 0 0 20px 0;
-    color: #64748b;
-    line-height: 1.5;
-  }
-
-  .retry-btn {
-    background: var(--primary-color, #ff6b35);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-  }
-
-  .retry-btn:hover {
-    background: #e55a2b;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
-  }
-
-  .empty-state {
-    display: flex;
-    justify-content: center;
-    padding: 60px 15px;
-  }
-
-  @media (max-width: 768px) {
-    .empty-state {
-      padding: 40px 10px;
-    }
-  }
-
-  .empty-card {
-    background: white;
-    padding: 40px 30px;
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid #f1f5f9;
-    max-width: 450px;
-    width: 100%;
-  }
-
-  @media (max-width: 768px) {
-    .empty-card {
-      padding: 30px 20px;
-      border-radius: 16px;
-    }
-  }
-
-  .empty-icon {
-    font-size: 3.5rem;
-    margin-bottom: 20px;
-  }
-
-  .empty-card h3 {
-    margin: 0 0 12px 0;
-    color: #0D1B2A;
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-
-  .empty-card p {
-    margin: 0 0 24px 0;
-    color: #64748b;
-    line-height: 1.5;
-  }
-
-  /* Mostrar solo en desktop */
-  .empty-description {
-    display: block;
-  }
-
-  .empty-description-mobile {
-    display: none;
-  }
-
-  @media (max-width: 768px) {
-    .empty-description {
-      display: none;
-    }
-
-    .empty-description-mobile {
-      display: block;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      margin: 0 0 20px 0;
-    }
-  }
-
-  .clear-filters-btn {
-    background: #0D1B2A;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-  }
-
-  .clear-filters-btn:hover {
-    background: #1e293b;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 27, 42, 0.25);
-  }
-
-  .scroll-top-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--primary-color, #ff6b35);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
-    transition: all 0.3s ease;
-    z-index: 100;
-  }
-
-  .scroll-top-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
-  }
-
-  .scroll-top-btn:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    .scroll-top-btn {
-      width: 44px;
-      height: 44px;
-      bottom: 16px;
-      right: 16px;
-    }
-
-    .nav-tabs {
-      max-width: 100%;
-      padding: 4px;
-    }
-  }
-  
-</style>

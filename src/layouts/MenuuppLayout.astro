@@ -3,19 +3,21 @@
 import Header from '../components/Header.svelte'; // 👈 AGREGAR ESTA LÍNEA
 import '../styles/reset.css';
 import '../styles/global-styles.css';
-
+import ModalManager from '../components/ ModalManager.svelte'
 export interface Props {
   title: string;
   description?: string;
   showHeaderShadow?: boolean;
   transparentHeader?: boolean;
+  showHeader?: boolean;
 }
 
 const { 
   title, 
   description = "Descubre los mejores restaurantes cerca de ti - Menupp",
   showHeaderShadow = false,
-  transparentHeader = false
+  transparentHeader = false,
+  showHeader = true,
 } = Astro.props;
 ---
 
@@ -172,17 +174,19 @@ const {
 
 <body class="page-loading">
   <!-- Header fijo -->
-  <Header 
+ {showHeader &&  <Header 
     client:load 
     showShadow={showHeaderShadow} 
     transparent={transparentHeader} 
-  />
+  />  }
   
   <!-- Contenido principal -->
   <main id="main-content" role="main">
     <slot />
   </main>
-  
+  <div id="modal-root">
+      <ModalManager client:load />
+    </div>
   <!-- Scripts globales si son necesarios -->
   <script>
     // Remover loading state cuando la página esté lista

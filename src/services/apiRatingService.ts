@@ -419,7 +419,7 @@ export async function fetchTopRatedRestaurants(
       throw new Error('Invalid top rated restaurants data format');
     }
     
-    console.log('✅ Successfully fetched top rated restaurants:', data.length);
+    console.log('✅ Successfully fetched top rated restaurants:', data);
     return data;
     
   } catch (error) {

@@ -108,7 +108,7 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
       autoPlayInterval={5000}
       showDots={true}
       showArrows={true}
-      height="40vh"
+      height="35vh"
       primaryColor={restaurantInfo?.primaryColor}
       secondaryColor={restaurantInfo?.secondaryColor}
     />
@@ -394,5 +394,28 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     // Log de inicialización
     console.log('🍽️ Menu page loaded successfully');
   });
+  document.addEventListener('DOMContentLoaded', () => {
+  const categoryNav = document.querySelector('.category-nav');
+  if (!categoryNav) return;
+  
+  const navTop = categoryNav.offsetTop;
+  
+  window.addEventListener('scroll', () => {
+    if (window.scrollY >= navTop) {
+      categoryNav.style.position = 'fixed';
+      categoryNav.style.top = '0px';  // Sin espacio del header
+      categoryNav.style.left = '0';
+      categoryNav.style.right = '0';
+      categoryNav.style.zIndex = '100';
+      categoryNav.style.width = '100%';
+    } else {
+      categoryNav.style.position = 'static';
+      categoryNav.style.top = '';
+      categoryNav.style.left = '';
+      categoryNav.style.right = '';
+      categoryNav.style.width = '';
+    }
+  });
+});
 </script>
 

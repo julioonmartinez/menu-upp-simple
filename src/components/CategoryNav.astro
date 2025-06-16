@@ -168,13 +168,15 @@ const capitalizarPrimeraLetra = (str: string) => {
 <style>
   /* Navegación principal */
   .category-nav {
-    background-color: var(--bg-color);
+    background-color: white;
     padding: 0.75rem 0;
     position: sticky;
     top: 0;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     z-index: 30;
     height: fit-content;
+    /* min-height: 60px; */
+
   }
 
   .nav-container {
@@ -220,6 +222,7 @@ const capitalizarPrimeraLetra = (str: string) => {
     color: #6b7280;
     outline: none;
     text-transform: capitalize;
+    /* min-height: 36px; */
   }
 
   .category-button:hover {
@@ -259,7 +262,7 @@ const capitalizarPrimeraLetra = (str: string) => {
   /* Responsive design */
   @media (max-width: 768px) {
     .category-nav {
-      padding: 0.5rem 0;
+      /* padding: 0.5rem 0; */
     }
     
     .nav-container {
@@ -272,8 +275,8 @@ const capitalizarPrimeraLetra = (str: string) => {
     }
     
     .category-button {
-      font-size: 1rem;
-      padding: 0.25rem 0.5rem;
+      /* font-size: 1rem;
+      padding: 0.25rem 0.5rem; */
     }
   }
 
@@ -283,7 +286,7 @@ const capitalizarPrimeraLetra = (str: string) => {
     }
     
     .category-button {
-      font-size: 0.875rem;
+      /* font-size: 0.875rem; */
     }
   }
 

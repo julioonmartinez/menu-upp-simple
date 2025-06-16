@@ -9,7 +9,8 @@
   import { searchDishes } from '../services/apiDishService';
   
   import type { RestaurantSearchResult } from '../interfaces/restaurantRating';
-  import type { DishWithRatings } from '../interfaces/dishRating';
+  import type { DishRating, DishWithRatings } from '../interfaces/dishRating';
+    import { openModal } from '../stores/modalStore';
 
   // Props
   const { isMobile = false, onDishSelect } = $props();
@@ -242,7 +243,9 @@
   function handleDishClick(dish: DishWithRatings) {
   if (onDishSelect) {
     // Si se proporciona callback, usarlo (cuando se usa desde HomePage)
-    onDishSelect(dish);
+    // onDishSelect(dish);
+    showDishDetails(dish);
+    
   } else {
     // Si no, manejar internamente (cuando se usa standalone)
     const selectedDish = dish;
@@ -250,6 +253,11 @@
   }
   closeDropdown();
 }
+function showDishDetails(dish:DishWithRatings) {
+    openModal('dish', {
+      dish: dish
+    });
+  }
 
   function highlightMatch(text: string, query: string): string {
     if (!query.trim()) return text;

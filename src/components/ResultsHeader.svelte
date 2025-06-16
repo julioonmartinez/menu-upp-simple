@@ -1,4 +1,5 @@
 <script lang="ts">
+  //ResultsHeader.svelte
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';

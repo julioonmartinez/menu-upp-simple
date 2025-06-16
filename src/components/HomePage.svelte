@@ -6,7 +6,7 @@
   
   // Componentes
   import RestaurantCard from './RestaurantCard.svelte';
-  import CardDishSvelte from './Cards/CardDishSvelte.svelte';
+  import CardDishSvelte from './Cards/CardDishCompact.svelte';
   import Toast from './Toast.svelte';
   import HeroSearchBox from './HeroSearchBox.svelte';
 
@@ -45,6 +45,7 @@
   import type { DishRanking } from '../interfaces/dishRating';
   import type { Restaurant } from '../interfaces/restaurant';
   import type { Dish } from '../interfaces/dish';
+    import RestaurantCardCompact from './RestaurantCardCompact.svelte';
 
   // Estados del componente usando Svelte 5 runes
   let loading = $state({
@@ -154,7 +155,7 @@ function closeDishModal() {
       loading.topDishes = true;
       errors.topDishes = null;
       
-      const topDishes = await fetchTopRatedDishes(8, 3);
+      const topDishes = await fetchTopRatedDishes();
       data.topDishes = topDishes;
       
       console.log('✅ Top dishes loaded:', topDishes.length);
@@ -229,27 +230,6 @@ function closeDishModal() {
     };
   }
 
-  // Función para transformar DishRanking a Dish
-  function transformDishRanking(ranking: DishRanking): Dish {
-    const dish = ranking.dish;
-    return {
-      ...dish,
-      // Propiedades requeridas que faltan
-      rating: ranking.rating,
-      favorites: 0, // Valor por defecto
-      reviewsCount: ranking.totalRatings,
-      userRating: 0,
-      userFav: false,
-      inStock: true,
-      // Propiedades opcionales
-      categoryId: dish.categoryId || '',
-      image: dish.image || '',
-      nutritionalInfo: undefined,
-      options: undefined,
-      discount: undefined
-    };
-  }
-
   // Stores derivados usando Svelte 5 syntax
   const storeInitialized = $derived($isRestaurantStoreInitialized && $isDishRatingInitialized);
 </script>
@@ -273,7 +253,7 @@ function closeDishModal() {
           <!-- Búsqueda directa con autocomplete -->
           <HeroSearchBox {isMobile} onDishSelect={openDishModal} />
           
-          <div class="hero-stats" in:fade={{ duration: 400, delay: 400 }}>
+          <!-- <div class="hero-stats" in:fade={{ duration: 400, delay: 400 }}>
             <div class="stat-item">
               <span class="stat-number">1,200+</span>
               <span class="stat-label">Restaurantes</span>
@@ -288,7 +268,7 @@ function closeDishModal() {
               <span class="stat-number">50k+</span>
               <span class="stat-label">Reseñas</span>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -325,11 +305,13 @@ function closeDishModal() {
                 easing: quintOut 
               }}
             >
-              <RestaurantCard 
+             <RestaurantCardCompact 
                 restaurant={transformRestaurantRanking(restaurant)}
-                storeInitialized={storeInitialized}
-                on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
-              />
+                  storeInitialized={storeInitialized}
+                  on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                
+                />
+              
             </div>
           {/each}
         </div>
@@ -364,7 +346,7 @@ function closeDishModal() {
         </div>
       {:else if data.topDishes.length > 0}
         <div class="dishes-grid">
-          {#each data.topDishes as dishRanking, index (dishRanking.dish?.id)}
+          {#each data.topDishes as dishRanking, index (dishRanking.id || `dish-${index}`)}
             <div 
               in:fly={{ 
                 y: isMobile ? 15 : 25, 
@@ -374,7 +356,7 @@ function closeDishModal() {
               }}
             >
               <CardDishSvelte 
-                item={transformDishRanking(dishRanking)}
+                item={dishRanking}
                 index={index}
                 storeMode={false}
               />
@@ -414,8 +396,9 @@ function closeDishModal() {
                   <span>#{restaurant.position}</span>
                   <span class="badge-text">Recomendado</span>
                 </div>
-                <RestaurantCard 
-                  restaurant={{
+                
+                <RestaurantCardCompact 
+                restaurant={{
                     ...restaurant,
                     priceRange: restaurant.priceRange as "low" | "medium" | "high" | "premium" | undefined,
                     analytics: {
@@ -429,6 +412,7 @@ function closeDishModal() {
                   }}
                   storeInitialized={storeInitialized}
                   on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                
                 />
               </div>
             </div>
@@ -448,7 +432,7 @@ function closeDishModal() {
         </div>
 
         <div class="dishes-grid">
-          {#each data.mostCommentedDishes as dishRanking, index (dishRanking.dish?.id)}
+          {#each data.mostCommentedDishes as dishRanking, index (dishRanking.id || `commented-dish-${index}`)}
             <div 
               in:fly={{ 
                 y: isMobile ? 15 : 25, 
@@ -466,7 +450,7 @@ function closeDishModal() {
                   <span>{dishRanking.totalComments || 0}</span>
                 </div>
                 <CardDishSvelte 
-                  item={transformDishRanking(dishRanking)}
+                  item={dishRanking}
                   index={index}
                   storeMode={false}
                 />
@@ -509,14 +493,7 @@ function closeDishModal() {
       on:close={hideToast}
     />
   {/if}
-  <!-- Modal del Platillo -->
-{#if selectedDish}
-  <DishModal 
-    dish={selectedDish}
-    bind:isOpen={showDishModal}
-    on:close={closeDishModal}
-  />
-{/if}
+
 </main>
 
 <style>
@@ -527,11 +504,11 @@ function closeDishModal() {
 
   /* Hero Section */
   .hero-section {
-    padding: 2rem 0 3rem;
-    background: linear-gradient(135deg, 
+    padding: 2rem 0 1rem;
+    /* background: linear-gradient(135deg, 
       rgba(255, 107, 53, 0.05) 0%, 
       rgba(255, 140, 105, 0.03) 50%, 
-      transparent 100%);
+      transparent 100%); */
     position: relative;
     z-index: 10; /* Por debajo del dropdown pero por encima del contenido */
   }
@@ -582,7 +559,7 @@ function closeDishModal() {
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    background: rgba(255, 255, 255, 0.8);
+    /* background: rgba(255, 255, 255, 0.8); */
     backdrop-filter: blur(10px);
     padding: 1rem 1.5rem;
     border-radius: 16px;
@@ -657,13 +634,13 @@ function closeDishModal() {
   /* Grids */
   .restaurants-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns:  repeat(auto-fit, minmax(180px, 1fr));
     gap: 1.5rem;
   }
 
   .dishes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1.5rem;
   }
 
@@ -686,7 +663,7 @@ function closeDishModal() {
 
   .featured-badge {
     position: absolute;
-    top: -8px;
+    top: -20px;
     right: 1rem;
     background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
     color: white;
@@ -856,6 +833,9 @@ function closeDishModal() {
     .section-subtitle {
       font-size: 0.9rem;
     }
+    .restaurants-grid {
+      grid-template-columns: 1fr;
+    }
 
     .dishes-grid {
       grid-template-columns: 1fr;
@@ -873,23 +853,23 @@ function closeDishModal() {
   /* Desktop Improvements */
   @media (min-width: 768px) {
     .hero-section {
-      padding: 4rem 0 5rem;
+      padding: 4rem 0 2rem;
     }
 
     .restaurants-grid {
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
     .featured-grid {
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
     .loading-grid {
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
     .content-section {
-      padding: 4rem 0;
+      padding: 1.5rem 0;
     }
 
     .section-header {

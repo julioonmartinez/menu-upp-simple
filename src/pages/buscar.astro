@@ -9,18 +9,21 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
   description="Busca y descubre los mejores restaurantes y platillos cerca de ti. Explora, filtra y encuentra exactamente lo que buscas."
   showHeaderShadow={false}
   transparentHeader={false}
+  showHeader={false}
 >
   <RestaurantSearch client:load />
 </MenuuppLayout>
 
 <style>
-  /* Estilos específicos para la página de búsqueda si son necesarios */
+  /* Ajustar el espaciado ya que no hay header fijo del layout */
+  :global(body) {
+    padding-top: 0 !important;
+  }
   
-  /* El contenido principal ya tiene el espaciado correcto gracias al layout */
-  
-  /* Animación de entrada para el contenido */
+  /* Estilos específicos para la página de búsqueda */
   :global(.search-page) {
     animation: fadeInUp 0.6s ease-out;
+    min-height: 100vh;
   }
   
   @keyframes fadeInUp {
@@ -34,8 +37,34 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
     }
   }
   
+  /* Asegurar que el contenido ocupe toda la pantalla */
+  :global(#main-content) {
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Mejoras visuales para la transición */
+  :global(.search-page .hero-section) {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  }
+  
   /* Ajustes responsive */
   @media (max-width: 768px) {
-    /* El header ya se ajusta automáticamente */
+    :global(.search-page) {
+      /* Optimizaciones móvil */
+    }
+  }
+  
+  /* Smooth scroll behavior para navegación interna */
+  :global(html) {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px;
+  }
+  
+  /* Mejoras de accesibilidad específicas para búsqueda */
+  :global(.search-page *:focus-visible) {
+    outline: 2px solid var(--primary-color, #ff6b35);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 </style>

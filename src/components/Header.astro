@@ -34,7 +34,7 @@ const hasLogo = restaurant?.imageText_data && restaurant.imageText_data.url !== 
           <a href="/menu">
             {hasLogo ? (
               <div class="logo-container with-image">
-                <img src={restaurant.imageText_data?.url} alt={restaurant.name} class="logo-image" />
+                <img src={linkTree.textImage?.url} alt={restaurant.name} class="logo-image" />
               </div>
             ) : (
               <div class="logo-container text-only">
@@ -112,24 +112,24 @@ const hasLogo = restaurant?.imageText_data && restaurant.imageText_data.url !== 
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    background:var(--bg-color);
   }
 
   /* Estilo cuando hay imagen */
   .logo-container.with-image {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 0.5rem 1rem;
+    
+    border-radius: 9999px;
+    padding: 0.25rem 1rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    backdrop-filter: blur(10px);
+    /* backdrop-filter: blur(10px); */
   }
 
   .logo-image {
-    object-fit: contain;
+    object-fit: cover;
     object-position: center;
     height: 45px;
-    width: auto;
-    max-width: 120px;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    width: 100px;
+    /* filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1)); */
   }
 
   /* Estilo cuando solo hay texto */
@@ -186,7 +186,7 @@ const hasLogo = restaurant?.imageText_data && restaurant.imageText_data.url !== 
   /* QR Button */
   .qr-button {
     border-radius: 12px;
-    padding: 0.75rem 1.5rem;
+    padding: 9999px;
     background: linear-gradient(135deg, var(--secondary-color) 0%, color-mix(in srgb, var(--secondary-color) 85%, white 15%) 100%);
     cursor: pointer;
     border: none;
@@ -200,6 +200,7 @@ const hasLogo = restaurant?.imageText_data && restaurant.imageText_data.url !== 
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
+    padding: 0.5rem 1.5rem;
   }
 
   .qr-button::before {
@@ -259,12 +260,12 @@ const hasLogo = restaurant?.imageText_data && restaurant.imageText_data.url !== 
     }
     
     .logo-container.with-image {
-      padding: 0.375rem 0.75rem;
+      /* padding: 0.375rem 0.75rem; */
     }
     
     .qr-button {
-      padding: 0.5rem 1.25rem;
-      font-size: 0.75rem;
+      /* padding: 0.5rem 1.25rem;
+      font-size: 0.75rem; */
     }
   }
 

@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { fly, fade, slide } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   
+  import Modal from '../components/Modal.svelte';
   import { 
     isLoadingComments,
     restaurantComments,
@@ -12,22 +13,15 @@
     createRestaurantCommentAnonymously
   } from '../stores/ratingStore';
   import './CommentsModal.css'
-  
   import type { RestaurantCommentCreate } from '../interfaces/restaurantRating';
 
-  //CommentsModal.slvete
+  const dispatch = createEventDispatcher();
 
-  // Props
-  const { restaurantId, restaurantName, commentsCount, onClose } = $props<{
+  // Props que vienen del modalStore
+  const { restaurantId, restaurantName, commentsCount } = $props<{
     restaurantId: string;
     restaurantName: string;
     commentsCount: number | undefined;
-    onClose: () => void;
-  }>();
-
-  // Dispatcher para toasts
-  const dispatch = createEventDispatcher<{
-    toast: { message: string; type: 'success' | 'error' | 'info' }
   }>();
 
   // Estado local del formulario
@@ -39,14 +33,6 @@
   });
 
   let selectedRestaurantForComments = $state<string | null>(null);
-  let isMobile = $state(false);
-
-  // Detectar móvil
-  function checkMobile() {
-    if (typeof window !== 'undefined') {
-      isMobile = window.innerWidth < 768;
-    }
-  }
 
   // Valores derivados
   let loadingComments = $derived($isLoadingComments);
@@ -54,13 +40,12 @@
   let commentsErrorMsg = $derived($commentsError);
   let isCreatingCommentState = $derived($isCreatingComment(restaurantId));
 
-  // Inicializar
-  if (typeof window !== 'undefined') {
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-  }
+  // Cargar comentarios al montar
+  onMount(() => {
+    loadCommentsForRestaurant();
+  });
 
-  // Cargar comentarios al abrir el modal
+  // Cargar comentarios al cambiar restaurantId
   $effect(() => {
     if (selectedRestaurantForComments !== restaurantId) {
       loadCommentsForRestaurant();
@@ -72,27 +57,18 @@
     const success = await loadRestaurantComments(restaurantId);
     
     if (!success) {
-      dispatch('toast', {
-        message: 'Error al cargar los comentarios',
-        type: 'error'
-      });
+      showToast('Error al cargar los comentarios', 'error');
     }
   }
 
   async function submitComment() {
     if (!commentForm.comment.trim()) {
-      dispatch('toast', {
-        message: 'Por favor escribe un comentario',
-        type: 'info'
-      });
+      showToast('Por favor escribe un comentario', 'info');
       return;
     }
 
     if (commentForm.comment.trim().length < 3) {
-      dispatch('toast', {
-        message: 'El comentario debe tener al menos 3 caracteres',
-        type: 'info'
-      });
+      showToast('El comentario debe tener al menos 3 caracteres', 'info');
       return;
     }
 
@@ -112,19 +88,19 @@
       commentForm.isExpanded = false;
       commentForm.isFocused = false;
       
-      dispatch('toast', {
-        message: '¡Comentario enviado! Gracias por compartir tu experiencia.',
-        type: 'success'
-      });
+      showToast('¡Comentario enviado! Gracias por compartir tu experiencia.', 'success');
       
-      // Recargar comentarios
       await loadCommentsForRestaurant();
     } else {
-      dispatch('toast', {
-        message: 'Error al enviar el comentario. Inténtalo de nuevo.',
-        type: 'error'
-      });
+      showToast('Error al enviar el comentario. Inténtalo de nuevo.', 'error');
     }
+  }
+
+  function showToast(message: string, type: 'success' | 'error' | 'info') {
+    // Emitir evento para el sistema de toasts global
+    window.dispatchEvent(new CustomEvent('showToast', {
+      detail: { message, type }
+    }));
   }
 
   function formatTimeAgo(dateString: string): string {
@@ -171,222 +147,175 @@
     commentForm.isExpanded = false;
     commentForm.isFocused = false;
   }
-
-  function handleModalClick(event: MouseEvent) {
-    // Cerrar si se hace clic en el backdrop
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      onClose();
-    }
-  }
 </script>
 
-
-<div 
-  class="modal-backdrop"
-  class:mobile={isMobile}
-  onclick={handleModalClick}
-  onkeydown={handleKeydown}
-  tabindex="-1"
-  in:fade={{ duration: 300 }}
-  out:fade={{ duration: 200 }}
+<Modal
+  title="Comentarios"
+  subtitle={restaurantName}
+  size="medium"
+  on:close
 >
-  <div 
-    class="modal-container"
-    class:mobile={isMobile}
-    in:fly={{ y: 30, duration: 400, easing: quintOut }}
-    out:fly={{ y: -30, duration: 300, easing: quintOut }}
-  >
-    <!-- Header del modal -->
-    <div class="modal-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h2 class="modal-title">Comentarios</h2>
-          <p class="restaurant-name">{restaurantName}</p>
-        </div>
+  <!-- Formulario para nuevo comentario -->
+  <div class="comment-form-section">
+    <div class="comment-form" class:expanded={commentForm.isExpanded} class:focused={commentForm.isFocused}>
+      
+      {#if !commentForm.isExpanded}
+        <!-- Versión compacta del formulario -->
         <button 
-          class="close-btn"
-          onclick={onClose}
-          title="Cerrar"
+          class="comment-form-trigger"
+          on:click={expandCommentForm}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <div class="trigger-avatar">✍️</div>
+          <span class="trigger-text">Comparte tu experiencia...</span>
         </button>
-      </div>
-    </div>
-
-    <!-- Contenido del modal -->
-    <div class="modal-content">
-      <!-- Formulario para nuevo comentario -->
-      <div class="comment-form-section">
-        <div class="comment-form-modal" class:expanded={commentForm.isExpanded} class:focused={commentForm.isFocused}>
-          
-          {#if !commentForm.isExpanded}
-            <!-- Versión compacta del formulario -->
+      {:else}
+        <!-- Formulario expandido -->
+        <div class="form-content" in:slide={{ duration: 300 }}>
+          <div class="form-header">
+            <span class="form-icon">✍️</span>
+            <span class="form-title">Tu experiencia</span>
             <button 
-              class="comment-form-trigger-modal"
-              onclick={expandCommentForm}
+              class="form-close-btn"
+              on:click={cancelComment}
+              disabled={isCreatingCommentState}
             >
-              <div class="trigger-avatar-modal">✍️</div>
-              <span class="trigger-text-modal">Comparte tu experiencia...</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </button>
-          {:else}
-            <!-- Formulario expandido -->
-            <div class="form-content-modal" in:slide={{ duration: 300 }}>
-              <div class="form-header-modal">
-                <span class="form-icon-modal">✍️</span>
-                <span class="form-title-modal">Tu experiencia</span>
-                <button 
-                  class="form-close-btn-modal"
-                  onclick={cancelComment}
-                  disabled={isCreatingCommentState}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-              
-              <textarea
-                bind:value={commentForm.comment}
-                placeholder="Cuéntanos sobre la comida, el servicio, el ambiente..."
-                maxlength="500"
-                rows="4"
+          </div>
+          
+          <textarea
+            bind:value={commentForm.comment}
+            placeholder="Cuéntanos sobre la comida, el servicio, el ambiente..."
+            maxlength="500"
+            rows="4"
+            disabled={isCreatingCommentState}
+            class="comment-textarea"
+            on:blur={collapseCommentForm}
+          ></textarea>
+          
+          <div class="form-meta" class:visible={commentForm.comment.length > 0}>
+            <span class="char-count" class:warning={commentForm.comment.length > 450}>
+              {commentForm.comment.length}/500
+            </span>
+          </div>
+
+          <div class="form-footer">
+            <div class="rating-input">
+              <label class="rating-label">⭐ Valoración:</label>
+              <select 
+                bind:value={commentForm.rating} 
                 disabled={isCreatingCommentState}
-                class="comment-textarea-modal"
-                onblur={collapseCommentForm}
-              ></textarea>
-              
-              <div class="form-meta-modal" class:visible={commentForm.comment.length > 0}>
-                <span class="char-count-modal" class:warning={commentForm.comment.length > 450}>
-                  {commentForm.comment.length}/500
-                </span>
-              </div>
-
-              <div class="form-footer-modal">
-                <div class="rating-input-modal">
-                  <label class="rating-label-modal">⭐ Valoración:</label>
-                  <select 
-                    bind:value={commentForm.rating} 
-                    disabled={isCreatingCommentState}
-                    class="rating-select-modal"
-                  >
-                    <option value="">Sin valoración</option>
-                    <option value="5">⭐⭐⭐⭐⭐</option>
-                    <option value="4">⭐⭐⭐⭐</option>
-                    <option value="3">⭐⭐⭐</option>
-                    <option value="2">⭐⭐</option>
-                    <option value="1">⭐</option>
-                  </select>
-                </div>
-                
-                <button 
-                  class="submit-comment-btn-modal"
-                  onclick={submitComment}
-                  disabled={isCreatingCommentState || !commentForm.comment.trim()}
-                  class:loading={isCreatingCommentState}
-                >
-                  {#if isCreatingCommentState}
-                    <div class="btn-spinner-modal"></div>
-                  {:else}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
-                    </svg>
-                    Enviar
-                  {/if}
-                </button>
-              </div>
+                class="rating-select"
+              >
+                <option value="">Sin valoración</option>
+                <option value="5">⭐⭐⭐⭐⭐</option>
+                <option value="4">⭐⭐⭐⭐</option>
+                <option value="3">⭐⭐⭐</option>
+                <option value="2">⭐⭐</option>
+                <option value="1">⭐</option>
+              </select>
             </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Lista de comentarios -->
-      <div class="comments-list-modal">
-        {#if loadingComments && selectedRestaurantForComments === restaurantId}
-          <div class="loading-comments-modal" in:fade={{ duration: 300 }}>
-            <div class="loading-spinner-comments-modal"></div>
-            <p>Cargando comentarios...</p>
-          </div>
-        {:else if commentsErrorMsg && selectedRestaurantForComments === restaurantId}
-          <div class="comments-error-modal" in:fade={{ duration: 300 }}>
-            <span class="error-icon-modal">⚠️</span>
-            <p>Error: {commentsErrorMsg}</p>
-            <button class="retry-btn-modal" onclick={loadCommentsForRestaurant}>
-              Reintentar
+            
+            <button 
+              class="submit-comment-btn"
+              on:click={submitComment}
+              disabled={isCreatingCommentState || !commentForm.comment.trim()}
+              class:loading={isCreatingCommentState}
+            >
+              {#if isCreatingCommentState}
+                <div class="btn-spinner"></div>
+              {:else}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                </svg>
+                Enviar
+              {/if}
             </button>
           </div>
-        {:else if comments && selectedRestaurantForComments === restaurantId}
-          {#if comments.comments.length > 0}
-            <div class="comments-header-modal">
-              <h3 class="comments-title-modal">
-                💬 {getCommentCountText(comments.pagination.total)}
-              </h3>
-            </div>
-            
-            <div class="comments-grid-modal">
-              {#each comments.comments as comment, index (comment.id)}
-                <div 
-                  class="comment-item-modal"
-                  in:fly={{ y: 20, duration: 300, delay: index * 50, easing: quintOut }}
-                >
-                  <div class="comment-header-modal">
-                    <div class="author-section-modal">
-                      <div class="author-avatar-modal">
-                        {comment.anonymous ? '👤' : '👨‍💼'}
-                      </div>
-                      <div class="author-info-modal">
-                        <span class="comment-author-modal">
-                          {comment.anonymous ? 'Anónimo' : 'Usuario'}
-                        </span>
-                        <span class="comment-time-modal">{formatTimeAgo(comment.timestamp)}</span>
-                      </div>
-                    </div>
-                    
-                    {#if comment.rating}
-                      <div class="comment-rating-modal">
-                        {#each renderStars(Number(comment.rating)) as star}
-                          <span class="comment-star-modal" class:filled={star.filled}>
-                            {star.filled ? '⭐' : '☆'}
-                          </span>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                  
-                  <div class="comment-content-modal">
-                    <p class="comment-text-modal">{comment.comment}</p>
-                    {#if comment.isEdited}
-                      <span class="comment-edited-modal">editado</span>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-            </div>
-            
-            {#if comments.pagination.total_pages > 1}
-              <div class="comments-pagination-modal" in:fade={{ duration: 400, delay: 200 }}>
-                <span class="pagination-info-modal">
-                  Página {comments.pagination.page} de {comments.pagination.total_pages}
-                </span>
-              </div>
-            {/if}
-          {:else}
-            <div class="no-comments-modal" in:fade={{ duration: 400 }}>
-              <div class="no-comments-icon-modal">💭</div>
-              <h4>Aún no hay comentarios</h4>
-              <p>¡Sé el primero en compartir tu experiencia!</p>
-            </div>
-          {/if}
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
   </div>
-</div>
 
+  <!-- Lista de comentarios -->
+  <div class="comments-list">
+    {#if loadingComments && selectedRestaurantForComments === restaurantId}
+      <div class="loading-comments" in:fade={{ duration: 300 }}>
+        <div class="loading-spinner-comments"></div>
+        <p>Cargando comentarios...</p>
+      </div>
+    {:else if commentsErrorMsg && selectedRestaurantForComments === restaurantId}
+      <div class="comments-error" in:fade={{ duration: 300 }}>
+        <span class="error-icon">⚠️</span>
+        <p>Error: {commentsErrorMsg}</p>
+        <button class="retry-btn" on:click={loadCommentsForRestaurant}>
+          Reintentar
+        </button>
+      </div>
+    {:else if comments && selectedRestaurantForComments === restaurantId}
+      {#if comments.comments.length > 0}
+        <div class="comments-header">
+          <h3 class="comments-title">
+            💬 {getCommentCountText(comments.pagination.total)}
+          </h3>
+        </div>
+        
+        <div class="comments-grid">
+          {#each comments.comments as comment, index (comment.id)}
+            <div 
+              class="comment-item"
+              in:fly={{ y: 20, duration: 300, delay: index * 50, easing: quintOut }}
+            >
+              <div class="comment-header">
+                <div class="author-section">
+                  <div class="author-avatar">
+                    {comment.anonymous ? '👤' : '👨‍💼'}
+                  </div>
+                  <div class="author-info">
+                    <span class="comment-author">
+                      {comment.anonymous ? 'Anónimo' : 'Usuario'}
+                    </span>
+                    <span class="comment-time">{formatTimeAgo(comment.timestamp)}</span>
+                  </div>
+                </div>
+                
+                {#if comment.rating}
+                  <div class="comment-rating">
+                    {#each renderStars(Number(comment.rating)) as star}
+                      <span class="comment-star" class:filled={star.filled}>
+                        {star.filled ? '⭐' : '☆'}
+                      </span>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+              
+              <div class="comment-content">
+                <p class="comment-text">{comment.comment}</p>
+                {#if comment.isEdited}
+                  <span class="comment-edited">editado</span>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+        
+        {#if comments.pagination.total_pages > 1}
+          <div class="comments-pagination" in:fade={{ duration: 400, delay: 200 }}>
+            <span class="pagination-info">
+              Página {comments.pagination.page} de {comments.pagination.total_pages}
+            </span>
+          </div>
+        {/if}
+      {:else}
+        <div class="no-comments" in:fade={{ duration: 400 }}>
+          <div class="no-comments-icon">💭</div>
+          <h4>Aún no hay comentarios</h4>
+          <p>¡Sé el primero en compartir tu experiencia!</p>
+        </div>
+      {/if}
+    {/if}
+  </div>
+</Modal>

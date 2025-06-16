@@ -1,0 +1,472 @@
+/* RestaurantCardCompact.css */
+
+.restaurant-card-compact {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.restaurant-card-compact:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color, #ff6b35);
+}
+
+/* ======================
+   SECCIÓN DE IMAGEN DOMINANTE
+   ====================== */
+
+/* La sección de imagen mantiene su tamaño fijo */
+.image-section {
+  position: relative;
+  width: 100%;
+  height: 180px; /* Altura fija para la imagen */
+  max-height: 180px;
+  flex-shrink: 0; /* No se encoge */
+  overflow: hidden;
+  background: #f8fafc;
+  max-height: 180px;
+}
+
+.restaurant-image-dominant {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.4s ease;
+  opacity: 0;
+}
+
+.restaurant-image-dominant.loaded {
+  opacity: 1;
+}
+
+.restaurant-card-compact:hover .restaurant-image-dominant {
+  transform: scale(1.08);
+}
+
+.image-skeleton-compact {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f0f2f5 25%, #e4e6ea 50%, #f0f2f5 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+.restaurant-placeholder-compact {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  color: #94a3b8;
+}
+
+.placeholder-icon-large {
+  font-size: 3rem;
+  opacity: 0.6;
+}
+
+/* Gradiente sutil para mejor legibilidad */
+.image-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ======================
+   OVERLAYS SUPERIORES
+   ====================== */
+
+.top-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 2;
+}
+
+.like-button {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #64748b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.like-button:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  color: #ff6b35;
+}
+
+.like-button.liked {
+  background: #ff6b35;
+  color: white;
+}
+
+.like-button.liked:hover {
+  background: #e55a2b;
+  transform: scale(1.1);
+}
+
+.rating-overlay {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.rating-star-overlay {
+  font-size: 0.9rem;
+}
+
+.rating-value-overlay {
+  font-size: 0.8rem;
+}
+
+/* ======================
+   OVERLAYS INFERIORES
+   ====================== */
+
+.bottom-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 2;
+}
+
+.price-tag-overlay {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ======================
+   FOOTER COMPACTO
+   ====================== */
+
+.footer-section {
+  padding: 14px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Ocupa todo el espacio restante */
+  /* Eliminamos gap y lo manejamos manualmente */
+}
+
+.restaurant-info {
+  flex: 1; /* Ocupa todo el espacio disponible */
+  display: flex;
+  flex-direction: column;
+  /* Esto empuja footer-actions hacia abajo */
+}
+
+.restaurant-name-compact {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0D1B2A;
+  transition: color 0.3s ease;
+}
+
+.restaurant-card-compact:hover .restaurant-name-compact {
+  color: var(--primary-color, #ff6b35);
+}
+
+.meta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px; /* Espaciado manual después del nombre */
+}
+
+.address-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.address-icon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.address-text {
+  line-height: 1.4;
+}
+
+.cuisine-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.cuisine-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--primary-color, #ff6b35);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cuisine-text {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* ======================
+   ACCIONES DEL FOOTER
+   ====================== */
+
+.footer-actions {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto; /* Esto empuja el footer hacia abajo */
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0; /* No se encoge */
+}
+
+.rating-section-compact {
+  flex: 1;
+}
+
+.comments-button-compact {
+  /* width: 0;
+  height: 0; */
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.comments-button-compact:hover {
+  background: var(--primary-color, #ff6b35);
+  color: white;
+  border-color: var(--primary-color, #ff6b35);
+  transform: translateY(-1px);
+}
+
+.comments-icon-compact {
+  font-size: 0.7rem;
+}
+
+.comments-count-compact {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 14px;
+  text-align: center;
+}
+
+.comments-button-compact:hover .comments-count-compact {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.loading-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.loading-spinner-compact {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid var(--primary-color, #ff6b35);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ======================
+   EFECTOS Y ANIMACIONES
+   ====================== */
+
+.hover-effect-compact {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 53, 0.02), 
+    rgba(13, 27, 42, 0.02));
+  pointer-events: none;
+  border-radius: 16px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ======================
+   RESPONSIVE DESIGN
+   ====================== */
+
+/* Tablets pequeñas */
+@media (min-width: 481px) and (max-width: 768px) {
+  .image-section {
+    height: 240px;
+  }
+  
+  .restaurant-name-compact {
+    font-size: 1.15rem;
+  }
+  
+  .footer-section {
+    padding: 16px;
+  }
+}
+
+/* Tablets y desktop */
+@media (min-width: 769px) {
+  .image-section {
+    height: 260px; /* Más alta en desktop */
+  }
+  
+  .restaurant-name-compact {
+    font-size: 1.2rem;
+  }
+  
+  .footer-section {
+    padding: 16px;
+  }
+  
+  .like-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .rating-overlay {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 360px) {
+  .image-section {
+    height: 200px;
+  }
+  
+  .restaurant-name-compact {
+    font-size: 1rem;
+  }
+  
+  .footer-section {
+    padding: 12px;
+  }
+  
+  .top-overlay,
+  .bottom-overlay {
+    left: 8px;
+    right: 8px;
+  }
+  
+  .bottom-overlay {
+    bottom: 8px;
+  }
+  
+  .like-button {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ======================
+   ESTADOS DE ACCESIBILIDAD
+   ====================== */
+
+.restaurant-card-compact:focus-within {
+  outline: 2px solid var(--primary-color, #ff6b35);
+  outline-offset: 2px;
+}
+
+.like-button:focus,
+.comments-button-compact:focus {
+  outline: 2px solid var(--primary-color, #ff6b35);
+  outline-offset: 2px;
+}
+
+/* Reducir animaciones para usuarios que las prefieren reducidas */
+@media (prefers-reduced-motion: reduce) {
+  .restaurant-card-compact,
+  .restaurant-image-dominant,
+  .like-button,
+  .comments-button-compact {
+    transition: none;
+  }
+  
+  .image-skeleton-compact {
+    animation: none;
+  }
+  
+  .loading-spinner-compact {
+    animation: none;
+  }
+}
+

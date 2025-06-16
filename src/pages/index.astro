@@ -149,7 +149,7 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
   }
 
   /* Mejoras para modo oscuro del sistema */
-  @media (prefers-color-scheme: dark) {
+  /* @media (prefers-color-scheme: dark) {
     :global(.homepage) {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
     }
@@ -160,7 +160,7 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
         rgba(255, 140, 105, 0.05) 50%, 
         transparent 100%);
     }
-  }
+  } */
 
   /* Transiciones suaves para cambios de tema */
   :global(*) {
@@ -168,7 +168,7 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
   }
 
   /* Precarga de recursos críticos */
-  :global(.hero-section::before) {
+  /* :global(.hero-section::before) {
     content: '';
     position: absolute;
     top: 0;
@@ -178,7 +178,7 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
     background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDIxTDE2LjUxNCAxNi41MDZMMJEMJTI0Wk0xOSAxMC41QzE5IDE1LjE5NCAxNS4xOTQgMTkgMTAuNSAxOUM1LjgwNiAxOSAyIDE1LjE5NCAyIDEwLjVDMiA1LjgwNiA1LjgwNiAyIDEwLjUgMkMxNS4xOTQgMiAxOSA1LjgwNiAxOSAxMC41WiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=');
     opacity: 0;
     pointer-events: none;
-  }
+  } */
 
   /* Estados de carga mejorados */
   :global(.loading-grid) {

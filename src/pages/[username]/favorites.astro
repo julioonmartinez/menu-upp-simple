@@ -19,6 +19,7 @@ let dishesInfo: Dish[] | null = null;
 let errorMessage: string | null = null;
 let linksTreeInfo: LinkTree | null = null;
 
+
 try {
     const data = await fetchAllRestaurantDataByUsername(username);
     linksTreeInfo = await fetchLinksByUsername(username);

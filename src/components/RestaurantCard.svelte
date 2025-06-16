@@ -3,7 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fly, scale, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  
+  import { openModal } from '../stores/modalStore.js';
   // Componentes
   import RatingSystem from './RatingSystem.svelte';
   import CommentsSection from './CommentsSection.svelte';
@@ -93,9 +93,15 @@
     showMoreInfo = !showMoreInfo;
   }
 
-  function openCommentsModal() {
-    showCommentsModal = true;
-  }
+  function showComments() {
+    const isMobile = window.innerWidth < 768;
+  openModal('comments', {
+    restaurantId: restaurant.id,
+    restaurantName: restaurant.name,
+    commentsCount: restaurant.commentsCount,
+    isMobile: isMobile
+  });
+}
 
   function closeCommentsModal() {
     showCommentsModal = false;
@@ -227,7 +233,7 @@
           <!-- Botón de comentarios -->
           <button 
             class="comments-button-mini"
-            onclick={openCommentsModal}
+            onclick={showComments}
             title="Ver comentarios"
           >
             <span class="comments-icon">💬</span>
@@ -261,13 +267,3 @@
   {/if}
 </article>
 
-<!-- Modal de comentarios -->
-{#if showCommentsModal}
-  <CommentsModal 
-    restaurantId={restaurant.id!}
-    restaurantName={restaurant.name}
-    commentsCount={restaurant.analytics?.commentsCount}
-    onClose={closeCommentsModal}
-    on:toast={handleToast}
-  />
-{/if}

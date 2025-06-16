@@ -11,12 +11,24 @@
     loading, 
     initialFilters, 
     placeholder = 'Buscar...',
-    searchType = 'restaurants'
+    searchType = 'restaurants',
+    compact = false,
+    searchTypes = [],
+    onSearchTypeChange
   } = $props<{
     loading: boolean;
     initialFilters: RestaurantSearchFilters | DishSearchFilters;
     placeholder?: string;
     searchType?: 'restaurants' | 'dishes' | 'routes';
+    compact?: boolean;
+    searchTypes?: Array<{
+      id: 'restaurants' | 'dishes' | 'routes';
+      label: string;
+      icon: string;
+      placeholder: string;
+      description: string;
+    }>;
+    onSearchTypeChange?: (type: 'restaurants' | 'dishes' | 'routes') => void;
   }>();
 
   // Dispatcher
@@ -24,12 +36,11 @@
     search: RestaurantSearchFilters | DishSearchFilters
   }>();
 
-  // Estado del formulario más compacto
+  // Estado del formulario
   let searchForm = $state({
     search: '',
     minRating: '',
     maxRating: '',
-    // Campos compartidos
     sortBy: 'rating',
     sortOrder: -1,
     showAdvancedFilters: false,
@@ -54,13 +65,11 @@
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Inicializar desde filtros según el tipo
     initializeFromFilters();
 
     return () => window.removeEventListener('resize', checkMobile);
   });
 
-  // NUEVA FUNCIÓN: Inicializar desde filtros según el tipo
   function initializeFromFilters() {
     if (initialFilters) {
       searchForm.search = initialFilters.search || '';
@@ -69,14 +78,11 @@
       searchForm.sortBy = initialFilters.sortBy || 'rating';
       searchForm.sortOrder = initialFilters.sortOrder || -1;
 
-      // Campos específicos de restaurantes
       if (searchType === 'restaurants') {
         const restaurantFilters = initialFilters as RestaurantSearchFilters;
         searchForm.cuisineType = restaurantFilters.cuisineType || '';
         searchForm.priceRange = restaurantFilters.priceRange || '';
-      }
-      // Campos específicos de platillos
-      else if (searchType === 'dishes') {
+      } else if (searchType === 'dishes') {
         const dishFilters = initialFilters as DishSearchFilters;
         searchForm.categoryId = dishFilters.categoryId || '';
         searchForm.restaurantId = dishFilters.restaurantId || '';
@@ -84,7 +90,6 @@
     }
   }
 
-  // NUEVA FUNCIÓN: Construir filtros según el tipo
   function buildFilters(): RestaurantSearchFilters | DishSearchFilters {
     const baseFilters: any = {};
     
@@ -94,7 +99,6 @@
     if (searchForm.sortBy) baseFilters.sortBy = searchForm.sortBy;
     baseFilters.sortOrder = parseInt(searchForm.sortOrder.toString()) === 1 ? 1 : -1;
 
-    // Campos específicos según el tipo
     if (searchType === 'restaurants') {
       if (searchForm.cuisineType) baseFilters.cuisineType = searchForm.cuisineType;
       if (searchForm.priceRange) baseFilters.priceRange = searchForm.priceRange;
@@ -142,35 +146,23 @@
     isFormFocused = false;
   }
 
-  // FUNCIÓN MEJORADA: Sugerencias contextuales basadas en el tipo de búsqueda
   const getContextualSuggestions = () => {
+    if (compact) return []; // No mostrar sugerencias en modo compacto
+    
     switch (searchType) {
       case 'dishes':
         return [
-          { emoji: '🍕', text: 'Pizza Margherita' },
-          { emoji: '🍣', text: 'California Roll' },
-          { emoji: '🍔', text: 'Hamburguesa Clásica' },
-          { emoji: '🌮', text: 'Tacos al Pastor' },
-          { emoji: '🍝', text: 'Pasta Carbonara' },
-          { emoji: '🥗', text: 'Ensalada César' }
+          { emoji: '🍕', text: 'Pizza' },
+          { emoji: '🍣', text: 'Sushi' },
+          { emoji: '🍔', text: 'Hamburguesa' },
+          { emoji: '🌮', text: 'Tacos' }
         ];
-      case 'routes':
-        return [
-          { emoji: '🗺️', text: 'Ruta Centro Histórico' },
-          { emoji: '🍷', text: 'Tour Gastronómico' },
-          { emoji: '🌮', text: 'Ruta de Tacos' },
-          { emoji: '☕', text: 'Cafeterías Locales' },
-          { emoji: '🍺', text: 'Bares y Cervecerías' },
-          { emoji: '🧁', text: 'Postres Artesanales' }
-        ];
-      default: // restaurants
+      default:
         return [
           { emoji: '🍕', text: 'Pizza' },
           { emoji: '🍔', text: 'Hamburguesas' },
           { emoji: '🍜', text: 'Ramen' },
-          { emoji: '🌮', text: 'Mexicana' },
-          { emoji: '🍝', text: 'Italiana' },
-          { emoji: '🥗', text: 'Saludable' }
+          { emoji: '🌮', text: 'Mexicana' }
         ];
     }
   };
@@ -180,7 +172,6 @@
     handleSubmit(new Event('submit'));
   }
 
-  // FUNCIÓN MEJORADA: Contar filtros activos según el tipo
   const activeFiltersCount = $derived(() => {
     const baseFilters = [
       searchForm.minRating,
@@ -202,19 +193,15 @@
     return baseFilters;
   });
 
-  // Obtener el placeholder dinámico
   const dynamicPlaceholder = $derived(() => placeholder || 'Buscar...');
 
-  // NUEVA FUNCIÓN: Obtener opciones de ordenamiento según el tipo
   const getSortOptions = () => {
     switch (searchType) {
       case 'dishes':
         return [
           { value: 'rating', label: '⭐ Valoración' },
           { value: 'name', label: '📝 Nombre' },
-          { value: 'price', label: '💰 Precio' },
-          { value: 'comments', label: '💬 Comentarios' },
-          { value: 'favorites', label: '❤️ Favoritos' }
+          { value: 'price', label: '💰 Precio' }
         ];
       case 'restaurants':
         return [
@@ -230,32 +217,64 @@
     }
   };
 
-  // Reactivo para reagir a cambios en searchType
   $effect(() => {
     if (searchType) {
-      // Limpiar campos específicos del tipo anterior
       searchForm.cuisineType = '';
       searchForm.priceRange = '';
       searchForm.categoryId = '';
       searchForm.restaurantId = '';
-      
-      // Reinicializar desde filtros si es necesario
       initializeFromFilters();
     }
   });
 </script>
 
-<div class="search-form-container-hero" class:focused={isFormFocused}>
+<div class="search-form-container" class:focused={isFormFocused} class:compact>
+  <!-- Navegación de tipos (solo si no es compacto y hay tipos disponibles) -->
+  {#if !compact && searchTypes.length > 0 && onSearchTypeChange}
+    <div class="search-navigation" in:fly={{ y: 20, duration: 400, delay: 100, easing: quintOut }}>
+       <!-- Logo/Brand -->
+      <a 
+        class="brand-button"
+        href="/"
+        aria-label="Ir a inicio"
+      >
+        <div class="brand-logo">
+          <span class="brand-text">Menu</span><span class="brand-accent">Upp</span>
+        </div>
+      </a>
+      
+      <div class="nav-tabs">
+        {#each searchTypes as type, index}
+          <button
+            class="nav-tab"
+            class:active={searchType === type.id}
+            onclick={() => onSearchTypeChange?.(type.id)}
+            in:fly={{ x: -20, duration: 400, delay: index * 80 }}
+          >
+            <span class="tab-icon">{type.icon}</span>
+            <span class="tab-label">{type.label}</span>
+          </button>
+        {/each}
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn btn-ghost btn-sm" href="/add-menu">Crea tu menú</a>
+        <button class="btn btn-primary btn-sm" ><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  {/if}
+
   <form 
-    class="search-form-hero" 
+    class="search-form" 
     class:mobile={isMobile}
+    class:compact
     onsubmit={handleSubmit}
   >
-    <!-- Búsqueda principal estilo Kayak -->
-    <div class="search-main-hero">
-      <div class="search-input-group">
-        <div class="search-input-wrapper-hero" class:focused={isFormFocused}>
-          <div class="search-icon-hero">
+    <!-- Búsqueda principal -->
+    <div class="search-main" class:compact>
+      <div class="search-input-section" class:compact>
+        <div class="search-input-wrapper" class:focused={isFormFocused} class:compact>
+          <div class="search-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z" 
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -267,7 +286,8 @@
             type="text" 
             bind:value={searchForm.search}
             placeholder={dynamicPlaceholder()}
-            class="search-input-hero"
+            class="search-input"
+            class:compact
             onfocus={handleInputFocus}
             onblur={handleInputBlur}
           />
@@ -275,7 +295,7 @@
           {#if searchForm.search}
             <button 
               type="button" 
-              class="clear-search-btn-hero"
+              class="clear-search-btn"
               onclick={() => searchForm.search = ''}
               in:scale={{ duration: 200 }}
             >
@@ -286,26 +306,30 @@
           {/if}
         </div>
         
-        <!-- Búsquedas populares rápidas -->
-        <div class="popular-searches-quick">
-          {#each getContextualSuggestions() as search, index}
-            <button 
-              type="button"
-              class="popular-quick-btn"
-              onclick={() => handlePopularSearch(search.text)}
-            >
-              <span class="popular-emoji">{search.emoji}</span>
-              <span class="popular-text">{search.text}</span>
-            </button>
-          {/each}
-        </div>
+        <!-- Búsquedas populares (solo si no es compacto) -->
+        {#if !compact}
+          <div class="popular-searches-quick">
+            {#each getContextualSuggestions() as search, index}
+              <button 
+                type="button"
+                class="popular-quick-btn"
+                onclick={() => handlePopularSearch(search.text)}
+                style="--delay: {index * 50}ms"
+              >
+                <span class="popular-emoji">{search.emoji}</span>
+                <span class="popular-text">{search.text}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
 
-      <div class="search-actions-hero">
+      <div class="search-actions" class:compact>
         <!-- Botón de filtros avanzados -->
         <button 
           type="button"
-          class="filters-btn-hero"
+          class="filters-btn"
+          class:compact
           onclick={toggleAdvancedFilters}
           class:active={searchForm.showAdvancedFilters}
           class:has-filters={activeFiltersCount() > 0}
@@ -314,29 +338,30 @@
             <path d="M3 4.6C3 4.03995 3 3.75992 3.10899 3.54601C3.20487 3.35785 3.35785 3.20487 3.54601 3.10899C3.75992 3 4.03995 3 4.6 3H19.4C19.9601 3 20.2401 3 20.454 3.10899C20.6422 3.20487 20.7951 3.35785 20.891 3.54601C21 3.75992 21 4.03995 21 4.6V6.33726C21 6.58185 21 6.70414 20.9724 6.81923C20.9479 6.92127 20.9075 7.01881 20.8526 7.10828C20.7908 7.2092 20.7043 7.29568 20.5314 7.46863L14.4686 13.5314C14.2957 13.7043 14.2092 13.7908 14.1474 13.8917C14.0925 13.9812 14.0521 14.0787 14.0276 14.1808C14 14.2959 14 14.4182 14 14.6627V17L10 21V14.6627C10 14.4182 10 14.2959 9.97237 14.1808C9.94787 14.0787 9.90747 13.9812 9.85264 13.8917C9.7908 13.7908 9.70432 13.7043 9.53137 13.5314L3.46863 7.46863C3.29568 7.29568 3.2092 7.2092 3.14736 7.10828C3.09253 7.01881 3.05213 6.92127 3.02763 6.81923C3 6.70414 3 6.58185 3 6.33726V4.6Z" 
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          {#if !isMobile}
+          {#if !compact || !isMobile}
             <span>Filtros</span>
           {/if}
           {#if activeFiltersCount() > 0}
-            <span class="filters-count-hero">{activeFiltersCount()}</span>
+            <span class="filters-count">{activeFiltersCount()}</span>
           {/if}
         </button>
 
         <!-- Botón de búsqueda -->
         <button 
           type="submit" 
-          class="search-btn-hero"
+          class="search-btn"
+          class:compact
           disabled={loading}
           class:loading
         >
           {#if loading}
-            <div class="search-btn-spinner-hero"></div>
+            <div class="search-btn-spinner"></div>
           {:else}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z" 
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            {#if !isMobile}
+            {#if !compact || !isMobile}
               Buscar
             {/if}
           {/if}
@@ -347,15 +372,16 @@
     <!-- Filtros avanzados -->
     {#if searchForm.showAdvancedFilters}
       <div 
-        class="advanced-filters-hero"
+        class="advanced-filters"
+        class:compact
         in:fly={{ y: -20, duration: 350, easing: quintOut }}
         out:fly={{ y: -20, duration: 250, easing: quintOut }}
       >
-        <div class="filters-grid-hero" class:mobile-grid={isMobile}>
-          <!-- Valoración - Común para ambos tipos -->
-          <div class="filter-group-hero">
-            <label class="filter-label-hero">⭐ Valoración</label>
-            <select bind:value={searchForm.minRating} class="filter-select-hero">
+        <div class="filters-grid" class:mobile-grid={isMobile} class:compact>
+          <!-- Valoración -->
+          <div class="filter-group">
+            <label class="filter-label">⭐ Valoración</label>
+            <select bind:value={searchForm.minRating} class="filter-select">
               <option value="">Cualquiera</option>
               <option value="4.5">4.5+ ⭐⭐⭐⭐⭐</option>
               <option value="4.0">4.0+ ⭐⭐⭐⭐</option>
@@ -364,29 +390,23 @@
             </select>
           </div>
 
-          <!-- FILTROS ESPECÍFICOS PARA RESTAURANTES -->
+          <!-- Filtros específicos para restaurantes -->
           {#if searchType === 'restaurants'}
-            <!-- Tipo de cocina -->
-            <div class="filter-group-hero">
-              <label class="filter-label-hero">🍽️ Cocina</label>
-              <select bind:value={searchForm.cuisineType} class="filter-select-hero">
+            <div class="filter-group">
+              <label class="filter-label">🍽️ Cocina</label>
+              <select bind:value={searchForm.cuisineType} class="filter-select">
                 <option value="">Todos</option>
                 <option value="mexicana">🌮 Mexicana</option>
                 <option value="italiana">🍝 Italiana</option>
                 <option value="asiática">🍜 Asiática</option>
                 <option value="americana">🍔 Americana</option>
-                <option value="española">🥘 Española</option>
                 <option value="japonesa">🍣 Japonesa</option>
-                <option value="china">🥟 China</option>
-                <option value="francesa">🥖 Francesa</option>
-                <option value="india">🍛 India</option>
               </select>
             </div>
 
-            <!-- Precio -->
-            <div class="filter-group-hero">
-              <label class="filter-label-hero">💰 Precio</label>
-              <select bind:value={searchForm.priceRange} class="filter-select-hero">
+            <div class="filter-group">
+              <label class="filter-label">💰 Precio</label>
+              <select bind:value={searchForm.priceRange} class="filter-select">
                 <option value="">Cualquiera</option>
                 <option value="low">💵 Económico</option>
                 <option value="medium">💶 Medio</option>
@@ -395,56 +415,54 @@
             </div>
           {/if}
 
-          <!-- FILTROS ESPECÍFICOS PARA PLATILLOS -->
+          <!-- Filtros específicos para platillos -->
           {#if searchType === 'dishes'}
-            <!-- Categoría -->
-            <div class="filter-group-hero">
-              <label class="filter-label-hero">🏷️ Categoría</label>
+            <div class="filter-group">
+              <label class="filter-label">🏷️ Categoría</label>
               <input 
                 type="text" 
                 bind:value={searchForm.categoryId}
                 placeholder="ID de categoría"
-                class="filter-input-hero"
+                class="filter-input"
               />
             </div>
 
-            <!-- Restaurante -->
-            <div class="filter-group-hero">
-              <label class="filter-label-hero">🏪 Restaurante</label>
+            <div class="filter-group">
+              <label class="filter-label">🏪 Restaurante</label>
               <input 
                 type="text" 
                 bind:value={searchForm.restaurantId}
                 placeholder="ID de restaurante"
-                class="filter-input-hero"
+                class="filter-input"
               />
             </div>
           {/if}
 
-          <!-- Ordenar - Común pero con opciones diferentes -->
-          <div class="filter-group-hero">
-            <label class="filter-label-hero">📊 Ordenar</label>
-            <select bind:value={searchForm.sortBy} class="filter-select-hero">
+          <!-- Ordenar -->
+          <div class="filter-group">
+            <label class="filter-label">📊 Ordenar</label>
+            <select bind:value={searchForm.sortBy} class="filter-select">
               {#each getSortOptions() as option}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>
           </div>
 
-          <!-- Orden - Común -->
-          <div class="filter-group-hero">
-            <label class="filter-label-hero">🔄 Orden</label>
-            <select bind:value={searchForm.sortOrder} class="filter-select-hero">
-              <option value={-1}>Descendente (Mayor a menor)</option>
-              <option value={1}>Ascendente (Menor a mayor)</option>
+          <!-- Orden -->
+          <div class="filter-group">
+            <label class="filter-label">🔄 Orden</label>
+            <select bind:value={searchForm.sortOrder} class="filter-select">
+              <option value={-1}>Descendente ↓</option>
+              <option value={1}>Ascendente ↑</option>
             </select>
           </div>
         </div>
 
         <!-- Acciones de filtros -->
-        <div class="filter-actions-hero">
+        <div class="filter-actions">
           <button 
             type="button" 
-            class="clear-btn-hero"
+            class="clear-btn"
             onclick={clearFilters}
             disabled={activeFiltersCount() === 0}
           >
@@ -457,7 +475,7 @@
           
           <button 
             type="submit" 
-            class="apply-btn-hero"
+            class="apply-btn"
             disabled={loading}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -472,75 +490,233 @@
 </div>
 
 <style>
-  .search-form-container-hero {
+  .search-form-container {
     width: 100%;
+    /* max-width: 900px; */
+    margin: 0 auto;
     transition: all 0.3s ease;
+    padding-bottom: 0.5rem;
   }
 
-  .search-form-hero {
-    background: white;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
+  .search-form-container.compact {
+    max-width: 1000px;
+  }
+   
+
+  /* Navegación de tipos */
+  .search-navigation {
+    margin-bottom: 0.5rem;
+    display: grid;
+    grid-template-columns:  1fr 2fr 1fr;
+    align-items: center;
+    padding: 1rem 0rem 0.5rem 0;
+  }
+  /* Brand */
+  .brand-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+  }
+
+  .brand-button:hover {
+    background: rgba(255, 107, 53, 0.1);
+  }
+
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+
+  .brand-text {
+    color: var(--secondary-color);
+  }
+
+  .brand-accent {
+    color: var(--primary-color, #ff6b35);
+  }
+
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    /* padding: 8px; */
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    max-width: 380px;
+    margin: 0 auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  }
+
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
   }
 
-  .search-form-hero.mobile {
-    border-radius: 12px;
+  @media (max-width: 768px) {
+    .nav-tab {
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      gap: 6px;
+      flex-direction: column;
+    }
+
+    .nav-tabs {
+      max-width: 100%;
+      padding: 6px;
+    }
   }
 
-  .search-form-container-hero.focused .search-form-hero {
-    border-color: var(--primary-color, #ff6b35);
-    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.15);
+  .nav-tab:hover {
+    color: #374151;
+    background: rgba(255, 255, 255, 0.7);
     transform: translateY(-2px);
   }
 
-  .search-main-hero {
-    padding: 20px;
+  .nav-tab.active {
+    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
+    color: white;
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3);
+    transform: translateY(-1px) scale(1.02);
+  }
+
+  .tab-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+  }
+
+  .nav-tab.active .tab-icon {
+    transform: scale(1.1);
+  }
+
+  .tab-label {
+    white-space: nowrap;
+    font-weight: 700;
+  }
+
+  .nav-buttons{
     display: flex;
-    gap: 16px;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  /* Formulario principal */
+  .search-form {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    max-width: 850px;
+    margin:  0 auto;
+  }
+
+  .search-form.compact {
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .search-form-container.focused .search-form {
+    border-color: var(--primary-color, #ff6b35);
+    box-shadow: 0 12px 40px rgba(255, 107, 53, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .search-form-container.compact.focused .search-form {
+    transform: translateY(-1px);
+  }
+
+  .search-main {
+    padding: 24px;
+    display: flex;
+    gap: 20px;
     align-items: flex-start;
   }
 
-  .search-input-group {
+  .search-main.compact {
+    padding: 16px 20px;
+    gap: 16px;
+  }
+
+  .search-input-section {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    min-width: 0;
   }
 
-  .search-input-wrapper-hero {
+  .search-input-section.compact {
+    gap: 0;
+  }
+
+  .search-input-wrapper {
     position: relative;
     display: flex;
     align-items: center;
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 0 16px;
-    transition: all 0.3s ease;
-    min-height: 52px;
+    border-radius: 16px;
+    padding: 0 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 56px;
+    overflow: hidden;
   }
 
-  .search-input-wrapper-hero.focused {
+  .search-input-wrapper.compact {
+    min-height: 48px;
+    border-radius: 12px;
+    padding: 0 16px;
+  }
+
+  .search-input-wrapper.focused {
     background: white;
     border-color: var(--primary-color, #ff6b35);
     box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+    transform: scale(1.02);
   }
 
-  .search-icon-hero {
+  .search-input-wrapper.compact.focused {
+    transform: scale(1.01);
+  }
+
+  .search-icon {
     color: #64748b;
-    margin-right: 12px;
+    margin-right: 16px;
     display: flex;
     align-items: center;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
   }
 
-  .search-input-wrapper-hero.focused .search-icon-hero {
+  .search-input-wrapper.focused .search-icon {
     color: var(--primary-color, #ff6b35);
+    transform: scale(1.1);
   }
 
-  .search-input-hero {
+  .search-input {
     flex: 1;
     border: none;
     background: transparent;
@@ -551,116 +727,137 @@
     font-weight: 500;
   }
 
-  .search-input-hero::placeholder {
+  .search-input.compact {
+    font-size: 1rem;
+  }
+
+  .search-input::placeholder {
     color: #94a3b8;
     font-weight: 400;
   }
 
-  .clear-search-btn-hero {
+  .clear-search-btn {
     background: #e2e8f0;
     border: none;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: #64748b;
     transition: all 0.2s ease;
-    margin-left: 8px;
+    margin-left: 12px;
+    flex-shrink: 0;
   }
 
-  .clear-search-btn-hero:hover {
+  .clear-search-btn:hover {
     background: #cbd5e1;
     color: #475569;
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(90deg);
   }
 
   .popular-searches-quick {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
   }
 
   .popular-quick-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
-    background: #f1f5f9;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     border: 1px solid #e2e8f0;
-    border-radius: 20px;
+    border-radius: 24px;
     color: #64748b;
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn 0.5s ease forwards;
+    animation-delay: var(--delay, 0ms);
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .popular-quick-btn:hover {
     background: var(--primary-color, #ff6b35);
     color: white;
     border-color: var(--primary-color, #ff6b35);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
   }
 
-  .popular-emoji {
-    font-size: 0.9rem;
-  }
-
-  .popular-text {
-    white-space: nowrap;
-  }
-
-  .search-actions-hero {
+  .search-actions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     flex-shrink: 0;
   }
 
-  .filters-btn-hero {
+  .search-actions.compact {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .filters-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 12px 16px;
-    background: #f8fafc;
+    gap: 8px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 12px;
     color: #64748b;
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    min-height: 44px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 48px;
     position: relative;
+    overflow: hidden;
   }
 
-  .filters-btn-hero:hover,
-  .filters-btn-hero.active {
-    background: #0D1B2A;
+  .filters-btn.compact {
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+
+  .filters-btn:hover,
+  .filters-btn.active {
+    background: linear-gradient(135deg, #0D1B2A, #1e293b);
     color: white;
     border-color: #0D1B2A;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(13, 27, 42, 0.2);
   }
 
-  .filters-btn-hero.has-filters {
-    background: var(--primary-color, #ff6b35);
+  .filters-btn.has-filters {
+    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
     color: white;
     border-color: var(--primary-color, #ff6b35);
   }
 
-  .filters-count-hero {
+  .filters-count {
     position: absolute;
     top: -6px;
     right: -6px;
     background: #dc2626;
     color: white;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -669,186 +866,56 @@
     border: 2px solid white;
   }
 
-  .search-btn-hero {
+  .search-btn {
     background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 12px 20px;
+    border-radius: 14px;
+    padding: 14px 22px;
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    min-height: 52px;
+    gap: 10px;
+    min-height: 56px;
     position: relative;
+    overflow: hidden;
   }
 
-  .search-btn-hero:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+  .search-btn.compact {
+    min-height: 48px;
+    padding: 12px 20px;
   }
 
-  .search-btn-hero:disabled {
+  .search-btn:not(:disabled):hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(255, 107, 53, 0.4);
+  }
+
+  .search-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
     transform: none;
   }
 
-  .search-btn-hero.loading {
+  .search-btn.loading {
     color: transparent;
   }
 
-  .search-btn-spinner-hero {
+  .search-btn-spinner {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top: 2px solid white;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-  }
-
-  .advanced-filters-hero {
-    border-top: 1px solid #f1f5f9;
-    padding: 20px;
-    background: #f8fafc;
-  }
-
-  .filters-grid-hero {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-
-  .filters-grid-hero.mobile-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .filter-group-hero {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .filter-label-hero {
-    font-weight: 600;
-    color: #0D1B2A;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .filter-select-hero {
-    padding: 10px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background: white;
-    font-size: 0.9rem;
-    color: #0D1B2A;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 10px center;
-    background-repeat: no-repeat;
-    background-size: 16px;
-    padding-right: 36px;
-  }
-
-  .filter-select-hero:focus {
-    outline: none;
-    border-color: var(--primary-color, #ff6b35);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-  }
-
-  /* NUEVO: Estilos para inputs de filtros */
-  .filter-input-hero {
-    padding: 10px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background: white;
-    font-size: 0.9rem;
-    color: #0D1B2A;
-    transition: all 0.3s ease;
-  }
-
-  .filter-input-hero:focus {
-    outline: none;
-    border-color: var(--primary-color, #ff6b35);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-  }
-
-  .filter-input-hero::placeholder {
-    color: #9ca3af;
-  }
-
-  .filter-actions-hero {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-  }
-
-  .clear-btn-hero,
-  .apply-btn-hero {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.3s ease;
-    min-height: 40px;
-  }
-
-  .clear-btn-hero {
-    background: white;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
-  }
-
-  .clear-btn-hero:hover:not(:disabled) {
-    border-color: #cbd5e1;
-    color: #475569;
-  }
-
-  .clear-btn-hero:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .apply-btn-hero {
-    background: #0D1B2A;
-    color: white;
-    border: none;
-    flex: 1;
-    justify-content: center;
-    max-width: 200px;
-  }
-
-  .apply-btn-hero:hover:not(:disabled) {
-    background: #1e293b;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 27, 42, 0.2);
-  }
-
-  .apply-btn-hero:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
   }
 
   @keyframes spin {
@@ -856,64 +923,227 @@
     100% { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
+  /* Filtros avanzados */
+  .advanced-filters {
+    border-top: 1px solid #f1f5f9;
+    padding: 24px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  }
+
+  .advanced-filters.compact {
+    padding: 20px;
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .filters-grid.compact {
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .filters-grid.mobile-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filter-label {
+    font-weight: 700;
+    color: #0D1B2A;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .filter-select,
+  .filter-input {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+    font-size: 0.9rem;
+    color: #0D1B2A;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .filter-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+
+  .filter-select:focus,
+  .filter-input:focus {
+    outline: none;
+    border-color: var(--primary-color, #ff6b35);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    transform: scale(1.02);
+  }
+
+  .filter-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  .clear-btn,
+  .apply-btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 44px;
+  }
+
+  .clear-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+  }
+
+  .clear-btn:hover:not(:disabled) {
+    border-color: #cbd5e1;
+    color: #475569;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .clear-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .apply-btn {
+    background: linear-gradient(135deg, #0D1B2A, #1e293b);
+    color: white;
+    border: none;
+    flex: 1;
+    justify-content: center;
+    max-width: 220px;
+  }
+
+  .apply-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(13, 27, 42, 0.3);
+  }
+
+  .apply-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Responsive */
   @media (max-width: 768px) {
-    .search-main-hero {
+    .search-form-container {
+      max-width: none;
+    }
+
+    .search-main {
       flex-direction: column;
-      padding: 16px;
+      padding: 20px;
+      gap: 16px;
+    }
+
+    .search-main.compact {
+      flex-direction: row;
+      padding: 12px 16px;
       gap: 12px;
     }
 
-    .search-actions-hero {
+    .search-actions {
       flex-direction: row;
       width: 100%;
     }
 
-    .filters-btn-hero,
-    .search-btn-hero {
+    .search-actions.compact {
+      width: auto;
+    }
+
+    .filters-btn,
+    .search-btn {
       flex: 1;
-      min-height: 48px;
+      min-height: 52px;
     }
 
-    .popular-searches-quick {
-      justify-content: center;
+    .filters-btn.compact,
+    .search-btn.compact {
+      flex: none;
+      min-height: 44px;
     }
 
-    .filter-actions-hero {
+    .filter-actions {
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
 
-    .clear-btn-hero,
-    .apply-btn-hero {
+    .clear-btn,
+    .apply-btn {
       max-width: none;
+    }
+
+    .search-input-wrapper {
+      min-height: 52px;
+    }
+
+    .search-input-wrapper.compact {
+      min-height: 44px;
+    }
+    .nav-buttons{
+      display: none;
     }
   }
 
   @media (max-width: 480px) {
-    .search-main-hero {
-      padding: 12px;
-    }
-
-    .search-input-wrapper-hero {
-      min-height: 48px;
-      padding: 0 12px;
-    }
-
-    .search-input-hero {
-      font-size: 16px;
-    }
-
-    .filters-grid-hero.mobile-grid {
+    .filters-grid.mobile-grid {
       grid-template-columns: 1fr;
     }
 
-    .popular-searches-quick {
-      gap: 6px;
+    .search-input {
+      font-size: 16px;
+    }
+  }
+
+  /* Prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .search-form-container.focused .search-form,
+    .search-input-wrapper.focused,
+    .popular-quick-btn:hover,
+    .filters-btn:hover,
+    .search-btn:hover {
+      transform: none;
+      animation: none;
     }
 
     .popular-quick-btn {
-      padding: 6px 10px;
-      font-size: 0.8rem;
+      opacity: 1;
+      animation: none;
     }
   }
 </style>

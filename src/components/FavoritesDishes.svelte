@@ -9,7 +9,7 @@
     let dishesRating: Dish[] = [];
     let dishesSaved: Dish[] = [];
     let allDishes: Dish[] = [];
-    
+    let showFloatingButton: boolean = true
     let loading = true;
     let checked = false;
     let activeTab: 'favorites' | 'ratings' = 'favorites';
@@ -23,7 +23,7 @@
     // Computed para asegurar que los colores estén bien formateados
     $: formattedPrimaryColor = primaryColor || '#FF4500';
     $: formattedSecondaryColor = secondaryColor || '#FF4500';
-    $: formattedBackgroundColor = backgroundColor || '#FFFFFF';
+    $: formattedBackgroundColor = backgroundColor || 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)';
     
     // Suscribirse al store para mantener actualizados los datos
     onMount(() => {
@@ -180,7 +180,8 @@
     {/if}
 </div>
 
-<a 
+{#if showFloatingButton}
+    <a 
   href="{username ? `/${username}/menu` : '/' }" 
   class="floating-button"
   in:fly={{ y: 50, duration: 500 }}
@@ -195,6 +196,7 @@
   </div>
   <div class="pulse-effect"></div>
 </a>
+{/if}
   
 <style>
   /* Estilos convertidos de Tailwind a CSS puro */

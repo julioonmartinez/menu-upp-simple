@@ -102,18 +102,17 @@ export interface DishSearchResponse {
 
 export interface DishRanking {
   position: number;
-  dish: {
     id: string;
     name: string;
     description: string;
     price: number;
-    image?: string;
-    categoryId?: string;
+    image: string;
+    categoryId: string;
     restaurantId?: string;
-  };
   rating: number;
   totalRatings: number;
   totalComments?: number;
+  favorites:number,
 }
 
 export interface TopRatedDishesResponse {
