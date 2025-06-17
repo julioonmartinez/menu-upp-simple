@@ -1,3 +1,4 @@
+import type { Restaurant } from '../interfaces';
 import type { 
   RestaurantRating, 
   RestaurantRatingCreate, 
@@ -11,7 +12,14 @@ import type {
   RestaurantComment,
   RestaurantCommentCreate,
   RestaurantCommentUpdate,
-  RestaurantCommentsResponse  
+  RestaurantCommentsResponse,  
+  RestaurantFavoriteResponse,
+  UserRestaurantFavoritesResponse,
+  RestaurantFavoriteStatusResponse,
+  AnonymousRestaurantFavoritesResponse,
+  CombinedFavoritesResponse,
+  PopularRestaurantsResponse,
+  FavoritesStatsResponse
 } from '../interfaces/restaurantRating';
 import { debugApiConfiguration, fetchRestaurantByUsername } from './apiService';
 
@@ -395,7 +403,7 @@ export async function fetchTopRatedRestaurants(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/top-rated?limit=${limit}&min_reviews=${minReviews}`;
   
-  console.log('🏆 Fetching top rated restaurants:', { limit, minReviews });
+  console.log('🏆 Fetching top rated restaurants:', { limit, minReviews } , );
   
   try {
     const response = await fetchWithStandardConfig(url, {
@@ -413,6 +421,7 @@ export async function fetchTopRatedRestaurants(
     }
     
     const data = await response.json();
+    
     
     if (!Array.isArray(data)) {
       console.error('❌ Invalid top rated restaurants data structure:', data);
@@ -897,6 +906,812 @@ export async function createAnonymousRestaurantComment(
     throw error;
   }
 }
+/**
+ * ==========================================
+ * FAVORITOS DE RESTAURANTES - USUARIOS AUTENTICADOS
+ * ==========================================
+ */
 
+/**
+ * Obtiene todos los restaurantes favoritos del usuario actual
+ */
+export async function fetchUserRestaurantFavorites(
+  token: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<UserRestaurantFavoritesResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurant-favorites/?page=${page}&limit=${limit}`;
+  
+  console.log('❤️ Fetching user restaurant favorites:', { page, limit });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      headers: getAuthHeaders(token),
+      timeout: 10000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching user favorites:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching user favorites: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !Array.isArray(data.restaurants)) {
+      console.error('❌ Invalid favorites data structure:', data);
+      throw new Error('Invalid favorites data format');
+    }
+    
+    console.log('✅ Successfully fetched user restaurant favorites:', data.restaurants.length);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching user restaurant favorites:', error);
+    throw error;
+  }
+}
+
+/**
+ * Alterna el estado de favorito de un restaurante (toggle)
+ */
+export async function toggleRestaurantFavorite(
+  restaurantId: string,
+  token: string
+): Promise<RestaurantFavoriteResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/favorite`;
+  
+  console.log('❤️ Toggling restaurant favorite:', { restaurantId });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error toggling favorite:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error toggling favorite: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully toggled restaurant favorite:', data.action);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error toggling restaurant favorite:', error);
+    throw error;
+  }
+}
+
+/**
+ * Añade un restaurante a favoritos
+ */
+export async function addRestaurantToFavorites(
+  restaurantId: string,
+  token: string
+): Promise<RestaurantFavoriteResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurant-favorites/restaurant/${restaurantId}`;
+  
+  console.log('➕ Adding restaurant to favorites:', { restaurantId });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error adding to favorites:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error adding to favorites: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully added restaurant to favorites');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error adding restaurant to favorites:', error);
+    throw error;
+  }
+}
+
+/**
+ * Quita un restaurante de favoritos
+ */
+export async function removeRestaurantFromFavorites(
+  restaurantId: string,
+  token: string
+): Promise<RestaurantFavoriteResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurant-favorites/restaurant/${restaurantId}`;
+  
+  console.log('➖ Removing restaurant from favorites:', { restaurantId });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token),
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error removing from favorites:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error removing from favorites: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully removed restaurant from favorites');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error removing restaurant from favorites:', error);
+    throw error;
+  }
+}
+
+/**
+ * Verifica si un restaurante está en favoritos del usuario
+ */
+export async function checkRestaurantFavoriteStatus(
+  restaurantId: string,
+  token: string
+): Promise<RestaurantFavoriteStatusResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/favorite-status`;
+  
+  console.log('🔍 Checking restaurant favorite status:', { restaurantId });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      headers: getAuthHeaders(token),
+      timeout: 5000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error checking favorite status:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error checking favorite status: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully checked restaurant favorite status:', data.isFavorite);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error checking restaurant favorite status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene el contador de favoritos del usuario
+ */
+export async function getUserFavoritesCount(token: string): Promise<{ userId: string; totalFavoriteRestaurants: number }> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurant-favorites/count`;
+  
+  console.log('📊 Getting user favorites count');
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      headers: getAuthHeaders(token),
+      timeout: 5000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error getting favorites count:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error getting favorites count: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully got user favorites count:', data.totalFavoriteRestaurants);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error getting user favorites count:', error);
+    throw error;
+  }
+}
+
+/**
+ * ==========================================
+ * FAVORITOS DE RESTAURANTES - USUARIOS ANÓNIMOS
+ * ==========================================
+ */
+
+/**
+ * Obtiene todos los restaurantes favoritos de un usuario anónimo
+ */
+export async function fetchAnonymousRestaurantFavorites(
+  deviceId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<AnonymousRestaurantFavoritesResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurant-favorites/anonymous?page=${page}&limit=${limit}`;
+  
+  console.log('❤️ Fetching anonymous restaurant favorites:', { deviceId, page, limit });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      headers: getAnonymousHeaders(deviceId),
+      timeout: 10000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching anonymous favorites:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching anonymous favorites: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !Array.isArray(data.restaurants)) {
+      console.error('❌ Invalid anonymous favorites data structure:', data);
+      throw new Error('Invalid anonymous favorites data format');
+    }
+    
+    console.log('✅ Successfully fetched anonymous restaurant favorites:', data.restaurants.length);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching anonymous restaurant favorites:', error);
+    throw error;
+  }
+}
+
+/**
+ * Alterna el estado de favorito de un restaurante para usuario anónimo
+ */
+export async function toggleAnonymousRestaurantFavorite(
+  restaurantId: string,
+  deviceId: string,
+  action: 'add' | 'remove' | 'toggle' = 'toggle'
+): Promise<RestaurantFavoriteResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/favorite-anonymous?action=${action}`;
+  
+  console.log('❤️ Toggling anonymous restaurant favorite:', { restaurantId, deviceId, action });
+  
+  try {
+    // Validación adicional
+    if (!restaurantId || !deviceId) {
+      throw new Error('Restaurant ID and Device ID are required');
+    }
+
+    const response = await fetchWithStandardConfig(url, {
+      method: 'POST',
+      headers: getAnonymousHeaders(deviceId),
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error toggling anonymous favorite:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error toggling anonymous favorite: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Guardar localmente para tracking
+    if (data.action === 'added') {
+      saveLocalRestaurantFavorite({
+        restaurantId,
+        deviceId,
+        timestamp: new Date().toISOString()
+      });
+    } else if (data.action === 'removed') {
+      removeLocalRestaurantFavorite(restaurantId, deviceId);
+    }
+    
+    console.log('✅ Successfully toggled anonymous restaurant favorite:', data.action);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error toggling anonymous restaurant favorite:', error);
+    throw error;
+  }
+}
+
+/**
+ * Verifica si un restaurante está en favoritos anónimos
+ */
+export async function checkAnonymousRestaurantFavoriteStatus(
+  restaurantId: string,
+  deviceId: string
+): Promise<RestaurantFavoriteStatusResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/favorite-status-anonymous`;
+  
+  console.log('🔍 Checking anonymous restaurant favorite status:', { restaurantId, deviceId });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      headers: getAnonymousHeaders(deviceId),
+      timeout: 5000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error checking anonymous favorite status:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error checking anonymous favorite status: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully checked anonymous restaurant favorite status:', data.isFavorite);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error checking anonymous restaurant favorite status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene favoritos combinados (platillos + restaurantes) para usuario anónimo
+ */
+export async function fetchCombinedAnonymousFavorites(
+  deviceId: string,
+  limitDishes: number = 10,
+  limitRestaurants: number = 10
+): Promise<CombinedFavoritesResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/anonymous/favorites/combined?limit_dishes=${limitDishes}&limit_restaurants=${limitRestaurants}`;
+  
+  console.log('🔗 Fetching combined anonymous favorites:', { deviceId, limitDishes, limitRestaurants });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      headers: getAnonymousHeaders(deviceId),
+      timeout: 10000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching combined favorites:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching combined favorites: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !Array.isArray(data.dishes) || !Array.isArray(data.restaurants)) {
+      console.error('❌ Invalid combined favorites data structure:', data);
+      throw new Error('Invalid combined favorites data format');
+    }
+    
+    console.log('✅ Successfully fetched combined anonymous favorites:', data.counts);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching combined anonymous favorites:', error);
+    throw error;
+  }
+}
+
+/**
+ * ==========================================
+ * ENDPOINTS PÚBLICOS Y ESTADÍSTICAS
+ * ==========================================
+ */
+
+/**
+ * Obtiene los restaurantes más populares por número de favoritos
+ */
+export async function fetchPopularRestaurantsByFavorites(
+  limit: number = 10
+): Promise<PopularRestaurantsResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/popular/by-favorites?limit=${limit}`;
+  
+  console.log('🏆 Fetching popular restaurants by favorites:', { limit });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      timeout: 10000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching popular restaurants:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching popular restaurants: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !Array.isArray(data.popular_restaurants)) {
+      console.error('❌ Invalid popular restaurants data structure:', data);
+      throw new Error('Invalid popular restaurants data format');
+    }
+    
+    console.log('✅ Successfully fetched popular restaurants by favorites:', data.popular_restaurants.length);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching popular restaurants by favorites:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene estadísticas generales del sistema de favoritos
+ */
+export async function fetchRestaurantFavoritesStats(): Promise<FavoritesStatsResponse> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurant-favorites/stats`;
+  
+  console.log('📊 Fetching restaurant favorites stats');
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      timeout: 8000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching favorites stats:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching favorites stats: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully fetched restaurant favorites stats');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching restaurant favorites stats:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene el contador total de favoritos de un restaurante
+ */
+export async function fetchRestaurantFavoritesCount(
+  restaurantId: string
+): Promise<{ restaurantId: string; restaurantName: string; favoritesCount: number; analytics: any }> {
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/restaurants/${restaurantId}/favorites-count`;
+  
+  console.log('📊 Fetching restaurant favorites count:', { restaurantId });
+  
+  try {
+    const response = await fetchWithStandardConfig(url, {
+      timeout: 5000,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error fetching favorites count:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      });
+      throw new Error(`Error fetching favorites count: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Successfully fetched restaurant favorites count:', data.favoritesCount);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error fetching restaurant favorites count:', error);
+    throw error;
+  }
+}
+
+/**
+ * ==========================================
+ * FUNCIONES HELPER PARA LOCAL STORAGE
+ * ==========================================
+ */
+
+/**
+ * Interface para favoritos locales de restaurantes
+ */
+interface LocalRestaurantFavorite {
+  restaurantId: string;
+  deviceId: string;
+  timestamp: string;
+}
+
+/**
+ * Obtiene los favoritos de restaurantes guardados localmente
+ */
+export function getLocalRestaurantFavorites(): LocalRestaurantFavorite[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem('local_restaurant_favorites');
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('⚠️ Error reading local restaurant favorites:', error);
+    return [];
+  }
+}
+
+/**
+ * Guarda un favorito de restaurante localmente
+ */
+export function saveLocalRestaurantFavorite(favorite: LocalRestaurantFavorite): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const localFavorites = getLocalRestaurantFavorites();
+    
+    // Remover favorito anterior del mismo restaurante y dispositivo
+    const filteredFavorites = localFavorites.filter(f => 
+      !(f.restaurantId === favorite.restaurantId && f.deviceId === favorite.deviceId)
+    );
+    
+    filteredFavorites.push(favorite);
+    
+    // Mantener solo los últimos 100 favoritos
+    const recentFavorites = filteredFavorites.slice(-100);
+    
+    localStorage.setItem('local_restaurant_favorites', JSON.stringify(recentFavorites));
+    console.log('💾 Saved local restaurant favorite');
+  } catch (error) {
+    console.warn('⚠️ Error saving local restaurant favorite:', error);
+  }
+}
+
+/**
+ * Remueve un favorito de restaurante localmente
+ */
+export function removeLocalRestaurantFavorite(restaurantId: string, deviceId: string): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const localFavorites = getLocalRestaurantFavorites();
+    const filteredFavorites = localFavorites.filter(f => 
+      !(f.restaurantId === restaurantId && f.deviceId === deviceId)
+    );
+    
+    localStorage.setItem('local_restaurant_favorites', JSON.stringify(filteredFavorites));
+    console.log('💾 Removed local restaurant favorite');
+  } catch (error) {
+    console.warn('⚠️ Error removing local restaurant favorite:', error);
+  }
+}
+
+/**
+ * Verifica si un restaurante está en favoritos localmente
+ */
+export function hasRestaurantFavoriteLocally(restaurantId: string, deviceId: string): boolean {
+  const localFavorites = getLocalRestaurantFavorites();
+  return localFavorites.some(favorite => 
+    favorite.restaurantId === restaurantId && favorite.deviceId === deviceId
+  );
+}
+
+/**
+ * Obtiene todos los favoritos locales combinados (platillos + restaurantes)
+ */
+export function getAllLocalFavorites(deviceId: string) {
+  return {
+    dishes: getLocalRatings().filter(r => r.deviceId === deviceId), // Reutilizar función existente
+    restaurants: getLocalRestaurantFavorites().filter(f => f.deviceId === deviceId),
+    deviceId,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Limpia todos los favoritos locales de restaurantes
+ */
+export function clearLocalRestaurantFavorites(): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.removeItem('local_restaurant_favorites');
+    console.log('🧹 Local restaurant favorites cleared');
+  } catch (error) {
+    console.warn('⚠️ Error clearing local restaurant favorites:', error);
+  }
+}
+
+/**
+ * ==========================================
+ * FUNCIONES HELPER MEJORADAS
+ * ==========================================
+ */
+
+/**
+ * Función helper para obtener un restaurante con su estado de favorito
+ */
+export async function fetchRestaurantWithFavoriteStatus(
+  restaurantId: string,
+  token?: string,
+  deviceId?: string
+): Promise<Restaurant & { userFav: boolean; favoritesCount: number }> {
+  console.log('🔍 Fetching restaurant with favorite status:', { restaurantId, hasToken: !!token, hasDeviceId: !!deviceId });
+  
+  try {
+    // Obtener restaurante y estado de favorito en paralelo
+    const [restaurantResult, statusResult, countResult] = await Promise.allSettled([
+      fetchRestaurantByUsername ? fetchRestaurantByUsername(restaurantId) : Promise.reject('fetchRestaurantByUsername not available'),
+      token 
+        ? checkRestaurantFavoriteStatus(restaurantId, token)
+        : deviceId 
+          ? checkAnonymousRestaurantFavoriteStatus(restaurantId, deviceId)
+          : Promise.resolve({ isFavorite: false }),
+      fetchRestaurantFavoritesCount(restaurantId)
+    ]);
+    
+    if (restaurantResult.status === 'rejected') {
+      throw new Error(`Restaurant not found: ${restaurantResult.reason}`);
+    }
+    
+    const restaurant = restaurantResult.value;
+    const favoriteStatus = statusResult.status === 'fulfilled' ? statusResult.value : { isFavorite: false };
+    const favoriteCount = countResult.status === 'fulfilled' ? countResult.value : { favoritesCount: 0 };
+    
+    return {
+      ...restaurant,
+      userFav: favoriteStatus.isFavorite,
+      favoritesCount: favoriteCount.favoritesCount
+    };
+    
+  } catch (error) {
+    console.error('❌ Error fetching restaurant with favorite status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Función helper para verificar múltiples restaurantes favoritos de una vez
+ */
+export async function checkMultipleRestaurantFavorites(
+  restaurantIds: string[],
+  token?: string,
+  deviceId?: string
+): Promise<Record<string, boolean>> {
+  console.log('🔍 Checking multiple restaurant favorites:', { count: restaurantIds.length });
+  
+  if (!token && !deviceId) {
+    // Sin autenticación, devolver todos como false
+    return restaurantIds.reduce((acc, id) => {
+      acc[id] = false;
+      return acc;
+    }, {} as Record<string, boolean>);
+  }
+  
+  try {
+    // Si hay muchos restaurantes, verificar localmente primero
+    if (restaurantIds.length > 10 && deviceId) {
+      const localResults: Record<string, boolean> = {};
+      restaurantIds.forEach(id => {
+        localResults[id] = hasRestaurantFavoriteLocally(id, deviceId);
+      });
+      return localResults;
+    }
+    
+    // Para pocos restaurantes, hacer llamadas individuales
+    const promises = restaurantIds.map(id => 
+      token 
+        ? checkRestaurantFavoriteStatus(id, token).catch(() => ({ isFavorite: false }))
+        : deviceId
+          ? checkAnonymousRestaurantFavoriteStatus(id, deviceId).catch(() => ({ isFavorite: false }))
+          : Promise.resolve({ isFavorite: false })
+    );
+    
+    const results = await Promise.all(promises);
+    
+    return restaurantIds.reduce((acc, id, index) => {
+      acc[id] = results[index].isFavorite;
+      return acc;
+    }, {} as Record<string, boolean>);
+    
+  } catch (error) {
+    console.error('❌ Error checking multiple restaurant favorites:', error);
+    // En caso de error, devolver todos como false
+    return restaurantIds.reduce((acc, id) => {
+      acc[id] = false;
+      return acc;
+    }, {} as Record<string, boolean>);
+  }
+}
+
+/**
+ * Función para sincronizar favoritos locales con el servidor (para cuando el usuario se autentica)
+ */
+export async function syncLocalRestaurantFavoritesToServer(
+  token: string,
+  deviceId: string
+): Promise<{ synced: number; errors: number }> {
+  console.log('🔄 Syncing local restaurant favorites to server');
+  
+  try {
+    const localFavorites = getLocalRestaurantFavorites().filter(f => f.deviceId === deviceId);
+    
+    if (localFavorites.length === 0) {
+      console.log('📭 No local favorites to sync');
+      return { synced: 0, errors: 0 };
+    }
+    
+    let syncedCount = 0;
+    let errorCount = 0;
+    
+    // Sincronizar cada favorito
+    for (const favorite of localFavorites) {
+      try {
+        await addRestaurantToFavorites(favorite.restaurantId, token);
+        syncedCount++;
+      } catch (error) {
+        console.warn(`⚠️ Error syncing favorite ${favorite.restaurantId}:`, error);
+        errorCount++;
+      }
+    }
+    
+    // Limpiar favoritos locales después de sincronizar
+    if (syncedCount > 0) {
+      clearLocalRestaurantFavorites();
+    }
+    
+    console.log(`✅ Sync completed: ${syncedCount} synced, ${errorCount} errors`);
+    return { synced: syncedCount, errors: errorCount };
+    
+  } catch (error) {
+    console.error('❌ Error syncing local favorites to server:', error);
+    return { synced: 0, errors: 1 };
+  }
+}
 
 

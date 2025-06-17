@@ -20,6 +20,7 @@
   --bg-accent: #e2e8f0;
   --bg-surface: rgba(255, 255, 255, 0.9);
   --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-skeleton:linear-gradient(90deg, rgba(255, 255, 255, 0.9) 25%, rgba(240, 240, 240, 0.9) 50%, rgba(255, 255, 255, 0.9) 75%);
   
   /* Colores de texto - Jerarquía clara */
   --text-primary: #0D1B2A;
@@ -846,7 +847,7 @@ button:focus-visible {
     --bg-accent: #475569;
     --bg-surface: rgba(30, 41, 59, 0.9);
     --bg-glass: rgba(30, 41, 59, 0.8);
-    
+    --bg-skeleton: linear-gradient(90deg, rgba(30, 41, 59, 0.9) 25%, rgba(45, 60, 80, 0.9) 50%, rgba(30, 41, 59, 0.9) 75%);
     --text-primary: #f8fafc;
     --text-secondary: #e2e8f0;
     --text-muted: #94a3b8;

@@ -7,10 +7,11 @@ interface Props {
     backgroundColor?: string;
     textColor?: string;
   };
-  username: string
+  username: string;
+  primaryColor?: string
 }
 
-const { link, theme, username } = Astro.props;
+const { link, theme, username, primaryColor = '#FF4500' } = Astro.props;
 
 // Función mejorada para convertir iconos del backend a clases de Font Awesome 6
 const getIconClass = (iconKey?: string) => {
@@ -181,7 +182,7 @@ if (import.meta.env.DEV) {
   <div class="link-content">
     <div 
       class="link-icon"
-      style={`background-color: ${iconColors.backgroundColor}; color: ${iconColors.color};`}
+      style={` color: ${primaryColor};`}
     >
       <i class={iconClass} aria-hidden="true"></i>
     </div>
@@ -205,7 +206,7 @@ if (import.meta.env.DEV) {
     padding: 1rem 1.25rem;
     background-color: var(--link-bg, #FFFFFF);
     color: var(--link-text, #2C2C2C);
-    border-radius: 16px;
+    border-radius: 0.75rem;
     text-decoration: none;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);

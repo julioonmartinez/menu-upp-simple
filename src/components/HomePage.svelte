@@ -6,7 +6,7 @@
   
   // Componentes
   import RestaurantCard from './RestaurantCard.svelte';
-  import CardDishSvelte from './Cards/CardDishCompact.svelte';
+  import CardDishSvelte from './Cards/CardDishDyanmic.svelte';
   import Toast from './Toast.svelte';
   import HeroSearchBox from './HeroSearchBox.svelte';
 
@@ -212,23 +212,24 @@ function closeDishModal() {
   }
 
   // Función para transformar RestaurantRanking a Restaurant
-  function transformRestaurantRanking(ranking: RestaurantRanking): Restaurant {
-    const restaurant = ranking.restaurant;
-    return {
-      ...restaurant,
-      // Asegurar que priceRange sea del tipo correcto
-      priceRange: restaurant.priceRange as "low" | "medium" | "high" | "premium" | undefined,
-      // Agregar analytics si no existen
-      analytics: {
-        averageRating: ranking.rating,
-        reviewsCount: ranking.totalReviews,
-        visitsCount: 0,
-        ordersCount: 0,
-        favoritesCount: 0,
-        commentsCount: 0
-      }
-    };
-  }
+  // function transformRestaurantRanking(ranking: RestaurantRanking): Restaurant {
+  //   const restaurant = ranking.restaurant;
+  //   console.log('ranking', ranking)
+  //   return {
+  //     ...restaurant,
+  //     // Asegurar que priceRange sea del tipo correcto
+  //     priceRange: restaurant.priceRange as "low" | "medium" | "high" | "premium" | undefined,
+  //     // Agregar analytics si no existen
+  //     analytics: {
+  //       averageRating: ranking.rating,
+  //       reviewsCount: ranking.totalReviews,
+  //       visitsCount: ranking.restaurant. ,
+  //       ordersCount: 0 ,
+  //       favoritesCount: ranking.analytics?.favoritesCount,
+  //       commentsCount: ranking.analytics?.commentsCount
+  //     }
+  //   };
+  // }
 
   // Stores derivados usando Svelte 5 syntax
   const storeInitialized = $derived($isRestaurantStoreInitialized && $isDishRatingInitialized);
@@ -274,57 +275,7 @@ function closeDishModal() {
     </div>
   </section>
 
-  <!-- Top Rated Restaurants Section -->
-  <section class="content-section">
-    <div class="section-container">
-      <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
-        <h2 class="section-title">🏆 Restaurantes mejor valorados</h2>
-        <p class="section-subtitle">Los favoritos de nuestra comunidad</p>
-      </div>
-
-      {#if loading.topRestaurants}
-        <div class="loading-grid">
-          {#each Array(6) as _, i}
-            <div class="skeleton-card" in:fade={{ duration: 200, delay: i * 100 }}></div>
-          {/each}
-        </div>
-      {:else if errors.topRestaurants}
-        <div class="error-state" in:scale={{ duration: 300 }}>
-          <div class="error-icon">⚠️</div>
-          <p>{errors.topRestaurants}</p>
-          <button class="retry-btn" onclick={loadTopRestaurants}>Reintentar</button>
-        </div>
-      {:else if data.topRestaurants.length > 0}
-        <div class="restaurants-grid">
-          {#each data.topRestaurants as restaurant, index (restaurant.restaurant.id)}
-            <div 
-              in:fly={{ 
-                y: isMobile ? 20 : 30, 
-                duration: 400, 
-                delay: index * 100,
-                easing: quintOut 
-              }}
-            >
-             <RestaurantCardCompact 
-                restaurant={transformRestaurantRanking(restaurant)}
-                  storeInitialized={storeInitialized}
-                  on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
-                
-                />
-              
-            </div>
-          {/each}
-        </div>
-      {:else}
-        <div class="empty-state">
-          <div class="empty-icon">🍽️</div>
-          <p>No hay restaurantes disponibles en este momento</p>
-        </div>
-      {/if}
-    </div>
-  </section>
-
-  <!-- Top Rated Dishes Section -->
+    <!-- Top Rated Dishes Section -->
   <section class="content-section">
     <div class="section-container">
       <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
@@ -371,6 +322,97 @@ function closeDishModal() {
       {/if}
     </div>
   </section>
+
+  <!-- Top Rated Restaurants Section -->
+  <section class="content-section">
+    <div class="section-container">
+      <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
+        <h2 class="section-title">🏆 Restaurantes mejor valorados</h2>
+        <p class="section-subtitle">Los favoritos de nuestra comunidad</p>
+      </div>
+
+      {#if loading.topRestaurants}
+        <div class="loading-grid">
+          {#each Array(6) as _, i}
+            <div class="skeleton-card" in:fade={{ duration: 200, delay: i * 100 }}></div>
+          {/each}
+        </div>
+      {:else if errors.topRestaurants}
+        <div class="error-state" in:scale={{ duration: 300 }}>
+          <div class="error-icon">⚠️</div>
+          <p>{errors.topRestaurants}</p>
+          <button class="retry-btn" onclick={loadTopRestaurants}>Reintentar</button>
+        </div>
+      {:else if data.topRestaurants.length > 0}
+        <div class="restaurants-grid">
+          {#each data.topRestaurants as restaurant, index (restaurant.restaurant.id)}
+            <div 
+              in:fly={{ 
+                y: isMobile ? 20 : 30, 
+                duration: 400, 
+                delay: index * 100,
+                easing: quintOut 
+              }}
+            >
+             <RestaurantCardCompact 
+                restaurant={restaurant.restaurant}
+                  storeInitialized={storeInitialized}
+                  on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                
+                />
+              
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <div class="empty-state">
+          <div class="empty-icon">🍽️</div>
+          <p>No hay restaurantes disponibles en este momento</p>
+        </div>
+      {/if}
+    </div>
+  </section>
+
+  <!-- Most Commented Dishes Section -->
+  {#if data.mostCommentedDishes.length > 0}
+    <section class="content-section">
+      <div class="section-container">
+        <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
+          <h2 class="section-title">💬 Más comentados</h2>
+          <p class="section-subtitle">Los platillos que generan más conversación</p>
+        </div>
+
+        <div class="dishes-grid">
+          {#each data.mostCommentedDishes as dishRanking, index (dishRanking.id || `commented-dish-${index}`)}
+            <div 
+              in:fly={{ 
+                y: isMobile ? 15 : 25, 
+                duration: 350, 
+                delay: index * 100,
+                easing: quintOut 
+              }}
+            >
+              <div class="commented-dish-wrapper">
+                <div class="comments-badge">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8.5 19H16.5C17.8807 19 19 17.8807 19 16.5V7.5C19 6.11929 17.8807 5 16.5 5H7.5C6.11929 5 5 6.11929 5 7.5V18.25C5 18.6642 5.33579 19 5.75 19C5.88807 19 6.01951 18.9481 6.12132 18.8536L8.5 19Z" 
+                          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>{dishRanking.totalComments || 0}</span>
+                </div>
+                <CardDishSvelte 
+                  item={dishRanking}
+                  index={index}
+                  storeMode={false}
+                />
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </section>
+  {/if}
+
 
   <!-- Featured Restaurants Section -->
   {#if data.featuredRestaurants && data.featuredRestaurants.featured_restaurants.length > 0}
@@ -422,45 +464,6 @@ function closeDishModal() {
     </section>
   {/if}
 
-  <!-- Most Commented Dishes Section -->
-  {#if data.mostCommentedDishes.length > 0}
-    <section class="content-section">
-      <div class="section-container">
-        <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
-          <h2 class="section-title">💬 Más comentados</h2>
-          <p class="section-subtitle">Los platillos que generan más conversación</p>
-        </div>
-
-        <div class="dishes-grid">
-          {#each data.mostCommentedDishes as dishRanking, index (dishRanking.id || `commented-dish-${index}`)}
-            <div 
-              in:fly={{ 
-                y: isMobile ? 15 : 25, 
-                duration: 350, 
-                delay: index * 100,
-                easing: quintOut 
-              }}
-            >
-              <div class="commented-dish-wrapper">
-                <div class="comments-badge">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8.5 19H16.5C17.8807 19 19 17.8807 19 16.5V7.5C19 6.11929 17.8807 5 16.5 5H7.5C6.11929 5 5 6.11929 5 7.5V18.25C5 18.6642 5.33579 19 5.75 19C5.88807 19 6.01951 18.9481 6.12132 18.8536L8.5 19Z" 
-                          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{dishRanking.totalComments || 0}</span>
-                </div>
-                <CardDishSvelte 
-                  item={dishRanking}
-                  index={index}
-                  storeMode={false}
-                />
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    </section>
-  {/if}
 
   <!-- CTA Final Section -->
   <section class="cta-section">
@@ -499,12 +502,13 @@ function closeDishModal() {
 <style>
   .homepage {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    background: var(--bg-secondary);
   }
 
   /* Hero Section */
   .hero-section {
     padding: 2rem 0 1rem;
+    background-image: none !important;
     /* background: linear-gradient(135deg, 
       rgba(255, 107, 53, 0.05) 0%, 
       rgba(255, 140, 105, 0.03) 50%, 
@@ -528,13 +532,13 @@ function closeDishModal() {
   .hero-title {
     font-size: 2.5rem;
     font-weight: 800;
-    color: #0D1B2A;
+    color: var(--text-primary);
     margin-bottom: 1rem;
     line-height: 1.1;
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
+    background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -542,7 +546,7 @@ function closeDishModal() {
 
   .hero-subtitle {
     font-size: 1.1rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin-bottom: 2rem;
     line-height: 1.6;
   }
@@ -588,12 +592,12 @@ function closeDishModal() {
   .stat-divider {
     width: 1px;
     height: 2rem;
-    background: #e2e8f0;
+    background: var(--bg-secondary);
   }
 
   /* Content Sections */
   .content-section {
-    padding: 3rem 0;
+    padding: 1.5rem 0;
     position: relative;
     z-index: 1; /* Asegurar que esté por debajo del dropdown */
   }
@@ -612,7 +616,7 @@ function closeDishModal() {
 
   .section-header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
     position: relative;
     z-index: 2; /* Por debajo del dropdown */
   }
@@ -620,13 +624,13 @@ function closeDishModal() {
   .section-title {
     font-size: 1.75rem;
     font-weight: 800;
-    color: #0D1B2A;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
   }
 
   .section-subtitle {
     font-size: 1rem;
-    color: #64748b;
+    color: var(--text-secondary);
     max-width: 500px;
     margin: 0 auto;
   }
@@ -640,7 +644,7 @@ function closeDishModal() {
 
   .dishes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1.5rem;
   }
 
@@ -665,7 +669,7 @@ function closeDishModal() {
     position: absolute;
     top: -20px;
     right: 1rem;
-    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    background: var(--success);
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 12px;
@@ -707,7 +711,7 @@ function closeDishModal() {
   /* Skeleton Loaders */
   .skeleton-card {
     height: 300px;
-    background: linear-gradient(90deg, #f0f2f5 25%, #e4e6ea 50%, #f0f2f5 75%);
+    background: --bg-skeleton;
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 16px;
@@ -869,11 +873,11 @@ function closeDishModal() {
     }
 
     .content-section {
-      padding: 1.5rem 0;
+      padding: 0.75rem 0;
     }
 
     .section-header {
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
     }
   }
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts">
   //RatingSystem
   import { createEventDispatcher } from 'svelte';
-  import { scale, fade, fly } from 'svelte/transition';
+  import { scale, fade } from 'svelte/transition';
   import { quintOut, backOut } from 'svelte/easing';
   
   import { 
@@ -25,9 +25,7 @@
   // Estado local compacto
   let hoveredStar = $state(0);
   let selectedRating = $state(0);
-  let showConfirmation = $state(false);
   let isMobile = $state(false);
-  let hasInteracted = $state(false);
 
   // Detectar móvil
   function checkMobile() {
@@ -69,16 +67,9 @@
   function handleStarClick(star: number) {
     if (!canRate || isRating) return;
 
-    hasInteracted = true;
     selectedRating = star;
-    
-    if (isMobile) {
-      // En móvil, mostrar confirmación
-      showConfirmation = true;
-    } else {
-      // En desktop, rating inmediato
-      submitRating();
-    }
+    // Envío directo sin confirmación
+    submitRating();
   }
 
   async function submitRating() {
@@ -88,9 +79,6 @@
       const success = await rateRestaurantAnonymously(restaurantId, selectedRating);
       
       if (success) {
-        showConfirmation = false;
-        hasInteracted = false;
-        
         dispatch('toast', {
           message: `¡Gracias por valorar con ${selectedRating} estrella${selectedRating > 1 ? 's' : ''}!`,
           type: 'success'
@@ -104,15 +92,7 @@
       
       // Reset en caso de error
       selectedRating = userRating;
-      showConfirmation = false;
     }
-  }
-
-  function cancelRating() {
-    selectedRating = userRating;
-    showConfirmation = false;
-    hasInteracted = false;
-    hoveredStar = 0;
   }
 
   function getStarDisplay(starNumber: number): boolean {
@@ -130,28 +110,6 @@
       5: '🤩'
     };
     return emojis[rating as keyof typeof emojis] || '😐';
-  }
-
-  function getRatingText(rating: number): string {
-    switch (rating) {
-      case 1: return 'Malo';
-      case 2: return 'Regular';
-      case 3: return 'Bueno';
-      case 4: return 'Muy bueno';
-      case 5: return 'Excelente';
-      default: return 'Valorar';
-    }
-  }
-
-  function getRatingMessage(rating: number): string {
-    switch (rating) {
-      case 1: return '😞 No fue una buena experiencia';
-      case 2: return '😐 Podría mejorar';
-      case 3: return '🙂 Estuvo bien';
-      case 4: return '😊 Me gustó mucho';
-      case 5: return '🤩 ¡Increíble!';
-      default: return '';
-    }
   }
 </script>
 
@@ -173,85 +131,39 @@
     <!-- Estado: Puede valorar -->
     <div class="rating-interactive-compact" class:mobile={isMobile}>
       
-      {#if !hasInteracted || !isMobile}
-        <!-- Estrellas interactivas compactas -->
-        <div class="rating-container-compact">
-          <div 
-            class="stars-row-compact interactive" 
-            class:mobile={isMobile}
-          >
-            {#each [1, 2, 3, 4, 5] as star}
-              <button
-                class="star-btn-compact"
-                class:active={getStarDisplay(star)}
-                class:mobile={isMobile}
-                disabled={isRating}
-                on:click={() => handleStarClick(star)}
-                on:mouseenter={() => handleStarHover(star)}
-                on:mouseleave={handleStarLeave}
-                title="{star} estrella{star > 1 ? 's' : ''}"
-                in:scale={{ duration: 200, delay: star * 30, easing: backOut }}
-              >
-                <i class="fas fa-star" class:active={getStarDisplay(star)}></i>
-              </button>
-            {/each}
-
-            <!-- Emoji flotante absoluto -->
-            {#if hoveredStar > 0 && !isMobile}
-              <div class="hover-emoji-absolute">
-                {getRatingEmoji(hoveredStar)}
-              </div>
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Confirmación móvil compacta -->
-      {#if showConfirmation && isMobile}
+      <!-- Estrellas interactivas compactas -->
+      <div class="rating-container-compact">
         <div 
-          class="mobile-confirmation-compact"
-          in:fly={{ y: 20, duration: 350, easing: quintOut }}
-          out:fly={{ y: -20, duration: 250, easing: quintOut }}
+          class="stars-row-compact interactive" 
+          class:mobile={isMobile}
         >
-          <div class="confirmation-content-compact">
-            <div class="confirmation-header-compact">
-              <span class="confirmation-emoji-compact">
-                {getRatingEmoji(selectedRating)}
-              </span>
-              <div class="confirmation-stars-compact">
-                {#each [1, 2, 3, 4, 5] as star}
-                  <i class="fas fa-star confirmation-star-compact" class:filled={star <= selectedRating}></i>
-                {/each}
-              </div>
-            </div>
+          {#each [1, 2, 3, 4, 5] as star}
+            <button
+              class="star-btn-compact"
+              class:active={getStarDisplay(star)}
+              class:mobile={isMobile}
+              disabled={isRating}
+              on:click={() => handleStarClick(star)}
+              on:mouseenter={() => handleStarHover(star)}
+              on:mouseleave={handleStarLeave}
+              title="{star} estrella{star > 1 ? 's' : ''}"
+              in:scale={{ duration: 200, delay: star * 30, easing: backOut }}
+            >
+              <i class="fas fa-star" class:active={getStarDisplay(star)}></i>
+            </button>
+          {/each}
 
-            <div class="confirmation-actions-compact">
-              <button 
-                class="cancel-btn-compact"
-                on:click={cancelRating}
-                disabled={isRating}
-              >
-                ✕
-              </button>
-              <button 
-                class="confirm-btn-compact"
-                on:click={submitRating}
-                disabled={isRating}
-                class:loading={isRating}
-              >
-                {#if isRating}
-                  <div class="btn-spinner-compact"></div>
-                {:else}
-                  ✓
-                {/if}
-              </button>
+          <!-- Emoji flotante absoluto -->
+          {#if hoveredStar > 0 && !isMobile}
+            <div class="hover-emoji-absolute">
+              {getRatingEmoji(hoveredStar)}
             </div>
-          </div>
+          {/if}
         </div>
-      {/if}
+      </div>
 
       <!-- Loading state compacto -->
-      {#if isRating && !isMobile}
+      {#if isRating}
         <div class="rating-loading-compact" in:fade={{ duration: 200 }}>
           <div class="loading-spinner-compact"></div>
         </div>

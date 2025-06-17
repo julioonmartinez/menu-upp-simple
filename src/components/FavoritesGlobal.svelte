@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import type { Dish } from "../interfaces/dish";
-    import CardDishSvelte from "./Cards/CardDishSvelte.svelte";
+    import CardDishDynamic from "../components/Cards/CardDishDyanmic.svelte";
     import { fade, fly } from "svelte/transition";
     import { favoritesStore, favCount, ratingCount } from "../stores/favoritesStore";
   
@@ -57,7 +57,7 @@
 </script>
 
 <div 
-    style="--bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};" 
+     
     class="ratings-container" 
     class:active={(dishesRating.length > 0) || (dishesSaved.length > 0)}
 >
@@ -95,7 +95,7 @@
                     <div class="dishes-grid">
                         {#each dishesSaved as dish, index (dish.id)}
                             <div in:fly={{y: 20, delay: index * 50, duration: 300}}>
-                                <CardDishSvelte 
+                                <CardDishDynamic
                                     item={dish} 
                                     index={index} 
                                     storeMode={false}
@@ -116,7 +116,7 @@
                             <p class="empty-description">
                                 Explora nuestro menú y guarda tus platillos favoritos para encontrarlos fácilmente después.
                             </p>
-                            <a href="/menu" class="explore-button">
+                            <a href="/buscar" class="explore-button">
                                 Explorar el menú
                                 <i class="fa-solid fa-arrow-right arrow-margin"></i>
                             </a>
@@ -132,7 +132,7 @@
                     <div class="dishes-grid">
                         {#each dishesRating as dish, index (dish.id)}
                             <div in:fly={{y: 20, delay: index * 50, duration: 300}}>
-                                <CardDishSvelte 
+                                <CardDishDynamic
                                     item={dish} 
                                     index={index} 
                                     storeMode={false}
@@ -218,7 +218,7 @@
       align-items: center;
       justify-content: center;
       padding: 1rem;
-      background-color: var(--bg-color);
+      background-color: var(--bg-secondary);
       overflow-x: hidden;
   }
   
@@ -236,7 +236,7 @@
   .main-title {
       font-size: 1.75rem;
       font-weight: 700;
-      color: var(--color-text);
+      color: var(--text-primary);
       margin-bottom: 0.25rem;
       position: relative;
       display: inline-block;
@@ -256,7 +256,7 @@
 
   .subtitle {
       font-size: 0.9rem;
-      color: var(--color-text);
+      color: var(--text-secondary);
       opacity: 0.8;
       margin-bottom: 1.25rem;
   }
@@ -270,9 +270,9 @@
   .tabs {
       display: flex;
       width: 100%;
-      max-width: 300px;
+      max-width: 320px;
       padding: 0.3rem;
-      background-color: var(--secondary-color);
+      background-color: var(--bg-accent);
       border-radius: 1.75rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
@@ -285,7 +285,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
       font-weight: 500;
-      color: var(--color-text);
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -309,7 +309,7 @@
 
   .section-title {
       font-size: 1.2rem;
-      color: var(--color-text);
+      color: var(--text-primary);
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
@@ -343,7 +343,7 @@
       border-radius: 50%;
       position: relative;
       padding: 2px;
-      background: linear-gradient(0deg, rgba(255,255,255,0) 33%, var(--primary-color) 100%);
+      background:var(--primary-gradient) ;
       animation: rotate 1.5s linear infinite;
   }
   
@@ -351,12 +351,12 @@
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background-color: var(--bg-color);
+      background-color: var(--bg-secondary);
   }
   
   .loading-text {
       margin-top: 1rem;
-      color: var(--color-text);
+      color: var(--text-primary);
       font-size: 0.9rem;
       font-weight: 500;
   }

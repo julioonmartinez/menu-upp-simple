@@ -103,9 +103,7 @@
   });
 }
 
-  function closeCommentsModal() {
-    showCommentsModal = false;
-  }
+
 
   // Nueva función para navegar al restaurante
   function navigateToRestaurant(event: Event) {

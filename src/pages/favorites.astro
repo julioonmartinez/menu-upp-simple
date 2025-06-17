@@ -1,5 +1,5 @@
 ---
-import FavoritesDishes from '../components/FavoritesDishes.svelte';
+import FavoritesGlobal from '../components/FavoritesGlobal.svelte';
 import type { Dish } from '../interfaces/dish';
 import MenuuppLayout from '../layouts/MenuuppLayout.astro';
 
@@ -8,5 +8,5 @@ import MenuuppLayout from '../layouts/MenuuppLayout.astro';
 ---
 
 <MenuuppLayout title='Mis Favoritos' >
-    <FavoritesDishes client:load showFloatingButton={false}  />
+    <FavoritesGlobal client:load showFloatingButton={false} backgroundColor={'#f8fafc'}  />
 </MenuuppLayout>

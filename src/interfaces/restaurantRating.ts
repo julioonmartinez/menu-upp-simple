@@ -74,20 +74,18 @@ export interface RestaurantSearchResponse {
 
 export interface RestaurantRanking {
   position: number;
-  restaurant: {
-    id: string;
-    name: string;
-    description?: string;
-    image?: string;
-    imageProfile?: string;
-    logo?: string;
-    cuisineType?: string[];
-    priceRange?: string;
-    address?: string;
-    username?: string;
-  };
+  restaurant: Restaurant;
   rating: number;
   totalReviews: number;
+  analytics?: {
+    averageRating?: number;
+    reviewsCount?: number;
+    visitsCount?: number;
+    ordersCount?: number;
+    favoritesCount?: number;
+    commentsCount?: number; // NUEVO
+  };
+  
 }
 
 export interface FeaturedRestaurant {
@@ -181,4 +179,77 @@ export interface PageChangeEvent {
 export interface SearchEvent {
   filters: RestaurantSearchFilters;
   page?: number;
+}
+
+export interface RestaurantFavorite {
+  id: string;
+  restaurantId: string;
+  userId: string;
+  timestamp: string;
+  restaurant?: Restaurant; // Datos básicos del restaurante
+}
+
+export interface RestaurantFavoriteResponse {
+  id: string;
+  name: string;
+  favoritesCount: number;
+  userFav: boolean;
+  message: string;
+  action: 'added' | 'removed';
+}
+
+export interface UserRestaurantFavoritesResponse {
+  restaurants: Restaurant[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+  total_favorites: number;
+}
+
+export interface AnonymousRestaurantFavoritesResponse extends UserRestaurantFavoritesResponse {
+  anonymous: boolean;
+}
+
+export interface PopularRestaurantsResponse {
+  popular_restaurants: Restaurant[];
+  total_count: number;
+  ranking_by: string;
+  includes_anonymous: boolean;
+}
+
+export interface RestaurantFavoriteStatusResponse {
+  restaurantId: string;
+  isFavorite: boolean;
+  authenticated?: boolean;
+  anonymous?: boolean;
+  userId?: string;
+  deviceId?: string;
+}
+
+export interface CombinedFavoritesResponse {
+  dishes: any[]; // Array de platillos favoritos
+  restaurants: Restaurant[];
+  deviceId: string;
+  anonymous: boolean;
+  counts: {
+    dishes: number;
+    restaurants: number;
+    total: number;
+  };
+}
+
+export interface FavoritesStatsResponse {
+  total_favorites: {
+    registered: number;
+    anonymous: number;
+    total: number;
+  };
+  top_restaurants: Restaurant[];
+  most_active_users: any[] | string;
+  generated_at: string;
 }

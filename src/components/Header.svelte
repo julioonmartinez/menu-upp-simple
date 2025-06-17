@@ -113,7 +113,7 @@
       <!-- Actions -->
       <div class="nav-actions">
 
-        <button 
+        <!-- <button 
           class="action-btn favorites-btn"
           title="Favoritos"
           aria-label="Login"
@@ -123,7 +123,7 @@
   <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
          
-        </button>
+        </button> -->
         <!-- Favorites -->
         <a
           class="action-btn favorites-btn"
@@ -209,7 +209,7 @@
 
   .main-header.scrolled {
     background: rgba(255, 255, 255, 0.98);
-    border-bottom-color: #e2e8f0;
+    /* border-bottom-color: #e2e8f0; */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
@@ -455,7 +455,7 @@
   @media (prefers-color-scheme: dark) {
     .main-header {
       background: rgba(15, 23, 42, 0.95);
-      border-bottom-color: #334155;
+      /* border-bottom-color: #334155; */
     }
 
     .main-header.scrolled {
