@@ -23,7 +23,7 @@ import type {
 } from '../interfaces/restaurantRating';
 import { debugApiConfiguration, fetchRestaurantByUsername } from './apiService';
 
-
+//services/apiRatingService.ts
 const getBaseUrl = () => {
   const apiUrl = import.meta.env.PUBLIC_API_URL;
   const isDev = import.meta.env.DEV;

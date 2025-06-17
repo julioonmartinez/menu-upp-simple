@@ -1,3 +1,5 @@
+import type { Dish } from "./dish";
+
 // src/interfaces/restaurant.ts
 export interface ImageData {
   url: string;
@@ -105,4 +107,12 @@ export interface Restaurant {
 }
 
 
+interface DishWithUserState extends Dish {
+    userFav?: boolean;
+    userRating?: number;
+}
 
+interface RestaurantWithUserState extends Restaurant {
+    userFav?: boolean;
+    userRating?: number;
+}
