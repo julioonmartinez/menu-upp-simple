@@ -12,6 +12,7 @@ import type { Restaurant } from '../../interfaces/restaurant';
 import type { Category } from '../../interfaces/categories';
 import type { Dish } from '../../interfaces/dish';
 import type { LinkTree } from '../../interfaces';
+import BottomSheetQR from '../../components/BottomSheetQR.astro';
 
 // Obtener el username de los parámetros de la URL
 const { username } = Astro.params;
@@ -62,16 +63,6 @@ const slides =  restaurantInfo?.heroSlides || [
     imageUrl: restaurantInfo?.imageCover || '/images/restaurants/labellavita/cover.webp',
     title: `Bienvenidos a ${restaurantInfo?.name || 'nuestro restaurante'}`,
     subtitle: restaurantInfo?.description || 'Disfruta de la mejor comida tradicional'
-  },
-  {
-    imageUrl: '/images/restaurants/sushizen/cover.webp', 
-    title: 'Platillos únicos',
-    subtitle: 'Preparados con ingredientes frescos y locales'
-  },
-  {
-    imageUrl: '/images/restaurants/tacoselrey/cover.webp',
-    title: 'Ambiente familiar',
-    subtitle: 'El lugar perfecto para compartir momentos especiales'
   }
 ];
 
@@ -89,6 +80,10 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   <!-- Header del restaurante -->
   {hasValidData && (
     <Header restaurant={restaurantInfo!} linkTree={linksTreeInfo!} />
+     <BottomSheetQR 
+      restaurant={restaurantInfo!}
+      linkTree={linksTreeInfo!}
+    />
   )}
   
   <!-- Navegación de categorías -->
@@ -114,18 +109,43 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     />
   )}
   
-  <!-- Menú dinámico -->
+  <!-- Contenedor del menú con altura mínima reservada -->
   {hasValidData ? (
-    <DynamicMenu 
-      username={username}
-      categories={categoriesInfo!}
-      restaurant={restaurantInfo!}
-      storeMode={false}
-      client:load
-      primaryColor={restaurantInfo?.primaryColor}
-      secondaryColor={restaurantInfo?.secondaryColor}
-      backgroundColor={linksTreeInfo?.backgroundColor}
-    />
+    <div class="menu-container" id="menu-main-container">
+      <!-- Skeleton loader inicial mientras el componente Svelte no esté listo -->
+      <div class="menu-skeleton" id="menu-skeleton">
+        <div class="skeleton-header">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-subtitle"></div>
+        </div>
+        <div class="skeleton-grid">
+          {Array.from({length: 6}).map((_, i) => (
+            <div class="skeleton-card" key={i}>
+              <div class="skeleton-image"></div>
+              <div class="skeleton-content">
+                <div class="skeleton-line skeleton-line-title"></div>
+                <div class="skeleton-line skeleton-line-subtitle"></div>
+                <div class="skeleton-line skeleton-line-price"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <!-- Componente Svelte que se carga cuando esté listo -->
+      <div class="dynamic-menu-wrapper" id="dynamic-menu-wrapper" style="display: none;">
+        <DynamicMenu 
+          username={username}
+          categories={categoriesInfo!}
+          restaurant={restaurantInfo!}
+          storeMode={false}
+          client:load
+          primaryColor={restaurantInfo?.primaryColor}
+          secondaryColor={restaurantInfo?.secondaryColor}
+          backgroundColor={linksTreeInfo?.backgroundColor}
+        />
+      </div>
+    </div>
   ) : (
     <div class="error-container">
       <div class="error-content">
@@ -141,48 +161,139 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     </div>
   )}
   
-  <!-- Footer del menú -->
-  {hasValidData && (
-    <footer class="menu-footer" style={`--primary-color: ${restaurantInfo?.primaryColor};  `} >
-      <div class="footer-content">
-        <div class="restaurant-info">
-          <h3>{restaurantInfo!.name}</h3>
-          {restaurantInfo!.address && (
-            <p class="address">📍 {restaurantInfo!.address}</p>
-          )}
-          {restaurantInfo!.phone && (
-            <p class="phone">📞 {restaurantInfo!.phone}</p>
-          )}
-          {restaurantInfo!.schedule && (
-            <p class="schedule">🕒 {restaurantInfo!.schedule}</p>
-          )}
-        </div>
-        
-        {/* <div class="footer-actions">
-          <a href={`/${username}`} class="profile-link">
-            Ver perfil completo
-          </a>
-          
-          {restaurantInfo!.phone && (
-            <a 
-              href={`tel:${restaurantInfo!.phone}`} 
-              class="call-button"
-            >
-              Llamar ahora
-            </a>
-          )}
-        </div> */}
+  <!-- Footer del menú - Solo se muestra cuando el contenido está cargado -->
+  <footer 
+    class="menu-footer" 
+    id="menu-footer"
+    style={`--primary-color: ${restaurantInfo?.primaryColor}; --text-color:${linksTreeInfo?.textColor}; opacity: 0; transition: opacity 0.3s ease;`}
+  >
+    <div class="footer-content">
+      <div class="restaurant-info">
+        <h3>{restaurantInfo!.name}</h3>
+        {restaurantInfo!.address && (
+          <p class="address">📍 {restaurantInfo!.address}</p>
+        )}
+        {restaurantInfo!.phone && (
+          <p class="phone">📞 {restaurantInfo!.phone}</p>
+        )}
+        {restaurantInfo!.schedule && (
+          <p class="schedule">🕒 {restaurantInfo!.schedule}</p>
+        )}
       </div>
-      
-      <div class="footer-bottom">
-        <p>© 2025 {restaurantInfo!.name} - Powered by Menu-upp</p>
-      </div>
-    </footer>
-  )}
-  <FloatingButton username={restaurantInfo?.username} client:load colorPrimary={restaurantInfo?.primaryColor}  ></FloatingButton>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>© 2025 {restaurantInfo!.name} - Powered by Menu-upp</p>
+    </div>
+  </footer>
+  
+  <FloatingButton username={restaurantInfo?.username} client:load colorPrimary={restaurantInfo?.primaryColor || '#FF4500'}  ></FloatingButton>
+   
 </Layout>
 
 <style>
+  /* Contenedor principal del menú */
+  .menu-container {
+    min-height: 100vh; /* Altura mínima para reservar espacio */
+    position: relative;
+  }
+
+  /* Skeleton loader mejorado */
+  .menu-skeleton {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .skeleton-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .skeleton-title {
+    height: 2rem;
+    width: 300px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+    margin: 0 auto 1rem auto;
+  }
+
+  .skeleton-subtitle {
+    height: 1rem;
+    width: 200px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin: 0 auto;
+    animation-delay: 0.2s;
+  }
+
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .skeleton-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeInUp 0.6s ease forwards;
+  }
+
+  .skeleton-card:nth-child(1) { animation-delay: 0.1s; }
+  .skeleton-card:nth-child(2) { animation-delay: 0.2s; }
+  .skeleton-card:nth-child(3) { animation-delay: 0.3s; }
+  .skeleton-card:nth-child(4) { animation-delay: 0.4s; }
+  .skeleton-card:nth-child(5) { animation-delay: 0.5s; }
+  .skeleton-card:nth-child(6) { animation-delay: 0.6s; }
+
+  .skeleton-image {
+    height: 200px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  .skeleton-content {
+    padding: 1.5rem;
+  }
+
+  .skeleton-line {
+    height: 1rem;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+  }
+
+  .skeleton-line-title {
+    width: 80%;
+    height: 1.25rem;
+  }
+
+  .skeleton-line-subtitle {
+    width: 100%;
+    animation-delay: 0.2s;
+  }
+
+  .skeleton-line-price {
+    width: 40%;
+    animation-delay: 0.4s;
+  }
+
+  /* Wrapper del componente dinámico */
+  .dynamic-menu-wrapper {
+    width: 100%;
+  }
+
   /* Error container */
   .error-container {
     display: flex;
@@ -237,7 +348,6 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   /* Footer del menú */
   .menu-footer {
     background: var(--primary-color);
-    /* border-top: 1px solid #e2e8f0; */
     margin-top: 3rem;
   }
   
@@ -254,52 +364,14 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   .restaurant-info h3 {
     font-size: 1.25rem;
     font-weight: 700;
-    color: white;
+    color: var(--text-color);
     margin-bottom: 1rem;
   }
   
   .restaurant-info p {
-    color: white;
+    color: var(--text-color);
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
-  }
-  
-  .footer-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .profile-link,
-  .call-button {
-    padding: 10px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-    text-align: center;
-    transition: all 0.3s ease;
-    font-size: 0.875rem;
-  }
-  
-  .profile-link {
-    background: white;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-  
-  .profile-link:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-  }
-  
-  .call-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-  }
-  
-  .call-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   }
   
   .footer-bottom {
@@ -309,61 +381,28 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   }
   
   .footer-bottom p {
-    color: white;
+    color: var(--text-color);
     font-size: 0.75rem;
     margin: 0;
   }
   
-  /* Responsive design */
-  @media (max-width: 768px) {
-    .footer-content {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-      text-align: center;
+  /* Animaciones */
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
     }
-    
-    .footer-actions {
-      align-items: center;
-    }
-    
-    .profile-link,
-    .call-button {
-      width: 200px;
+    100% {
+      background-position: -200% 0;
     }
   }
-  
-  @media (max-width: 480px) {
-    .error-content {
-      padding: 2rem 1rem;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
     }
-    
-    .footer-content {
-      padding: 1.5rem 1rem;
+    to {
+      opacity: 1;
     }
-    
-    .error-title {
-      font-size: 1.5rem;
-    }
-  }
-  
-  /* Estados de carga progresiva */
-  .category-nav,
-  .dynamic-menu,
-  .menu-footer {
-    opacity: 0;
-    animation: fadeInUp 0.6s ease forwards;
-  }
-  
-  .category-nav {
-    animation-delay: 0.1s;
-  }
-  
-  .dynamic-menu {
-    animation-delay: 0.2s;
-  }
-  
-  .menu-footer {
-    animation-delay: 0.3s;
   }
   
   @keyframes fadeInUp {
@@ -374,6 +413,42 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .skeleton-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    
+    .footer-content {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      text-align: center;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .menu-skeleton {
+      padding: 1rem;
+    }
+    
+    .skeleton-grid {
+      gap: 1rem;
+    }
+    
+    .error-content {
+      padding: 2rem 1rem;
+    }
+    
+    .footer-content {
+      padding: 1.5rem 1rem;
+    }
+    
+    .error-title {
+      font-size: 1.5rem;
     }
   }
 </style>
@@ -391,31 +466,89 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
       }
     }));
     
-    // Log de inicialización
+    // Manejar la transición del skeleton al contenido real
+    let svelteComponentReady = false;
+    
+    // Escuchar cuando el componente Svelte esté completamente montado
+    document.addEventListener('svelteMenuReady', () => {
+      svelteComponentReady = true;
+      handleMenuTransition();
+    });
+    
+    // También verificar periódicamente si el componente ya se renderizó
+    const checkInterval = setInterval(() => {
+      const dynamicMenuContent = document.querySelector('#menu-section');
+      if (dynamicMenuContent && dynamicMenuContent.children.length > 0) {
+        svelteComponentReady = true;
+        handleMenuTransition();
+        clearInterval(checkInterval);
+      }
+    }, 100);
+    
+    // Limpiar el intervalo después de 10 segundos máximo
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      if (!svelteComponentReady) {
+        // Si por alguna razón no se detectó la carga, mostrar de todos modos
+        handleMenuTransition();
+      }
+    }, 10000);
+    
+    function handleMenuTransition() {
+      const skeleton = document.getElementById('menu-skeleton');
+      const dynamicWrapper = document.getElementById('dynamic-menu-wrapper');
+      const footer = document.getElementById('menu-footer');
+      
+      if (skeleton && dynamicWrapper) {
+        // Fade out skeleton
+        skeleton.style.transition = 'opacity 0.3s ease';
+        skeleton.style.opacity = '0';
+        
+        setTimeout(() => {
+          // Hide skeleton and show dynamic menu
+          skeleton.style.display = 'none';
+          dynamicWrapper.style.display = 'block';
+          dynamicWrapper.style.opacity = '0';
+          dynamicWrapper.style.transition = 'opacity 0.3s ease';
+          
+          // Fade in dynamic menu
+          setTimeout(() => {
+            dynamicWrapper.style.opacity = '1';
+            
+            // Show footer
+            if (footer) {
+              footer.style.opacity = '1';
+            }
+          }, 50);
+        }, 300);
+      }
+    }
+    
     console.log('🍽️ Menu page loaded successfully');
   });
-  document.addEventListener('DOMContentLoaded', () => {
-  const categoryNav = document.querySelector('.category-nav');
-  if (!categoryNav) return;
-  
-  const navTop = categoryNav.offsetTop;
-  
-  window.addEventListener('scroll', () => {
-    if (window.scrollY >= navTop) {
-      categoryNav.style.position = 'fixed';
-      categoryNav.style.top = '0px';  // Sin espacio del header
-      categoryNav.style.left = '0';
-      categoryNav.style.right = '0';
-      categoryNav.style.zIndex = '100';
-      categoryNav.style.width = '100%';
-    } else {
-      categoryNav.style.position = 'static';
-      categoryNav.style.top = '';
-      categoryNav.style.left = '';
-      categoryNav.style.right = '';
-      categoryNav.style.width = '';
-    }
-  });
-});
-</script>
 
+  // Manejo del sticky category nav
+  document.addEventListener('DOMContentLoaded', () => {
+    const categoryNav = document.querySelector('.category-nav');
+    if (!categoryNav) return;
+    
+    const navTop = categoryNav.offsetTop;
+    
+    window.addEventListener('scroll', () => {
+      if (window.scrollY >= navTop) {
+        categoryNav.style.position = 'fixed';
+        categoryNav.style.top = '0px';
+        categoryNav.style.left = '0';
+        categoryNav.style.right = '0';
+        categoryNav.style.zIndex = '100';
+        categoryNav.style.width = '100%';
+      } else {
+        categoryNav.style.position = 'static';
+        categoryNav.style.top = '';
+        categoryNav.style.left = '';
+        categoryNav.style.right = '';
+        categoryNav.style.width = '';
+      }
+    });
+  });
+</script>

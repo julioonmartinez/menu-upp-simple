@@ -1,0 +1,742 @@
+---
+import type { LinkTree } from '../interfaces';
+import type { Restaurant, SocialLinks } from '../interfaces/restaurant';
+// import type { LinkTree } from '../interfaces/restaurant';
+// import type { SocialLinks } from "../interfaces/socialLinks";
+// Componente Adaptativo Modal/BottomSheet para Astro 5
+export interface Props {
+  restaurant: Restaurant,
+  linkTree: LinkTree | null
+  
+}
+
+const {
+  restaurant,
+  linkTree
+} = Astro.props;
+console.log('Restaurant data:', restaurant);
+
+// Valores por defecto seguros
+const backgroundColor = linkTree?.backgroundColor || '#FFFFFF';
+const textColor = linkTree?.textColor || '#2b2b2b';
+const primaryColor = restaurant?.primaryColor || '#FF4500';
+
+// Procesar el horario de forma compacta
+let formattedHours = "Sin horario registrado";
+
+if (restaurant?.schedule) {
+  formattedHours = restaurant.schedule;
+} else if (restaurant?.businessHours) {
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const dayNamesShort = {
+    monday: 'Lun',
+    tuesday: 'Mar',
+    wednesday: 'Mié',
+    thursday: 'Jue',
+    friday: 'Vie',
+    saturday: 'Sáb',
+    sunday: 'Dom'
+  };
+  
+  // Definir el tipo para scheduleGroups
+  const scheduleGroups: Record<string, string[]> = {};
+  
+  days.forEach(day => {
+    const dayInfo = restaurant?.businessHours?.[day as keyof typeof restaurant.businessHours];
+    if (!dayInfo) return;
+    
+    const scheduleKey = dayInfo.closed 
+      ? 'Cerrado' 
+      : `${dayInfo.open} - ${dayInfo.close}`;
+      
+    if (!scheduleGroups[scheduleKey]) {
+      scheduleGroups[scheduleKey] = [];
+    }
+    scheduleGroups[scheduleKey].push(day);
+  });
+  
+  // Formatear los grupos para mostrarlos
+  const formattedSchedules = Object.entries(scheduleGroups).map(([schedule, daysInGroup]) => {
+    // Formatear los días agrupados
+    let dayText = '';
+    
+    if (daysInGroup.length === 7) {
+      dayText = 'Todos los días';
+    } else if (daysInGroup.length === 5 && 
+               daysInGroup.includes('monday') && 
+               daysInGroup.includes('friday')) {
+      dayText = 'Lun-Vie';
+    } else if (daysInGroup.length === 2 && 
+               daysInGroup.includes('saturday') && 
+               daysInGroup.includes('sunday')) {
+      dayText = 'Fin de semana';
+    } else {
+      // Agrupar días consecutivos
+      let currentGroup: string[] = [];
+      let result: string[] = [];
+      
+      // Ordenar los días de la semana
+      const orderedDays = [...daysInGroup].sort((a, b) => 
+        days.indexOf(a) - days.indexOf(b)
+      );
+      
+      for (let i = 0; i < orderedDays.length; i++) {
+        const currentDay = orderedDays[i];
+        const nextDay = orderedDays[i + 1];
+        
+        currentGroup.push(currentDay);
+        
+        if (!nextDay || days.indexOf(nextDay) !== days.indexOf(currentDay) + 1) {
+          if (currentGroup.length === 1) {
+            result.push(dayNamesShort[currentGroup[0] as keyof typeof dayNamesShort]);
+          } else {
+            result.push(`${dayNamesShort[currentGroup[0] as keyof typeof dayNamesShort]}-${dayNamesShort[currentGroup[currentGroup.length - 1] as keyof typeof dayNamesShort]}`);
+          }
+          currentGroup = [];
+        }
+      }
+      
+      dayText = result.join(', ');
+    }
+    
+    return `${dayText}: ${schedule}`;
+  });
+  
+  formattedHours = formattedSchedules.join(' • ');
+}
+
+const socialIcons = {
+  facebook: 'fa-facebook-f',
+  instagram: 'fa-instagram',
+  twitter: 'fa-twitter',
+  tiktok: 'fa-tiktok',
+  youtube: 'fa-youtube',
+  linkedin: 'fa-linkedin-in',
+  whatsapp: 'fa-whatsapp',
+  telegram: 'fa-telegram',
+  pinterest: 'fa-pinterest-p',
+  snapchat: 'fa-snapchat-ghost'
+};
+---
+<!-- Estos elementos se moverán al body -->
+<div id="modal-overlay" class="modal-overlay" aria-hidden="true"></div>
+<div 
+      id="modal-container" 
+      class="modal-container" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-labelledby="modal-title" 
+      style={`--bg-background: ${backgroundColor}; --text-color: ${textColor}; --primary-color: ${primaryColor}`}
+    >
+  <div class="modal-content">
+    <header class="modal-header">
+      <div class="restaurant-info">
+        <img src={restaurant?.logo  || '' } width="80" height="40" alt={`${restaurant?.name} logo`} class="restaurant-logo">
+        <!-- <h2 id="modal-title" class="restaurant-name">{restaurant?.name}</h2> -->
+      </div>
+      <button id="modal-close" class="modal-close" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </header>
+    
+    <div class="modal-body">
+      <div class="qr-section">
+        <div class="qr-container">
+          <img src={restaurant.qrCode_data?.url} alt="Código QR para visitar nuestro menú online." class="qr-image">
+        </div>
+        <p class="qr-instructions">Escanea para visitar nuestro menú.</p>
+      </div>
+      
+      <div class="restaurant-details">
+        <div class="detail-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="detail-icon">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <p class="address">{restaurant?.address}</p>
+        </div>
+        
+        <div class="detail-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="detail-icon">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <p class="hours">{formattedHours}</p>
+        </div>
+      </div>
+    </div>
+    
+    <footer class="modal-footer">
+      <p class="social-title">Síguenos en redes sociales</p>
+      <div class="social-buttons">
+        {Object.entries(socialIcons).map(([network, iconClass])=>{
+          const socialNetwork = network as keyof SocialLinks;
+          const username = restaurant?.socialLinks?.[socialNetwork];
+          if (!username) return null;
+          return(
+          <a 
+              href={`https://${network}.com/${username}`} 
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              class="social-link"
+              aria-label={network}
+            >
+              <i class={`fa-brands ${iconClass}`}></i>
+            </a>
+          )
+        })}
+      </div>
+    </footer>
+  </div>
+</div>
+
+<style>
+  :root {
+    --modal-radius: 16px;
+    --modal-padding: 1.5rem;
+    --modal-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    --animation-duration: 0.3s;
+  }
+
+  /* Overlay: oscurece y aplica blur al fondo */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 998;
+    opacity: 0;
+    transition: opacity var(--animation-duration) ease;
+    pointer-events: none;
+  }
+  .modal-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  /* Contenedor Modal/BottomSheet */
+  .modal-container {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: -100%;
+    background-color: var(--bg-background);
+    z-index: 999;
+    transition: all var(--animation-duration) ease;
+    border-top-left-radius: var(--modal-radius);
+    border-top-right-radius: var(--modal-radius);
+    box-shadow: var(--modal-shadow);
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: contain; /* Prevenir scroll del body */
+  }
+  
+  .modal-container.open {
+    bottom: 0;
+  }
+  
+  .modal-content {
+    padding: var(--modal-padding);
+  }
+  
+  /* Header del modal */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .restaurant-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .restaurant-logo {
+    object-fit: contain;
+  }
+  
+  .restaurant-name {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--color-text, #333);
+  }
+  
+  .modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    color: var(--color-text, #333);
+  }
+  
+  .modal-close:hover, .modal-close:focus {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Sección del QR */
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .qr-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .qr-container {
+    width: 220px;
+    height: 220px;
+    padding: 0.85rem;
+    background-color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: transform 0.3s ease;
+  }
+  
+  .qr-container::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    border: 2px dashed var(--color-primary, #e74c3c);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  
+  .qr-container:hover {
+    transform: scale(1.02);
+  }
+  
+  .qr-image {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 6px;
+  }
+  
+  .qr-instructions {
+    color: var(--text-color, #333);
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin: 0;
+  }
+  
+  /* Detalles del restaurante */
+  .restaurant-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .detail-icon {
+    color: var(--primary-color, #e74c3c);
+    flex-shrink: 0;
+  }
+  
+  .detail-item p {
+    margin: 0;
+    color: var(--text-color, #333);
+  }
+  
+  /* Footer con botones sociales */
+  .modal-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+  .social-link{
+    color: var(--primary-color);
+  }
+  .social-title {
+    margin: 0 0 1rem 0;
+    font-size: 0.95rem;
+    color: var(--text-color, #333);
+    opacity: 0.8;
+  }
+  
+  .social-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+  
+  .social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--primary-color, #e74c3c);
+    color: white;
+    transition: all 0.3s ease;
+  }
+  
+  .social-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+  }
+  
+  .social-btn.facebook {
+    background-color: #3b5998;
+  }
+  
+  .social-btn.whatsapp {
+    background-color: #25d366;
+  }
+  
+  .social-btn.instagram {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  }
+
+  /* Modo escritorio: cambiar a modal centrado en vez de bottom sheet */
+  @media (min-width: 768px) {
+    .modal-container {
+      width: 480px;
+      max-width: 90vw;
+      height: auto;
+      max-height: 85vh;
+      bottom: auto;
+      top: -100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: var(--modal-radius);
+      transition: top var(--animation-duration) ease, opacity var(--animation-duration) ease;
+      opacity: 0;
+    }
+    
+    .modal-container.open {
+      top: 10%;
+      opacity: 1;
+    }
+    
+    .modal-body {
+      flex-direction: row;
+      align-items: center;
+      gap: 2rem;
+    }
+    
+    .qr-section {
+      flex-basis: 50%;
+    }
+    
+    .restaurant-details {
+      flex-basis: 50%;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .modal-container {
+      width: 580px;
+    }
+  }
+
+  /* Agregar al final de tus estilos existentes */
+
+/* Indicador visual para swipe en móvil */
+.modal-container::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+/* Mejorar el área táctil para swipe */
+.modal-header {
+  position: relative;
+  padding-top: 0.5rem; /* Espacio extra para el indicador */
+}
+
+/* Prevenir selección de texto durante el swipe */
+.modal-container.dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Solo mostrar indicador en móvil */
+@media (min-width: 768px) {
+  .modal-container::before {
+    display: none;
+  }
+}
+</style>
+
+<script>
+function setupModalComponent() {
+  const modal = document.getElementById('modal-container') as HTMLElement;
+  const overlay = document.getElementById('modal-overlay') as HTMLElement;
+  const closeButton = document.getElementById('modal-close') as HTMLElement;
+  
+  if (!modal || !overlay || !closeButton) return;
+  
+  // Variables para el swipe gesture
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+  let startTime = 0;
+  
+  // Configuración del swipe
+  const SWIPE_THRESHOLD = 100; // Píxeles mínimos para cerrar
+  const VELOCITY_THRESHOLD = 0.5; // Velocidad mínima para cerrar rápido
+  const MAX_SWIPE = 300; // Máximo desplazamiento antes de cerrar automáticamente
+  
+  function openModal() {
+    modal.classList.add('open');
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+    
+    // Reset de transformaciones previas
+    modal.style.transform = '';
+    modal.style.transition = '';
+    modal.classList.remove('dragging');
+    
+    // Agregar listeners de swipe
+    addSwipeListeners();
+    
+    // Accesibilidad: Enfoque al modal cuando se abre
+    setTimeout(() => {
+      closeButton.focus();
+    }, 100);
+    
+    // Añadir escucha de tecla ESC
+    document.addEventListener('keydown', handleEscKey);
+  }
+  
+  function closeModal() {
+    modal.classList.remove('open');
+    overlay.classList.remove('visible');
+    document.body.style.overflow = '';
+    
+    // Reset de transformaciones
+    modal.style.transform = '';
+    modal.style.transition = '';
+    modal.classList.remove('dragging');
+    
+    // Remover listeners de swipe
+    removeSwipeListeners();
+    
+    // Eliminar escucha de tecla ESC
+    document.removeEventListener('keydown', handleEscKey);
+  }
+  
+  function handleEscKey(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  }
+  
+  // === FUNCIONES PARA SWIPE TO DISMISS ===
+  
+  function getClientY(e: TouchEvent | MouseEvent): number {
+    if ('touches' in e) {
+      return e.touches[0]?.clientY || 0;
+    }
+    return e.clientY;
+  }
+  
+  function handleStart(e: TouchEvent | MouseEvent) {
+    // Solo procesar si el modal está abierto
+    if (!modal.classList.contains('open')) return;
+    
+    const target = e.target as HTMLElement;
+    
+    // No procesar si se toca un botón, enlace o elemento interactivo
+    if (target.closest('button, a, input, select, textarea, [role="button"]')) {
+      return;
+    }
+    
+    // Solo permitir swipe desde la parte superior del modal
+    const modalRect = modal.getBoundingClientRect();
+    const startPoint = getClientY(e);
+    
+    // Solo iniciar el swipe si se toca en los primeros 60px del modal
+    // Y no es el botón de cierre
+    if (startPoint > modalRect.top + 60) return;
+    
+    startY = startPoint;
+    currentY = startY;
+    isDragging = true;
+    startTime = Date.now();
+    
+    // Remover transiciones para seguimiento suave
+    modal.style.transition = 'none';
+    modal.classList.add('dragging');
+    
+    e.preventDefault();
+  }
+  
+  function handleMove(e: TouchEvent | MouseEvent) {
+    if (!isDragging) return;
+    
+    currentY = getClientY(e);
+    const deltaY = Math.max(0, currentY - startY); // Solo permitir movimiento hacia abajo
+    
+    // Aplicar resistencia progresiva
+    let adjustedDelta = deltaY;
+    if (deltaY > SWIPE_THRESHOLD) {
+      const excess = deltaY - SWIPE_THRESHOLD;
+      adjustedDelta = SWIPE_THRESHOLD + (excess * 0.3); // Resistencia del 70%
+    }
+    
+    // Aplicar transformación
+    const translateY = Math.min(adjustedDelta, MAX_SWIPE);
+    modal.style.transform = `translateY(${translateY}px)`;
+    
+    // Aplicar opacidad al overlay basada en el desplazamiento
+    const opacity = Math.max(0.3, 1 - (translateY / 200));
+    overlay.style.opacity = opacity.toString();
+    
+    e.preventDefault();
+  }
+  
+  function handleEnd(e: TouchEvent | MouseEvent) {
+    if (!isDragging) return;
+    
+    isDragging = false;
+    const deltaY = Math.max(0, currentY - startY);
+    const deltaTime = Date.now() - startTime;
+    const velocity = deltaY / deltaTime; // píxeles por milisegundo
+    
+    // Restaurar transición y remover clase dragging
+    modal.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    overlay.style.transition = 'opacity 0.3s ease';
+    modal.classList.remove('dragging');
+    
+    // Determinar si cerrar el modal
+    const shouldClose = deltaY > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
+    
+    if (shouldClose) {
+      // Animar hacia abajo y cerrar
+      modal.style.transform = 'translateY(100%)';
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        closeModal();
+      }, 300);
+    } else {
+      // Retornar a la posición original
+      modal.style.transform = '';
+      overlay.style.opacity = '';
+    }
+  }
+  
+  // === EVENT LISTENERS ===
+  
+  // Crear área específica para swipe (solo en el header, excluyendo botones)
+  function addSwipeListeners() {
+    // Touch events para dispositivos móviles - solo en el área del header
+    const modalHeader = modal.querySelector('.modal-header') as HTMLElement;
+    if (modalHeader) {
+      modalHeader.addEventListener('touchstart', handleStart, { passive: false });
+    }
+    
+    // Los eventos de move y end van en document para capturar el gesto completo
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('touchend', handleEnd, { passive: false });
+    
+    // Mouse events para testing en desktop (opcional)
+    if (modalHeader) {
+      modalHeader.addEventListener('mousedown', handleStart);
+    }
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+  }
+  
+  function removeSwipeListeners() {
+    const modalHeader = modal.querySelector('.modal-header') as HTMLElement;
+    if (modalHeader) {
+      modalHeader.removeEventListener('touchstart', handleStart);
+      modalHeader.removeEventListener('mousedown', handleStart);
+    }
+    document.removeEventListener('touchmove', handleMove);
+    document.removeEventListener('touchend', handleEnd);
+    document.removeEventListener('mousemove', handleMove);
+    document.removeEventListener('mouseup', handleEnd);
+  }
+  
+  // Evento específico para el botón de cierre
+  closeButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+  
+  // Evento específico para botones táctiles en el close button
+  closeButton.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+  
+  // Usar delegación de eventos para botones que abren el modal
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const button = target.closest('[data-open-modal]');
+    
+    if (button) {
+      e.preventDefault();
+      openModal();
+    } else if (overlay.contains(target) && !isDragging && !modal.classList.contains('dragging')) {
+      closeModal();
+    }
+  });
+  
+  // Prevenir que el clic dentro del modal cierre el modal
+  modal.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
+  // Limpiar event listeners al cerrar
+  function cleanup() {
+    removeSwipeListeners();
+  }
+  
+  // Cleanup cuando se navega a otra página
+  document.addEventListener('astro:before-preparation', cleanup);
+}
+
+// Inicializar en carga inicial
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupModalComponent);
+} else {
+  setupModalComponent();
+}
+
+// Reinicializar después de cada navegación
+document.addEventListener('astro:page-load', setupModalComponent);
+</script>

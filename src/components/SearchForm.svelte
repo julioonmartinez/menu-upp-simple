@@ -295,7 +295,7 @@
           {#if searchForm.search}
             <button 
               type="button" 
-              class="clear-search-btn"
+              class="clear-search-btn btn btn-secondary btn-sm btn-rounded"
               onclick={() => searchForm.search = ''}
               in:scale={{ duration: 200 }}
             >
@@ -328,7 +328,7 @@
         <!-- Botón de filtros avanzados -->
         <button 
           type="button"
-          class="filters-btn"
+          class="filters-btn btn btn-secondary"
           class:compact
           onclick={toggleAdvancedFilters}
           class:active={searchForm.showAdvancedFilters}
@@ -349,7 +349,7 @@
         <!-- Botón de búsqueda -->
         <button 
           type="submit" 
-          class="search-btn"
+          class="search-btn btn btn-primary"
           class:compact
           disabled={loading}
           class:loading
@@ -462,7 +462,7 @@
         <div class="filter-actions">
           <button 
             type="button" 
-            class="clear-btn"
+            class="clear-btn btn btn-ghost"
             onclick={clearFilters}
             disabled={activeFiltersCount() === 0}
           >
@@ -475,7 +475,7 @@
           
           <button 
             type="submit" 
-            class="apply-btn"
+            class="apply-btn btn btn-primary"
             disabled={loading}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -533,7 +533,7 @@
   }
 
   .brand-text {
-    color: var(--secondary-color);
+    color: var(--text-primary);
   }
 
   .brand-accent {
@@ -543,13 +543,14 @@
   .nav-tabs {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 0;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--bg-glass);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
-    /* padding: 8px; */
-    border: 1px solid rgba(226, 232, 240, 0.5);
-    max-width: 380px;
+    border-radius: 999px;
+    padding: 0.3rem;
+    border: var(--bg-accent);
+    /* max-width: 380px; */
     margin: 0 auto;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   }
@@ -560,13 +561,13 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px 16px;
+     padding: 0.6rem 0.75rem;
     border: none;
     background: transparent;
-    color: #64748b;
-    font-weight: 600;
+    color: var(--text-muted);
+    /* font-weight: 400; */
     font-size: 0.9rem;
-    border-radius: 14px;
+    border-radius: 999px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -575,7 +576,7 @@
 
   @media (max-width: 768px) {
     .nav-tab {
-      padding: 10px 12px;
+      padding: 0.6rem 0.75rem;
       font-size: 0.8rem;
       gap: 6px;
       flex-direction: column;
@@ -588,16 +589,16 @@
   }
 
   .nav-tab:hover {
-    color: #374151;
-    background: rgba(255, 255, 255, 0.7);
-    transform: translateY(-2px);
+    /* color: var(--text-sedondary);
+    background: var(--bg-surface);
+    transform: translateY(-2px); */
   }
 
   .nav-tab.active {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
+    background: var(--primary-color);
     color: white;
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3);
-    transform: translateY(-1px) scale(1.02);
+    /* box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3); */
+    /* transform: translateY(-1px) scale(1.02); */
   }
 
   .tab-icon {
@@ -606,7 +607,7 @@
   }
 
   .nav-tab.active .tab-icon {
-    transform: scale(1.1);
+    /* transform: scale(1.1); */
   }
 
   .tab-label {
@@ -622,9 +623,9 @@
 
   /* Formulario principal */
   .search-form {
-    background: white;
+    background: var(--bg-primary);
     border-radius: 20px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--bg-glass);
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
@@ -676,8 +677,8 @@
     position: relative;
     display: flex;
     align-items: center;
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
+    background: var(--bg-secondary);
+    border: 2px solid var(--bg-accent);
     border-radius: 16px;
     padding: 0 20px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -692,7 +693,7 @@
   }
 
   .search-input-wrapper.focused {
-    background: white;
+    background: var(--bg-accent);
     border-color: var(--primary-color, #ff6b35);
     box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
     transform: scale(1.02);
@@ -721,7 +722,7 @@
     border: none;
     background: transparent;
     font-size: 1.1rem;
-    color: #0D1B2A;
+    color: var(--text-primary);
     outline: none;
     padding: 0;
     font-weight: 500;
@@ -732,30 +733,16 @@
   }
 
   .search-input::placeholder {
-    color: #94a3b8;
+    color: var(--text-light);
     font-weight: 400;
   }
 
   .clear-search-btn {
-    background: #e2e8f0;
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: #64748b;
-    transition: all 0.2s ease;
-    margin-left: 12px;
-    flex-shrink: 0;
+   
   }
 
   .clear-search-btn:hover {
-    background: #cbd5e1;
-    color: #475569;
-    transform: scale(1.1) rotate(90deg);
+  
   }
 
   .popular-searches-quick {
@@ -770,10 +757,10 @@
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    border: 1px solid #e2e8f0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-accent);
     border-radius: 24px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
@@ -795,7 +782,7 @@
     color: white;
     border-color: var(--primary-color, #ff6b35);
     transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+    box-shadow: var(--primary-glow);
   }
 
   .search-actions {
@@ -811,42 +798,42 @@
   }
 
   .filters-btn {
-    display: flex;
+    /* display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     padding: 14px 18px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    border: 1px solid #e2e8f0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-accent);
     border-radius: 12px;
-    color: #64748b;
+    color: var(--text-muted);
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     min-height: 48px;
     position: relative;
-    overflow: hidden;
+    overflow: hidden; */
   }
 
   .filters-btn.compact {
-    padding: 12px 16px;
-    min-height: 44px;
+    /* padding: 12px 16px;
+    min-height: 44px; */
   }
 
   .filters-btn:hover,
   .filters-btn.active {
-    background: linear-gradient(135deg, #0D1B2A, #1e293b);
-    color: white;
-    border-color: #0D1B2A;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(13, 27, 42, 0.2);
+    /* background: linear-gradient(135deg, #0D1B2A, #1e293b); */
+    /* color: white; */
+    /* border-color: #0D1B2A; */
+    /* transform: translateY(-2px); */
+    /* box-shadow: 0 8px 20px rgba(13, 27, 42, 0.2); */
   }
 
   .filters-btn.has-filters {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
+    /* background: linear-gradient(135deg, var(--primary-color, #ff6b35), #ff8c69);
     color: white;
-    border-color: var(--primary-color, #ff6b35);
+    border-color: var(--primary-color, #ff6b35); */
   }
 
   .filters-count {
@@ -867,7 +854,7 @@
   }
 
   .search-btn {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
+    /* background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
     color: white;
     border: none;
     border-radius: 14px;
@@ -882,12 +869,12 @@
     gap: 10px;
     min-height: 56px;
     position: relative;
-    overflow: hidden;
+    overflow: hidden; */
   }
 
   .search-btn.compact {
-    min-height: 48px;
-    padding: 12px 20px;
+    /* min-height: 48px;
+    padding: 12px 20px; */
   }
 
   .search-btn:not(:disabled):hover {
@@ -912,7 +899,7 @@
     transform: translate(-50%, -50%);
     width: 22px;
     height: 22px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid #ffffff4d;
     border-top: 2px solid white;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -925,9 +912,9 @@
 
   /* Filtros avanzados */
   .advanced-filters {
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--bg-secondary);
     padding: 24px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    background: var(--bg-primary);
   }
 
   .advanced-filters.compact {
@@ -959,7 +946,7 @@
 
   .filter-label {
     font-weight: 700;
-    color: #0D1B2A;
+    color: var(--text-primary);
     font-size: 0.9rem;
     display: flex;
     align-items: center;
@@ -969,11 +956,11 @@
   .filter-select,
   .filter-input {
     padding: 12px 16px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--bg-accent);
     border-radius: 10px;
-    background: white;
+    background: var(--bg-primary);
     font-size: 0.9rem;
-    color: #0D1B2A;
+    color: var(--text-primary);
     cursor: pointer;
     transition: all 0.3s ease;
   }
@@ -1004,12 +991,12 @@
     gap: 16px;
     justify-content: flex-end;
     padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    border-top: 1px solid var(--bg-accent);
   }
 
   .clear-btn,
   .apply-btn {
-    padding: 12px 24px;
+    /* padding: 12px 24px;
     border-radius: 10px;
     font-weight: 600;
     font-size: 0.9rem;
@@ -1018,45 +1005,45 @@
     align-items: center;
     gap: 8px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-height: 44px;
+    min-height: 44px; */
   }
 
   .clear-btn {
-    background: white;
+    /* background: var(--bg-secondary);
     border: 1px solid #e2e8f0;
-    color: #64748b;
+    color: var(--text-muted); */
   }
 
   .clear-btn:hover:not(:disabled) {
-    border-color: #cbd5e1;
+    /* border-color: #cbd5e1;
     color: #475569;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */
   }
 
   .clear-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    /* opacity: 0.5;
+    cursor: not-allowed; */
   }
 
   .apply-btn {
-    background: linear-gradient(135deg, #0D1B2A, #1e293b);
+    /* background: linear-gradient(135deg, #0D1B2A, #1e293b);
     color: white;
-    border: none;
-    flex: 1;
+    border: none; */
+    /* flex: 1;
     justify-content: center;
-    max-width: 220px;
+    max-width: 220px; */
   }
 
   .apply-btn:hover:not(:disabled) {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 20px rgba(13, 27, 42, 0.3);
+    /* transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(13, 27, 42, 0.3); */
   }
 
   .apply-btn:disabled {
-    opacity: 0.6;
+    /* opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
+    transform: none; */
   }
 
   /* Responsive */

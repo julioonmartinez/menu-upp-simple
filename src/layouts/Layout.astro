@@ -2,7 +2,8 @@
 import '../styles/reset.css'
 import '../styles/global.css'
 import type { Restaurant } from '../interfaces'
-
+import BottomSheetQR from '../components/BottomSheetQR.astro'
+//Layout.astro
 interface Props {
 	restaurant: Restaurant
 	backgroundColor: string
@@ -25,6 +26,7 @@ const {restaurant , backgroundColor = '#FFFF'} = Astro.props;
 	</head>
 	<body style={`--font-family:${restaurant?.fontFamily }; --bg-color:${backgroundColor} `} >
 		<slot />
+		
 	</body>
 </html>
 

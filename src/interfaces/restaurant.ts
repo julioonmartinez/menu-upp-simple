@@ -63,6 +63,7 @@ export interface Restaurant {
   imageText?: string;
   textImage?:ImageData;
   imageText_data?: ImageData;
+  qrCode_data?:ImageData;
   
   // Redes sociales
   socialLinks?: SocialLinks;

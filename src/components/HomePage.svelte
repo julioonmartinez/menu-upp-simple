@@ -16,7 +16,7 @@
   // Stores
   import { 
     ratingStore, 
-    searchStore, 
+    searchStore,  
     isInitialized as isRestaurantStoreInitialized 
   } from '../stores/ratingStore';
   

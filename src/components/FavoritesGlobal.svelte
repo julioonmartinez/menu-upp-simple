@@ -270,11 +270,6 @@
                 <div class="loader-ring-inner"></div>
             </div>
             <div class="loading-text">Buscando tu colección...</div>
-            <!-- NUEVO: Mostrar estado de carga detallado -->
-            <div class="loading-details">
-                Platillos: {dishesLoaded ? '✓' : '⏳'} | 
-                Restaurantes: {restaurantsLoaded ? '✓' : '⏳'}
-            </div>
         </div>
     {:else if hasAnyData}
         <div class="rated-dishes">

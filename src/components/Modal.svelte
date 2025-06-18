@@ -10,7 +10,7 @@
     showCloseButton = true, 
     size = 'medium', // small, medium, large, full
     headerless = false, 
-    bottomSheet = false // Convierte en bottom sheet en móviles
+    bottomSheet =  true // Convierte en bottom sheet en móviles
   } = $props();
   
   // Estados usando Svelte 5
@@ -148,7 +148,7 @@
 
 <style>
   .modal-content {
-    background: white;
+    background: var(--bg-primary);
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     display: flex;
@@ -181,7 +181,7 @@
   /* Header */
   .modal-header {
     padding: 20px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--bg-glass);
     flex-shrink: 0;
     /* display: flex; */
     justify-content: space-between;
@@ -203,20 +203,20 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #0D1B2A;
+    color: var(--text-primary);
     line-height: 1.2;
   }
   
   .modal-subtitle {
     margin: 4px 0 0 0;
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-muted);
     line-height: 1.4;
   }
   
   .close-btn {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-glass);
+    /* border: 1px solid #e2e8f0; */
     border-radius: 8px;
     width: 40px;
     height: 40px;
@@ -225,7 +225,7 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #64748b;
+    color: var(--text-muted);
     flex-shrink: 0;
   }
   
@@ -252,9 +252,9 @@
   /* Footer */
   .modal-footer {
     padding: 16px 20px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--bg-tertiary);
     flex-shrink: 0;
-    background: #f8fafc;
+    background: var(--bg-secondary);
   }
   
   /* Scrollbar personalizado */
@@ -273,7 +273,7 @@
   }
   
   .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--text-light)
   }
   
   /* Firefox */
@@ -305,7 +305,7 @@
   .bottom-sheet-handle {
     width: 40px;
     height: 4px;
-    background: #cbd5e1;
+    background: var(--bg-accent);
     border-radius: 2px;
     margin: 8px auto 12px auto;
     cursor: grab;

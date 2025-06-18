@@ -219,7 +219,7 @@
             </div>
             
             <button 
-              class="submit-comment-btn"
+              class="submit-comment-btn  btn btn-primary"
               on:click={submitComment}
               disabled={isCreatingCommentState || !commentForm.comment.trim()}
               class:loading={isCreatingCommentState}
@@ -271,7 +271,7 @@
               <div class="comment-header">
                 <div class="author-section">
                   <div class="author-avatar">
-                    {comment.anonymous ? '👤' : '👨‍💼'}
+                    <i class="fa-solid fa-user"></i>
                   </div>
                   <div class="author-info">
                     <span class="comment-author">

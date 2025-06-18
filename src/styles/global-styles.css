@@ -4,6 +4,7 @@
    ==================================== */
 
 /* CSS Variables Mobile-First Optimizadas */
+/* GLOBAL CSS */
 :root {
   /* Colores principales - Paleta mejorada */
   --primary-color: #ff6b35;
@@ -692,6 +693,10 @@ button:focus-visible {
   padding: var(--spacing-lg) var(--spacing-xl);
   font-size: var(--font-lg);
   min-height: 52px;
+}
+
+.btn-rounded{
+  border-radius: 9999px;
 }
 
 /* Animation utilities mejoradas */

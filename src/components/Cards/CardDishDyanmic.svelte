@@ -2,12 +2,13 @@
   //CardDishDynamic.svelte
   import { onMount, createEventDispatcher } from 'svelte';
   import type { CartItem, Dish, DishOption } from '../../interfaces/dish';
-  import RatingDisplayDynamic from '../microcomponentes/RatingDisplayDynamic.svelte';
+
   import FavoriteButton from '../microcomponentes/FavoriteButton.svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { elasticOut, cubicOut } from 'svelte/easing';
   import { cartStore } from '../../stores/cartStore20';
   import { favoritesStore } from '../../stores/favoritesStore';
+  import { openModal } from '../../stores/modalStore';
   import { trackDishInteraction, recordLinkClick } from '../../services/analyticsService';
   
   // Props con valores por defecto
@@ -57,6 +58,24 @@
     // Limpiar la suscripción cuando el componente se desmonte
     return unsubscribe;
   });
+
+  // Función para abrir el modal de detalles del platillo
+  function showDishDetails(event: Event) {
+    // Prevenir que se abra si se hizo click en botones de acción
+    const target = event.target as HTMLElement;
+    if (target.closest('.action-button')) {
+      return;
+    }
+    
+    if (item.id) {
+      trackDishInteraction(item.id.toString(), 'view_details');
+      recordLinkClick(`dish-details-${item.id}`);
+    }
+    
+    openModal('dish', {
+      dish: item
+    });
+  }
   
   // Función para manejar la carga de la imagen
   function handleImageLoad() {
@@ -75,6 +94,11 @@
       return Math.floor(count / 1000) + 'K';
     }
   }
+
+  // Función para formatear el contador de comentarios
+  function formatCommentsCount(count: number): string {
+    return formatLikesCount(count);
+  }
   
   // Calcula el precio con descuento si existe
   $: finalPrice = item.discount 
@@ -85,7 +109,8 @@
   $: totalPrice = finalPrice + selectedOptions.reduce((sum, opt) => sum + opt.price, 0);
   
   // Función para agregar al carrito
-  function addToCart() {
+  function addToCart(event: Event) {
+    event.stopPropagation(); // Prevenir que se abra el modal
     addingToCart = true;
     if (item.id) {
       // Enviar evento de analytics al agregar al carrito
@@ -119,7 +144,8 @@
   }
   
   // Función para alternar opciones
-  function toggleOptions() {
+  function toggleOptions(event: Event) {
+    event.stopPropagation(); // Prevenir que se abra el modal
     showOptions = !showOptions;
     // Registrar interacción de analytics
     if (item.id) {
@@ -147,14 +173,29 @@
   function isOptionSelected(optionId: string | number) {
     return selectedOptions.some(opt => opt.id === optionId);
   }
+
+  // Función para manejar clicks en controles de cantidad
+  function handleQuantityChange(event: Event, action: 'increment' | 'decrement') {
+    event.stopPropagation(); // Prevenir que se abra el modal
+    if (action === 'increment') {
+      quantity = quantity + 1;
+    } else {
+      quantity = Math.max(1, quantity - 1);
+    }
+  }
 </script>
 
-<!-- Removemos las clases CSS de animación y dejamos que Svelte maneje todo -->
+<!-- Card clickeable para abrir modal -->
 <div 
-  class="bento-card group"
+  class="bento-card group clickable-card"
   data-item-id={item.id}
   style="--bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
   in:fly={{y: 30, delay: index * 50, duration: 500, easing: cubicOut}}
+  on:click={showDishDetails}
+  on:keydown={(e) => e.key === 'Enter' && showDishDetails(e)}
+  role="button"
+  tabindex="0"
+  aria-label="Ver detalles de {item.name}"
 >
   {#if item.discount && storeMode}
     <div class="discount-badge" 
@@ -177,7 +218,7 @@
       {#if !imageLoaded}
         <div class="image-placeholder">
           <div class="loading-spinner">
-            <i class="fa-solid fa-spinner fa-spin"></i>
+            <!-- <i class="fa-solid fa-spinner fa-spin"></i> -->
           </div>
         </div>
       {/if}
@@ -188,7 +229,7 @@
     {/if}
     
     <!-- Favorito con contador (solo se muestra cuando hay 5 o más likes) -->
-    <div class="favorites-container" in:fade={{ duration: 300, delay: 200 }}>
+    <div class="favorites-container action-button" in:fade={{ duration: 300, delay: 200 }}>
       {#if favoritesCount >= 5}
         <div class="favorites-counter">
           <svg class="heart-icon" fill="currentColor" viewBox="0 0 24 24">
@@ -225,18 +266,31 @@
     <!-- El contenedor flex-grow empuja el contenido hacia arriba -->
     <div class="spacer"></div>
     
-    <!-- Componente de valoración independiente con altura fija -->
-    <div class="rating-container">
-      <RatingDisplayDynamic 
-        id={item.id!} 
-        rating={item.rating || 0} 
-        reviewsCount={item.reviewsCount || 0} 
-      />
+    <!-- Indicadores de valoración y comentarios -->
+    <div class="rating-and-comments-container">
+      <!-- Indicador de rating -->
+      {#if item.rating && item.rating > 0}
+        <div class="rating-indicator" title="Ver valoraciones">
+          <i class="fas fa-star star-icon"></i>
+          <span class="rating-value">{item.rating.toFixed(1)}</span>
+          {#if item.reviewsCount && item.reviewsCount > 0}
+            <span class="reviews-count">({formatCommentsCount(item.reviewsCount)})</span>
+          {/if}
+        </div>
+      {/if}
+      
+      <!-- Indicador de comentarios -->
+      {#if item.reviewsCount && item.reviewsCount > 0}
+        <div class="comments-indicator" title="Ver comentarios">
+          <i class="fas fa-comment comment-icon"></i>
+          <span class="comments-count">{formatCommentsCount(item.reviewsCount)}</span>
+        </div>
+      {/if}
     </div>
     
     {#if storeMode}
       <!-- Modo tienda: Controles de cantidad y opciones -->
-      <div class="store-controls" in:fade={{ duration: 300, delay: 250 }}>
+      <div class="store-controls action-button" in:fade={{ duration: 300, delay: 250 }}>
         {#if showOptions && item.options && item.options.length > 0}
           <div 
             class="options-panel"
@@ -265,7 +319,7 @@
           <div class="quantity-controls">
             <button 
               class="quantity-btn"
-              on:click={() => quantity = Math.max(1, quantity - 1)}
+              on:click={(e) => handleQuantityChange(e, 'decrement')}
               disabled={!item.inStock}
             >
               <svg class="quantity-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +331,7 @@
             
             <button 
               class="quantity-btn"
-              on:click={() => quantity = quantity + 1}
+              on:click={(e) => handleQuantityChange(e, 'increment')}
               disabled={!item.inStock}
             >
               <svg class="quantity-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +402,7 @@
   --color-white-80: rgba(255, 255, 255, 0.8);
 }
 
-/* Componente principal - Simplificado sin conflictos de animación */
+/* Componente principal - Clickeable */
 .bento-card {
   height: 100%;
   background-color: var(--bg-primary);
@@ -362,9 +416,24 @@
   will-change: transform;
 }
 
-.bento-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px);
+.clickable-card {
+  cursor: pointer;
+}
+
+.clickable-card:hover {
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-3px);
+}
+
+.clickable-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Evitar que los elementos de acción activen el modal */
+.action-button {
+  position: relative;
+  z-index: 10;
 }
 
 /* Badge de descuento */
@@ -413,7 +482,7 @@
   opacity: 1;
 }
 
-.group:hover .dish-image {
+.clickable-card:hover .dish-image {
   transform: scale(1.05);
 }
 
@@ -452,7 +521,7 @@
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  z-index: 10;
+  z-index: 15;
   display: flex;
   align-items: center;
 }
@@ -562,12 +631,82 @@
   flex-grow: 1;
 }
 
-/* Contenedor de rating */
-.rating-container {
+/* Contenedor de rating y comentarios */
+.rating-and-comments-container {
   min-height: 36px;
   display: flex;
-  align-items: end;
+  align-items: center;
+  justify-content: flex-start;
   margin-bottom: 0.5rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Indicador de rating */
+.rating-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: var(--color-gray-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: var(--color-gray-600);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.rating-indicator:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.star-icon {
+  color: #fbbf24; /* yellow-400 */
+  font-size: 0.875rem;
+}
+
+.rating-value {
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.reviews-count {
+  font-weight: 400;
+  color: var(--color-gray-500);
+  font-size: 0.7rem;
+}
+
+/* Indicador de comentarios */
+.comments-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: var(--color-gray-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: var(--color-gray-600);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.comments-indicator:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.comment-icon {
+  color: var(--primary-color);
+  font-size: 0.875rem;
+}
+
+.comments-count {
+  font-weight: 500;
+  min-width: 1rem;
+  text-align: center;
 }
 
 /* Controles de la tienda */
@@ -808,6 +947,16 @@
   .card-content {
     padding: 1rem;
   }
+
+  .rating-and-comments-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .comments-indicator {
+    align-self: flex-end;
+  }
 }
 
 /* Mejoras visuales para modo oscuro */
@@ -819,6 +968,16 @@
   .image-placeholder,
   .placeholder-icon {
     background-color: #374151;
+  }
+
+  .comments-indicator {
+    background-color: rgba(55, 65, 81, 0.8);
+    color: #d1d5db;
+  }
+
+  .comments-indicator:hover {
+    background-color: rgba(75, 85, 99, 0.9);
+    color: #f3f4f6;
   }
 }
 
@@ -833,12 +992,33 @@ button {
   .dish-image,
   .quantity-btn,
   .add-to-cart-btn,
-  .toggle-icon {
+  .toggle-icon,
+  .comments-indicator {
     transition: none;
   }
   
   .loading-spinner-btn {
     animation: none;
   }
+  
+  .clickable-card:hover {
+    transform: none;
+  }
+  
+  .clickable-card:hover .dish-image {
+    transform: none;
+  }
+}
+
+/* Estados de focus mejorados para accesibilidad */
+.clickable-card:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.comments-indicator:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+  border-radius: 9999px;
 }
 </style>
