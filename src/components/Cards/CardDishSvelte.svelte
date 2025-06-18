@@ -10,6 +10,11 @@
   import { favoritesStore } from '../../stores/favoritesStore';
   import { trackDishInteraction, recordLinkClick } from '../../services/analyticsService';
   
+  // ========================================
+  // IMPORTACIÓN DEL SISTEMA DE MODALES
+  // ========================================
+  import { openCustomDishModal } from '../../stores/modalStore';
+  
   // Props con valores por defecto
   export let item: Dish;
   export let index: number;
@@ -20,7 +25,9 @@
   
   // Variable reactiva para la calificación del usuario
   let userRating = 0;
-  let visible = false;
+  let mounted = false;
+  let imageLoaded = false;
+  let showImage = false;
   let quantity = 1;
   let showOptions = false;
   let addingToCart = false;
@@ -36,16 +43,28 @@
   $: formattedSecondaryColor = secondaryColor || '#FF4500';
   $: formattedBackgroundColor = backgroundColor || '#FFFFFF';
   
+  // Función para manejar la carga de imagen
+  function handleImageLoad() {
+    imageLoaded = true;
+    // Pequeño delay para asegurar que la imagen esté lista
+    setTimeout(() => {
+      showImage = true;
+    }, 100);
+  }
+  
   onMount(() => {
     // Inicializar opciones seleccionadas si existen
     if (item.options) {
       selectedOptions = item.options.filter(opt => opt.selected).map(opt => ({...opt}));
     }
     
-    // Hacer visible con un pequeño delay para la animación
-    setTimeout(() => {
-      visible = true;
-    }, 100);
+    // Marcar como montado para iniciar animaciones
+    mounted = true;
+    
+    // Si no hay imagen, mostrar inmediatamente
+    if (!item.image || item.image === '') {
+      showImage = true;
+    }
     
     // Suscribirse al store para mantener actualizado el contador de favoritos
     const unsubscribe = favoritesStore.subscribe(state => {
@@ -58,6 +77,60 @@
     // Limpiar la suscripción cuando el componente se desmonte
     return unsubscribe;
   });
+  
+  // ========================================
+  // FUNCIÓN PARA ABRIR EL MODAL
+  // ========================================
+  function openDishModal(event: Event) {
+    // Prevenir que se abra el modal si se hizo clic en botones específicos
+    const target = event.target as HTMLElement;
+    
+    // Lista de clases y selectores que NO deben abrir el modal
+    const preventModalSelectors = [
+      '.add-to-cart-btn',
+      '.quantity-btn', 
+      '.toggle-options-btn',
+      '.option-checkbox',
+      '.option-item',
+      'button',
+      'input',
+      'label'
+    ];
+    
+    // Verificar si el clic fue en algún elemento que debe prevenir el modal
+    const shouldPreventModal = preventModalSelectors.some(selector => {
+      return target.closest(selector) !== null;
+    });
+    
+    // También verificar si el clic fue en el componente FavoriteButton
+    if (target.closest('[data-favorite-button]') || shouldPreventModal) {
+      return;
+    }
+    
+    // Registrar la interacción de analytics
+    if (item.id) {
+      trackDishInteraction(item.id.toString(), 'modal_open');
+      recordLinkClick(`dish-modal-open-${item.id}`);
+    }
+    
+    // Crear esquema de colores desde las props de la card
+    const colorScheme = {
+      primaryColor: formattedPrimaryColor,
+      secondaryColor: formattedSecondaryColor,
+      textColor: '#2C3E50', // Color de texto por defecto
+      backgroundColor: formattedBackgroundColor
+    };
+    
+    // Abrir el modal personalizado con los colores de la card
+    openCustomDishModal(item, colorScheme, {
+      showNutrition: true,
+      allowComments: true,
+      showReviews: true,
+      enableFavorites: true,
+      showIngredients: storeMode,
+      showQuantitySelector: storeMode
+    });
+  }
   
   // Función para formatear el contador de likes
   function formatLikesCount(count: number): string {
@@ -81,7 +154,10 @@
   $: totalPrice = finalPrice + selectedOptions.reduce((sum, opt) => sum + opt.price, 0);
   
   // Función para agregar al carrito
-  function addToCart() {
+  function addToCart(event: MouseEvent) {
+    // Prevenir que se abra el modal al hacer clic en agregar al carrito
+    event.stopPropagation();
+    
     addingToCart = true;
     if (item.id) {
       // Enviar evento de analytics al agregar al carrito
@@ -115,7 +191,10 @@
   }
   
   // Función para alternar opciones
-  function toggleOptions() {
+  function toggleOptions(event: MouseEvent) {
+    // Prevenir que se abra el modal
+    event.stopPropagation();
+    
     showOptions = !showOptions;
     // Registrar interacción de analytics
     if (item.id) {
@@ -124,7 +203,10 @@
   }
   
   // Función para alternar una opción seleccionada
-  function toggleOption(option: DishOption) {
+  function toggleOption(option: DishOption, event: MouseEvent) {
+    // Prevenir que se abra el modal
+    event.stopPropagation();
+    
     const index = selectedOptions.findIndex(opt => opt.id === option.id);
     
     if (index >= 0) {
@@ -139,22 +221,44 @@
     }
   }
   
+  // Función para manejar clics en botones de cantidad
+  function handleQuantityChange(delta: number, event: MouseEvent) {
+    // Prevenir que se abra el modal
+    event.stopPropagation();
+    
+    if (delta > 0) {
+      quantity = quantity + 1;
+    } else {
+      quantity = Math.max(1, quantity - 1);
+    }
+  }
+  
   // Comprobar si una opción está seleccionada
   function isOptionSelected(optionId: string | number) {
     return selectedOptions.some(opt => opt.id === optionId);
   }
 </script>
 
+{#if mounted}
 <div 
-  class="bento-card group {visible ? 'animate-fade-in' : 'opacity-hidden'}"
+  class="bento-card group clickable-card"
   data-item-id={item.id}
-  data-animation-delay={index}
-  style="--index: {index}; --bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
-  in:fly={{y: 30, delay: index * 50, duration: 500, easing: cubicOut}}
+  style="--bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
+  in:fly={{y: 30, delay: index * 100, duration: 600, easing: cubicOut}}
+  on:click={openDishModal}
+  role="button"
+  tabindex="0"
+  aria-label="Ver detalles de {item.name}"
+  on:keydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openDishModal(e);
+    }
+  }}
 >
   {#if item.discount && storeMode}
     <div class="discount-badge" 
-         in:fly={{x: -20, duration: 300, delay: 300 + index * 50}}>
+         in:fly={{x: -20, duration: 400, delay: 200 + index * 100}}>
       -{item.discount}%
     </div>
   {/if}
@@ -164,18 +268,18 @@
       <img 
         src={item.image} 
         alt={item.name} 
-        class="dish-image"
-        in:fade={{ duration: 300 }}
-        out:fade={{ duration: 200 }}
+        class="dish-image {showImage ? 'image-visible' : 'image-hidden'}"
+        on:load={handleImageLoad}
+        style="opacity: {showImage ? 1 : 0}; transition: opacity 0.5s ease-in-out;"
       />
     {:else}
-      <div class="placeholder-icon">
+      <div class="placeholder-icon" in:scale={{ duration: 400, delay: 300 + index * 100 }}>
         <i class="fa-solid fa-utensils"></i>
       </div>
     {/if}
     
     <!-- Favorito con contador (solo se muestra cuando hay 5 o más likes) -->
-    <div class="favorites-container">
+    <div class="favorites-container" in:fade={{ duration: 400, delay: 400 + index * 100 }}>
       {#if favoritesCount >= 5}
         <div class="favorites-counter">
           <svg class="heart-icon" fill="currentColor" viewBox="0 0 24 24">
@@ -184,17 +288,19 @@
           <span class="favorites-text">{formatLikesCount(favoritesCount)}</span>
         </div>
       {/if}
-      <FavoriteButton id={item.id!} title={item.name} isSaved={item.userFav} />
+      <div data-favorite-button>
+        <FavoriteButton id={item.id!} title={item.name} isSaved={item.userFav} />
+      </div>
     </div>
     
     {#if storeMode && !item.inStock}
-      <div class="out-of-stock-overlay">
+      <div class="out-of-stock-overlay" in:fade={{ duration: 300, delay: 500 + index * 100 }}>
         <p class="out-of-stock-text">Agotado</p>
       </div>
     {/if}
   </div>
 
-  <div class="card-content">
+  <div class="card-content" in:fly={{y: 20, duration: 500, delay: 400 + index * 100}}>
     <div class="header-section">
       <h3 class="dish-title">{item.name}</h3>
       <div class="price-container">
@@ -233,11 +339,12 @@
             <h4 class="options-title">Opciones</h4>
             <div class="options-list">
               {#each item.options as option}
-                <label class="option-item">
+                <label class="option-item" on:click={(e) => toggleOption(option, e)}>
                   <input 
                     type="checkbox" 
                     checked={isOptionSelected(option.id)} 
-                    on:change={() => toggleOption(option)}
+                    on:change={(e:any) => toggleOption(option, e)}
+                    on:click={(e) => e.stopPropagation()}
                     class="option-checkbox"
                   />
                   <span class="option-name">{option.name}</span>
@@ -252,7 +359,7 @@
           <div class="quantity-controls">
             <button 
               class="quantity-btn"
-              on:click={() => quantity = Math.max(1, quantity - 1)}
+              on:click={(e) => handleQuantityChange(-1, e)}
               disabled={!item.inStock}
             >
               <svg class="quantity-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,7 +371,7 @@
             
             <button 
               class="quantity-btn"
-              on:click={() => quantity = quantity + 1}
+              on:click={(e) => handleQuantityChange(1, e)}
               disabled={!item.inStock}
             >
               <svg class="quantity-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,13 +416,14 @@
               {/if}
             </button>
           {:else}
-            <button class="out-of-stock-btn">Agotado</button>
+            <button class="out-of-stock-btn" on:click={(e) => e.stopPropagation()}>Agotado</button>
           {/if}
         </div>
       </div>
     {/if}
   </div>
 </div>
+{/if}
 
 <style>
 /* Variables CSS para colores (ajusta según tu paleta) */
@@ -350,19 +458,41 @@
   backface-visibility: hidden;
 }
 
-.bento-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* hover:shadow-md */
+/* ========================================
+   ESTILOS PARA CARD CLICKEABLE
+   ======================================== */
+.clickable-card {
+  cursor: pointer;
 }
 
-.opacity-hidden {
+.clickable-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.clickable-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Indicador visual sutil de que es clickeable */
+.clickable-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 15px 15px 0;
+  border-color: transparent var(--primary-color) transparent transparent;
   opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 5;
 }
 
-.animate-fade-in {
-  opacity: 1 !important;
-  transform: translateY(0);
-  animation: fadeScale 0.5s forwards;
-  animation-delay: calc(var(--index) * 0.1s);
+.clickable-card:hover::before {
+  opacity: 0.1;
 }
 
 /* Badge de descuento */
@@ -719,17 +849,6 @@
 }
 
 /* Animaciones */
-@keyframes fadeScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 @keyframes spin {
   from {
     transform: rotate(0deg);

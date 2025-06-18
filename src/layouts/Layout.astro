@@ -3,6 +3,7 @@ import '../styles/reset.css'
 import '../styles/global.css'
 import type { Restaurant } from '../interfaces'
 import BottomSheetQR from '../components/BottomSheetQR.astro'
+import ModalManager from '../components/ ModalManager.svelte'
 //Layout.astro
 interface Props {
 	restaurant: Restaurant
@@ -26,7 +27,7 @@ const {restaurant , backgroundColor = '#FFFF'} = Astro.props;
 	</head>
 	<body style={`--font-family:${restaurant?.fontFamily }; --bg-color:${backgroundColor} `} >
 		<slot />
-		
+		<ModalManager client:load  />
 	</body>
 </html>
 

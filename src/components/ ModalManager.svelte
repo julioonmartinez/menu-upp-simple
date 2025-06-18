@@ -7,6 +7,7 @@
   // Importar todos los tipos de modales
   import CommentsModal from './CommentsModal.svelte';
   import DishModal from './DishModal.svelte';
+    import CustomDishModal from './CustomDishModal.svelte';
   // import ConfirmationModal from './modals/ConfirmationModal.svelte';
   // import ImageGalleryModal from './modals/ImageGalleryModal.svelte';
   // import FormModal from './modals/FormModal.svelte';
@@ -15,10 +16,13 @@
   const modalComponents = {
     'comments': CommentsModal,
     'dish': DishModal,
+    'dishCustom': CustomDishModal,
     // 'confirmation': ConfirmationModal,
     // 'imageGallery': ImageGalleryModal,
     // 'form': FormModal,
   };
+
+  
   
   // Estados usando Svelte 5
   let isMobile = $state(false);

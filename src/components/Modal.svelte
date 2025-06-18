@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  //Modal.svelte
   
   const dispatch = createEventDispatcher();
   
@@ -10,7 +11,8 @@
     showCloseButton = true, 
     size = 'medium', // small, medium, large, full
     headerless = false, 
-    bottomSheet =  true // Convierte en bottom sheet en móviles
+    bottomSheet =  true, // Convierte en bottom sheet en móviles
+    backgroundColor = undefined
   } = $props();
   
   // Estados usando Svelte 5
@@ -89,7 +91,8 @@
 
 <div 
   bind:this={modalElement}
-  class="modal-content" 
+  class="modal-content"
+  style={`--bg-primary:${backgroundColor}`} 
   class:size-{size}
   class:bottom-sheet={useBottomSheet}
   class:dragging={isDragging}
@@ -148,7 +151,7 @@
 
 <style>
   .modal-content {
-    background: var(--bg-primary);
+    background: var( --bg-primary, --bg-custom);
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     display: flex;

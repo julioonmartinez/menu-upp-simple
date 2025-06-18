@@ -384,6 +384,7 @@
   <Modal
     size="large"
     headerless={true}
+    backgroundColor={backgroundColor}
     on:close
   >
     <!-- Header personalizado con botón de cerrar -->
