@@ -13,7 +13,7 @@
   --primary-dark: #e55a2b;
   --primary-gradient: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   --primary-glow: 0 8px 32px rgba(255, 107, 53, 0.3);
-  
+  --primary-gradient-bold: linear-gradient(135deg, var(--primary-color), var(--primary-dark), var(--secondary-color));
   /* Colores de fondo - Sistema coherente */
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;

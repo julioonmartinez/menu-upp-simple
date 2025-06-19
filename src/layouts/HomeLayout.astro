@@ -6,12 +6,14 @@ import '../styles/global.css'
 interface Props {
   title?: string;
   description?: string;
+  
 }
 
 const { 
   title = "MenuUpp - Menús Digitales Exclusivos para Restaurantes",
   description = "Crea la experiencia gastronómica digital perfecta. Menús interactivos, sistemas de valoración y analytics avanzados para restaurantes exitosos."
 } = Astro.props;
+const urlOG = 'https://res.cloudinary.com/dsyudnkjh/image/upload/v1750307287/menuupp-og_s8pcyv.png'
 ---
 
 <!doctype html>
@@ -29,16 +31,16 @@ const {
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:url" content="https://menu-upp.com" />
-  <meta property="og:image" content="/images/menuupp-og.jpg" />
+  <meta property="og:image" content={urlOG} />
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content="/images/menuupp-og.jpg" />
+  <meta name="twitter:image" content={urlOG} />
   
   <!-- Mobile -->
-  <meta name="theme-color" content="#FF6B00" />
+  <meta name="theme-color" content="#FF4500" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   
@@ -51,10 +53,10 @@ const {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/ico.PNG" />
   
   <!-- Preload critical resources -->
-  <link rel="preload" href="/images/hero-bg.webp" as="image" />
+  <!-- <link rel="preload" href="/images/hero-bg.webp" as="image" /> -->
 </head>
 
 <body>

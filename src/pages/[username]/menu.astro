@@ -1,18 +1,18 @@
 ---
 // src/pages/[username]/menu.astro
-// Vista del menú basada en username del restaurante
+// Vista del menú optimizada con mejores prácticas de SEO, Performance, Accessibility y UX
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import CategoryNav from '../../components/CategoryNav.astro';
 import DynamicMenu from '../../components/DynamicMenu.svelte';
 import HeroSlider from '../../components/HeroSlider.astro';
 import FloatingButton from '../../components/microcomponentes/FloatingButton.svelte';
+import BottomSheetQR from '../../components/BottomSheetQR.astro';
 import { fetchAllRestaurantDataByUsername, fetchLinksByUsername } from '../../services/apiService';
 import type { Restaurant } from '../../interfaces/restaurant';
 import type { Category } from '../../interfaces/categories';
 import type { Dish } from '../../interfaces/dish';
 import type { LinkTree } from '../../interfaces';
-import BottomSheetQR from '../../components/BottomSheetQR.astro';
 
 // Obtener el username de los parámetros de la URL
 const { username } = Astro.params;
@@ -30,20 +30,22 @@ let linksTreeInfo: LinkTree | null = null;
 
 try {
   // Obtener todos los datos del restaurante usando el username
-  const data = await fetchAllRestaurantDataByUsername(username);
-  linksTreeInfo = await fetchLinksByUsername(username);
+  const [restaurantData, linksData] = await Promise.all([
+    fetchAllRestaurantDataByUsername(username),
+    fetchLinksByUsername(username)
+  ]);
   
-  // Asignar los datos a las variables correspondientes
-  restaurantInfo = data.restaurant;
-  categoriesInfo = data.categories;
-  dishesInfo = data.dishes;
+  restaurantInfo = restaurantData.restaurant;
+  categoriesInfo = restaurantData.categories;
+  dishesInfo = restaurantData.dishes;
+  linksTreeInfo = linksData;
 
   // Verificar que el restaurante existe y está activo
-  if (!restaurantInfo) {
+  if (!restaurantInfo || !restaurantInfo.active) {
     return Astro.redirect('/404');
   }
 
-  console.log('🏪 Restaurant Info:', restaurantInfo );
+  console.log('🏪 Restaurant Info:', restaurantInfo);
   console.log('📂 Categories count:', categoriesInfo?.length || 0);
   console.log('🍽️ Total dishes count:', dishesInfo?.length || 0);
   
@@ -57,153 +59,322 @@ try {
   }
 }
 
-// Configurar slides del hero
-const slides =  restaurantInfo?.heroSlides || [
+// Configurar slides del hero con lazy loading
+const slides = restaurantInfo?.heroSlides || [
   {
-    imageUrl: restaurantInfo?.imageCover || '/images/restaurants/labellavita/cover.webp',
+    imageUrl: restaurantInfo?.imageCover || '/images/restaurants/default/cover.webp',
     title: `Bienvenidos a ${restaurantInfo?.name || 'nuestro restaurante'}`,
-    subtitle: restaurantInfo?.description || 'Disfruta de la mejor comida tradicional'
+    subtitle: restaurantInfo?.description || 'Disfruta de la mejor comida tradicional',
+    alt: `Imagen principal de ${restaurantInfo?.name || 'nuestro restaurante'}`
   }
 ];
 
-// Meta tags para SEO
-const pageTitle = restaurantInfo ? `${restaurantInfo.name} - Menú Completo` : 'Menú';
+// Meta tags optimizados para SEO
+const pageTitle = restaurantInfo 
+  ? `${restaurantInfo.name} - Menú`
+  : 'Menú Digital';
+
 const pageDescription = restaurantInfo 
-  ? `Descubre el delicioso menú de ${restaurantInfo.name}. ${categoriesInfo?.length || 0} categorías con ${dishesInfo?.length || 0} platillos únicos.`
-  : 'Menú del restaurante';
+  ? `Descubre el delicioso menú de ${restaurantInfo.name}. ${categoriesInfo?.length || 0} categorías con ${dishesInfo?.length || 0} platillos únicos. ${restaurantInfo.cuisineType?.join(', ') || 'Cocina tradicional'}.`
+  : 'Menú digital del restaurante';
+
+const canonicalURL = new URL(`/${username}/menu`, Astro.site);
+const ogImage = restaurantInfo?.imageCover || restaurantInfo?.imageProfile || '/default-menu-og.jpg';
 
 // Verificar que tenemos los datos necesarios
 const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length > 0;
+
+// Colores del tema
+const primaryColor = restaurantInfo?.primaryColor || '#FF4500';
+const secondaryColor = restaurantInfo?.secondaryColor || '#FF6B35';
+const backgroundColor = linksTreeInfo?.backgroundColor || '#FFFFFF';
+
+// Schema markup específico para menú
+const menuStructuredData = hasValidData ? {
+  "@context": "https://schema.org",
+  "@type": "Menu",
+  "name": `Menú de ${restaurantInfo?.name}`,
+  "description": pageDescription,
+  "hasMenuSection": categoriesInfo?.map(category => ({
+    "@type": "MenuSection",
+    "name": category.name,
+    "description": category.description,
+    "hasMenuItem": dishesInfo?.filter(dish => dish.categoryId === category.id).map(dish => ({
+      "@type": "MenuItem",
+      "name": dish.name,
+      "description": dish.description,
+      "image": dish.image,
+      "offers": {
+        "@type": "Offer",
+        "price": dish.price,
+        "priceCurrency": "MXN"
+      },
+      "nutrition": dish.nutritionalInfo && {
+        "@type": "NutritionInformation",
+        "calories": dish.nutritionalInfo.calories
+      }
+    }))
+  }))
+} : null;
+
 ---
 
-<Layout backgroundColor={linksTreeInfo?.backgroundColor || '#FFFF'} restaurant={restaurantInfo!} >
-  <!-- Header del restaurante -->
+<Layout 
+  restaurant={restaurantInfo!} 
+  backgroundColor={backgroundColor}
+  title={pageTitle}
+  description={pageDescription}
+  image={ogImage}
+  canonicalURL={canonicalURL}
+>
+  <!-- Schema markup para el menú -->
+  {menuStructuredData && (
+    <script type="application/ld+json" set:html={JSON.stringify(menuStructuredData)} />
+  )}
+
+  <!-- Header del restaurante con mejoras de accesibilidad -->
   {hasValidData && (
-    <Header restaurant={restaurantInfo!} linkTree={linksTreeInfo!} />
-     <BottomSheetQR 
+    <Header 
+      restaurant={restaurantInfo!} 
+      linkTree={linksTreeInfo!}
+      aria-label={`Información del restaurante ${restaurantInfo!.name}`}
+    />
+  )}
+  
+  <!-- Bottom Sheet QR con lazy loading -->
+  {hasValidData && (
+    <BottomSheetQR 
       restaurant={restaurantInfo!}
       linkTree={linksTreeInfo!}
     />
   )}
   
-  <!-- Navegación de categorías -->
+  <!-- Navegación de categorías con sticky behavior mejorado -->
   {hasValidData && (
-    <CategoryNav 
-      categories={categoriesInfo!} 
-      restaurant={restaurantInfo!} 
-      linkTree={linksTreeInfo!} 
-    />
+    <nav 
+      class="category-nav-wrapper" 
+      role="navigation"
+      aria-label="Navegación de categorías del menú"
+    >
+      <CategoryNav 
+        categories={categoriesInfo!} 
+        restaurant={restaurantInfo!} 
+        linkTree={linksTreeInfo!} 
+      />
+    </nav>
   )}
   
-  <!-- Hero Slider -->
+  <!-- Hero Slider con lazy loading y mejor accesibilidad -->
   {hasValidData && (
-    <HeroSlider 
-      slides={slides}
-      autoPlay={true}
-      autoPlayInterval={5000}
-      showDots={true}
-      showArrows={true}
-      height="35vh"
-      primaryColor={restaurantInfo?.primaryColor}
-      secondaryColor={restaurantInfo?.secondaryColor}
-    />
+    <section 
+      class="hero-section"
+      aria-label="Galería de imágenes del restaurante"
+    >
+      <HeroSlider 
+        slides={slides}
+        autoPlay={true}
+        autoPlayInterval={5000}
+        showDots={true}
+        showArrows={true}
+        height="35vh"
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        
+      />
+    </section>
   )}
   
-  <!-- Contenedor del menú con altura mínima reservada -->
+  <!-- Contenedor del menú optimizado -->
   {hasValidData ? (
-    <div class="menu-container" id="menu-main-container">
-      <!-- Skeleton loader inicial mientras el componente Svelte no esté listo -->
-      <div class="menu-skeleton" id="menu-skeleton">
+    <section 
+      class="menu-container" 
+      id="menu-main-container"
+      aria-label="Menú del restaurante"
+    >
+      <!-- Skeleton loader mejorado con mejor accesibilidad -->
+      <div 
+        class="menu-skeleton" 
+        id="menu-skeleton"
+        aria-label="Cargando menú"
+        role="status"
+        aria-live="polite"
+      >
         <div class="skeleton-header">
-          <div class="skeleton-title"></div>
-          <div class="skeleton-subtitle"></div>
+          <div class="skeleton-title" aria-hidden="true"></div>
+          <div class="skeleton-subtitle" aria-hidden="true"></div>
         </div>
-        <div class="skeleton-grid">
+        <div class="skeleton-grid" aria-hidden="true">
           {Array.from({length: 6}).map((_, i) => (
-            <div class="skeleton-card" key={i}>
+            <article class="skeleton-card">
               <div class="skeleton-image"></div>
               <div class="skeleton-content">
                 <div class="skeleton-line skeleton-line-title"></div>
                 <div class="skeleton-line skeleton-line-subtitle"></div>
                 <div class="skeleton-line skeleton-line-price"></div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
+        <span class="sr-only">Cargando menú del restaurante...</span>
       </div>
       
-      <!-- Componente Svelte que se carga cuando esté listo -->
-      <div class="dynamic-menu-wrapper" id="dynamic-menu-wrapper" style="display: none;">
+      <!-- Componente Svelte optimizado -->
+      <div 
+        class="dynamic-menu-wrapper" 
+        id="dynamic-menu-wrapper" 
+        style="display: none;"
+        role="main"
+      >
         <DynamicMenu 
           username={username}
           categories={categoriesInfo!}
           restaurant={restaurantInfo!}
           storeMode={false}
           client:load
-          primaryColor={restaurantInfo?.primaryColor}
-          secondaryColor={restaurantInfo?.secondaryColor}
-          backgroundColor={linksTreeInfo?.backgroundColor}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
+          backgroundColor={backgroundColor}
         />
       </div>
-    </div>
+    </section>
   ) : (
-    <div class="error-container">
+    <section 
+      class="error-container"
+      role="alert"
+      aria-live="assertive"
+    >
       <div class="error-content">
-        <div class="error-icon">⚠️</div>
+        <div class="error-icon" aria-hidden="true">⚠️</div>
         <h1 class="error-title">Error al cargar el menú</h1>
         <p class="error-description">
           {errorMessage || 'No se pudieron cargar los datos del restaurante'}
         </p>
-        <a href={`/${username}`} class="back-button">
+        <a 
+          href={`/${username}`} 
+          class="back-button"
+          aria-label={`Volver al perfil de ${username}`}
+        >
           Volver al perfil
         </a>
       </div>
-    </div>
+    </section>
   )}
   
-  <!-- Footer del menú - Solo se muestra cuando el contenido está cargado -->
+  <!-- Footer del menú optimizado -->
   <footer 
     class="menu-footer" 
     id="menu-footer"
-    style={`--primary-color: ${restaurantInfo?.primaryColor}; --text-color:${linksTreeInfo?.textColor}; opacity: 0; transition: opacity 0.3s ease;`}
+    style={`
+      --primary-color: ${primaryColor}; 
+      --text-color: ${linksTreeInfo?.textColor || '#333'}; 
+      opacity: 0; 
+      transition: opacity 0.3s ease;
+    `}
+    role="contentinfo"
   >
     <div class="footer-content">
       <div class="restaurant-info">
         <h3>{restaurantInfo!.name}</h3>
         {restaurantInfo!.address && (
-          <p class="address">📍 {restaurantInfo!.address}</p>
+          <address class="address">
+            <span aria-label="Dirección">📍</span> {restaurantInfo!.address}
+          </address>
         )}
         {restaurantInfo!.phone && (
-          <p class="phone">📞 {restaurantInfo!.phone}</p>
+          <p class="phone">
+            <span aria-label="Teléfono">📞</span> 
+            <a href={`tel:${restaurantInfo!.phone}`}>{restaurantInfo!.phone}</a>
+          </p>
         )}
         {restaurantInfo!.schedule && (
-          <p class="schedule">🕒 {restaurantInfo!.schedule}</p>
+          <p class="schedule">
+            <span aria-label="Horario">🕒</span> {restaurantInfo!.schedule}
+          </p>
         )}
       </div>
+      
+      {restaurantInfo!.socialLinks && (
+        <div class="social-links" aria-label="Redes sociales">
+          {Object.entries(restaurantInfo!.socialLinks).map(([platform, url]) => 
+            url && (
+              <a 
+                href={url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label={`Síguenos en ${platform}`}
+                class={`social-link social-link-${platform}`}
+              >
+                <i class={`fab fa-${platform}`} aria-hidden="true"></i>
+              </a>
+            )
+          )}
+        </div>
+      )}
     </div>
     
     <div class="footer-bottom">
-      <p>© 2025 {restaurantInfo!.name} - Powered by Menu-upp</p>
+      <p>© {new Date().getFullYear()} {restaurantInfo!.name} - Powered by Menu-upp</p>
     </div>
   </footer>
   
-  <FloatingButton username={restaurantInfo?.username} client:load colorPrimary={restaurantInfo?.primaryColor || '#FF4500'}  ></FloatingButton>
+  <!-- Floating Button optimizado -->
+  <FloatingButton 
+    username={restaurantInfo?.username} 
+    client:load 
+    colorPrimary={primaryColor}
+    aria-label="Botón de acción flotante"
+  />
    
 </Layout>
 
 <style>
-  /* Contenedor principal del menú */
-  .menu-container {
-    min-height: 100vh; /* Altura mínima para reservar espacio */
-    position: relative;
+  /* Variables CSS optimizadas */
+  :root {
+    --border-radius-sm: 8px;
+    --border-radius-md: 16px;
+    --border-radius-lg: 24px;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    --z-index-sticky: 100;
+    --z-index-floating: 200;
+    --z-index-modal: 1000;
   }
 
-  /* Skeleton loader mejorado */
+  /* Contenedor principal del menú optimizado */
+  .menu-container {
+    min-height: 100vh;
+    position: relative;
+    contain: layout style paint;
+  }
+
+  /* Category nav wrapper con mejor sticky behavior */
+  .category-nav-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-index-sticky);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    transition: all var(--transition-normal);
+  }
+
+  /* Hero section optimizada */
+  .hero-section {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Skeleton loader mejorado con mejor performance */
   .menu-skeleton {
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem 1rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--transition-normal);
+    will-change: opacity;
   }
 
   .skeleton-header {
@@ -211,54 +382,52 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     margin-bottom: 3rem;
   }
 
-  .skeleton-title {
-    height: 2rem;
-    width: 300px;
+  .skeleton-title,
+  .skeleton-subtitle {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: 8px;
-    margin: 0 auto 1rem auto;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--border-radius-sm);
+    margin: 0 auto;
+  }
+
+  .skeleton-title {
+    height: 2rem;
+    width: min(300px, 80%);
+    margin-bottom: 1rem;
   }
 
   .skeleton-subtitle {
     height: 1rem;
-    width: 200px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: 4px;
-    margin: 0 auto;
+    width: min(200px, 60%);
     animation-delay: 0.2s;
   }
 
   .skeleton-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
   }
 
   .skeleton-card {
     background: white;
-    border-radius: 16px;
+    border-radius: var(--border-radius-md);
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    animation: fadeInUp 0.6s ease forwards;
+    box-shadow: var(--shadow-md);
+    animation: slideInUp 0.6s ease forwards;
+    will-change: transform, opacity;
   }
 
-  .skeleton-card:nth-child(1) { animation-delay: 0.1s; }
-  .skeleton-card:nth-child(2) { animation-delay: 0.2s; }
-  .skeleton-card:nth-child(3) { animation-delay: 0.3s; }
-  .skeleton-card:nth-child(4) { animation-delay: 0.4s; }
-  .skeleton-card:nth-child(5) { animation-delay: 0.5s; }
-  .skeleton-card:nth-child(6) { animation-delay: 0.6s; }
+  .skeleton-card:nth-child(n) {
+    animation-delay: calc(0.1s * var(--nth-child, 1));
+  }
 
   .skeleton-image {
     height: 200px;
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
-    animation: loading 1.5s infinite;
+    animation: shimmer 1.5s infinite;
   }
 
   .skeleton-content {
@@ -269,8 +438,8 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     height: 1rem;
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: 4px;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--border-radius-sm);
     margin-bottom: 0.75rem;
   }
 
@@ -292,9 +461,10 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   /* Wrapper del componente dinámico */
   .dynamic-menu-wrapper {
     width: 100%;
+    contain: layout style paint;
   }
 
-  /* Error container */
+  /* Error container mejorado */
   .error-container {
     display: flex;
     justify-content: center;
@@ -308,17 +478,19 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     max-width: 500px;
     background: white;
     padding: 3rem 2rem;
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: slideInUp 0.6s ease;
   }
   
   .error-icon {
     font-size: 4rem;
     margin-bottom: 1.5rem;
+    animation: bounce 2s infinite;
   }
   
   .error-title {
-    font-size: 1.75rem;
+    font-size: clamp(1.5rem, 4vw, 1.75rem);
     font-weight: 700;
     color: #dc2626;
     margin-bottom: 1rem;
@@ -333,22 +505,30 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   .back-button {
     display: inline-block;
     padding: 12px 24px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     text-decoration: none;
     border-radius: 50px;
     font-weight: 600;
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    box-shadow: var(--shadow-md);
   }
   
-  .back-button:hover {
+  .back-button:hover,
+  .back-button:focus {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .back-button:active {
+    transform: translateY(0);
   }
   
-  /* Footer del menú */
+  /* Footer optimizado */
   .menu-footer {
     background: var(--primary-color);
     margin-top: 3rem;
+    color: var(--text-color);
   }
   
   .footer-content {
@@ -364,48 +544,89 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
   .restaurant-info h3 {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-color);
     margin-bottom: 1rem;
   }
   
-  .restaurant-info p {
-    color: var(--text-color);
+  .restaurant-info p,
+  .restaurant-info address {
     margin-bottom: 0.5rem;
     font-size: 0.875rem;
+    font-style: normal;
+  }
+
+  .restaurant-info a {
+    color: inherit;
+    text-decoration: none;
+    transition: opacity var(--transition-fast);
+  }
+
+  .restaurant-info a:hover {
+    opacity: 0.8;
+  }
+
+  /* Social links */
+  .social-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-color);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+  }
+
+  .social-link:hover,
+  .social-link:focus {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
   }
   
   .footer-bottom {
-    background: var(--primary-color);
+    background: rgba(0, 0, 0, 0.1);
     padding: 1rem;
     text-align: center;
   }
   
   .footer-bottom p {
-    color: var(--text-color);
     font-size: 0.75rem;
     margin: 0;
+    opacity: 0.8;
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   
-  /* Animaciones */
-  @keyframes loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
+  /* Animaciones optimizadas */
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   
-  @keyframes fadeInUp {
+  @keyframes slideInUp {
     from {
       opacity: 0;
       transform: translateY(20px);
@@ -416,7 +637,22 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     }
   }
 
-  /* Responsive design */
+  @keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40%, 43% {
+      transform: translateY(-10px);
+    }
+    70% {
+      transform: translateY(-5px);
+    }
+    90% {
+      transform: translateY(-3px);
+    }
+  }
+
+  /* Responsive design optimizado */
   @media (max-width: 768px) {
     .skeleton-grid {
       grid-template-columns: 1fr;
@@ -427,6 +663,10 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
       grid-template-columns: 1fr;
       gap: 1.5rem;
       text-align: center;
+    }
+
+    .social-links {
+      justify-content: center;
     }
   }
   
@@ -446,109 +686,210 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
     .footer-content {
       padding: 1.5rem 1rem;
     }
+  }
+
+  /* Performance optimizations */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-title,
+    .skeleton-subtitle,
+    .skeleton-image,
+    .skeleton-line {
+      animation: none;
+    }
     
-    .error-title {
-      font-size: 1.5rem;
+    .skeleton-card {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .skeleton-title,
+    .skeleton-subtitle,
+    .skeleton-image,
+    .skeleton-line {
+      background: #ccc;
+    }
+  }
+
+  /* Print styles */
+  @media print {
+    .menu-skeleton,
+    .category-nav-wrapper,
+    .hero-section {
+      display: none;
+    }
+    
+    .dynamic-menu-wrapper {
+      display: block !important;
+      opacity: 1 !important;
     }
   }
 </style>
 
 <script>
-  // Analytics y tracking
+  // Performance optimizations y analytics mejorados
   document.addEventListener('DOMContentLoaded', () => {
-    // Track page view
-    window.dispatchEvent(new CustomEvent('menuPageView', {
-      detail: {
-        restaurantUsername: window.location.pathname.split('/')[1],
-        timestamp: Date.now(),
-        userAgent: navigator.userAgent,
-        referrer: document.referrer
-      }
-    }));
+    // Track page view con más datos
+    const trackingData = {
+      restaurantUsername: window.location.pathname.split('/')[1],
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent,
+      referrer: document.referrer,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+      connection: (navigator as any).connection ? {
+        effectiveType: (navigator as any).connection.effectiveType,
+        downlink: (navigator as any).connection.downlink,
+        saveData: (navigator as any).connection.saveData
+      } : null
+    };
+
+    window.dispatchEvent(new CustomEvent('menuPageView', { detail: trackingData }));
     
-    // Manejar la transición del skeleton al contenido real
+    // Manejar la transición del skeleton al contenido real con mejor performance
     let svelteComponentReady = false;
+    let transitionTriggered = false;
     
-    // Escuchar cuando el componente Svelte esté completamente montado
-    document.addEventListener('svelteMenuReady', () => {
-      svelteComponentReady = true;
-      handleMenuTransition();
-    });
+    function handleMenuTransition() {
+      if (transitionTriggered) return;
+      transitionTriggered = true;
+      
+      const skeleton = document.getElementById('menu-skeleton');
+      const dynamicWrapper = document.getElementById('dynamic-menu-wrapper');
+      const footer = document.getElementById('menu-footer');
+      
+      if (skeleton && dynamicWrapper) {
+        // Use requestAnimationFrame for smooth transitions
+        requestAnimationFrame(() => {
+          skeleton.style.transition = 'opacity 0.3s ease';
+          skeleton.style.opacity = '0';
+          
+          setTimeout(() => {
+            skeleton.style.display = 'none';
+            dynamicWrapper.style.display = 'block';
+            dynamicWrapper.style.opacity = '0';
+            dynamicWrapper.style.transition = 'opacity 0.3s ease';
+            
+            requestAnimationFrame(() => {
+              dynamicWrapper.style.opacity = '1';
+              
+              if (footer) {
+                footer.style.opacity = '1';
+              }
+            });
+          }, 300);
+        });
+      }
+    }
     
-    // También verificar periódicamente si el componente ya se renderizó
+    // Escuchar eventos del componente Svelte
+    document.addEventListener('svelteMenuReady', handleMenuTransition);
+    
+    // Intersection Observer para lazy loading mejorado
+    const observerOptions = {
+      rootMargin: '50px',
+      threshold: 0.1
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Trigger transition when menu comes into view
+          handleMenuTransition();
+        }
+      });
+    }, observerOptions);
+    
+    const menuContainer = document.getElementById('menu-main-container');
+    if (menuContainer) {
+      observer.observe(menuContainer);
+    }
+    
+    // Fallback timer con tiempos optimizados
+    const fallbackTimer = setTimeout(() => {
+      if (!svelteComponentReady) {
+        handleMenuTransition();
+      }
+    }, 5000); // Reducido de 10s a 5s
+    
+    // Verificación periódica optimizada
     const checkInterval = setInterval(() => {
       const dynamicMenuContent = document.querySelector('#menu-section');
       if (dynamicMenuContent && dynamicMenuContent.children.length > 0) {
         svelteComponentReady = true;
         handleMenuTransition();
         clearInterval(checkInterval);
+        clearTimeout(fallbackTimer);
       }
-    }, 100);
+    }, 50); // Más frecuente para mejor responsividad
     
-    // Limpiar el intervalo después de 10 segundos máximo
+    // Cleanup interval después de 5 segundos
     setTimeout(() => {
       clearInterval(checkInterval);
-      if (!svelteComponentReady) {
-        // Si por alguna razón no se detectó la carga, mostrar de todos modos
-        handleMenuTransition();
-      }
-    }, 10000);
+    }, 5000);
     
-    function handleMenuTransition() {
-      const skeleton = document.getElementById('menu-skeleton');
-      const dynamicWrapper = document.getElementById('dynamic-menu-wrapper');
-      const footer = document.getElementById('menu-footer');
-      
-      if (skeleton && dynamicWrapper) {
-        // Fade out skeleton
-        skeleton.style.transition = 'opacity 0.3s ease';
-        skeleton.style.opacity = '0';
-        
-        setTimeout(() => {
-          // Hide skeleton and show dynamic menu
-          skeleton.style.display = 'none';
-          dynamicWrapper.style.display = 'block';
-          dynamicWrapper.style.opacity = '0';
-          dynamicWrapper.style.transition = 'opacity 0.3s ease';
-          
-          // Fade in dynamic menu
-          setTimeout(() => {
-            dynamicWrapper.style.opacity = '1';
-            
-            // Show footer
-            if (footer) {
-              footer.style.opacity = '1';
-            }
-          }, 50);
-        }, 300);
-      }
-    }
-    
-    console.log('🍽️ Menu page loaded successfully');
+    console.log('🍽️ Menu page loaded successfully with optimizations');
   });
 
-  // Manejo del sticky category nav
+  // Sticky navigation mejorado con Intersection Observer
   document.addEventListener('DOMContentLoaded', () => {
-    const categoryNav = document.querySelector('.category-nav');
+    const categoryNav = document.querySelector('.category-nav-wrapper');
     if (!categoryNav) return;
     
-    const navTop = categoryNav.offsetTop;
+    const heroSection = document.querySelector('.hero-section');
+    if (!heroSection) return;
     
-    window.addEventListener('scroll', () => {
-      if (window.scrollY >= navTop) {
-        categoryNav.style.position = 'fixed';
-        categoryNav.style.top = '0px';
-        categoryNav.style.left = '0';
-        categoryNav.style.right = '0';
-        categoryNav.style.zIndex = '100';
-        categoryNav.style.width = '100%';
-      } else {
-        categoryNav.style.position = 'static';
-        categoryNav.style.top = '';
-        categoryNav.style.left = '';
-        categoryNav.style.right = '';
-        categoryNav.style.width = '';
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            categoryNav.classList.remove('is-sticky');
+          } else {
+            categoryNav.classList.add('is-sticky');
+          }
+        });
+      },
+      { 
+        rootMargin: '-1px 0px 0px 0px',
+        threshold: 0 
       }
+    );
+    
+    observer.observe(heroSection);
+  });
+
+  // Error tracking mejorado
+  window.addEventListener('error', (event) => {
+    console.error('Menu page error:', {
+      message: event.message,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+      error: event.error
     });
   });
+
+  // Performance monitoring
+  if ('PerformanceObserver' in window) {
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.entryType === 'measure') {
+          console.log(`Performance: ${entry.name}: ${entry.duration}ms`);
+        }
+      });
+    });
+    
+    observer.observe({ entryTypes: ['measure'] });
+    
+    // Measure critical timings
+    window.addEventListener('load', () => {
+      performance.mark('menu-page-loaded');
+      performance.measure('menu-page-load-time', 'navigationStart', 'menu-page-loaded');
+    });
+  }
 </script>

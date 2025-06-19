@@ -254,11 +254,11 @@
   }
 
   .brand-text {
-    color: #0D1B2A;
+    color: var(--text-primary);
   }
 
   .brand-accent {
-    color: var(--primary-color, #ff6b35);
+    color: var(--primary-color) !important;
   }
 
   /* Navigation Links */

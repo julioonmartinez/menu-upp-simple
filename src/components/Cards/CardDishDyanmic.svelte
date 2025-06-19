@@ -223,7 +223,7 @@
         </div>
       {/if}
     {:else}
-      <div class="placeholder-icon" in:fade={{ duration: 300, delay: 100 }}>
+      <div class="placeholder-icon-card" in:fade={{ duration: 300, delay: 100 }}>
         <i class="fa-solid fa-utensils"></i>
       </div>
     {/if}
@@ -505,7 +505,7 @@
   font-size: 2rem;
 }
 
-.placeholder-icon {
+.placeholder-icon-card {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -966,7 +966,7 @@
   }
   
   .image-placeholder,
-  .placeholder-icon {
+  .placeholder-icon-card {
     background-color: #374151;
   }
 

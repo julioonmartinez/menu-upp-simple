@@ -1,44 +1,454 @@
 ---
+// src/layouts/Layout.astro
 import '../styles/reset.css'
 import '../styles/global.css'
 import type { Restaurant } from '../interfaces'
-import BottomSheetQR from '../components/BottomSheetQR.astro'
 import ModalManager from '../components/ ModalManager.svelte'
-//Layout.astro
+
 interface Props {
-	restaurant: Restaurant
-	backgroundColor: string
+  restaurant: Restaurant
+  backgroundColor?: string
+  title?: string
+  description?: string
+  image?: string
+  canonicalURL?: URL | string
+  noindex?: boolean
 }
 
-const {restaurant , backgroundColor = '#FFFF'} = Astro.props;
+const {
+  restaurant,
+  backgroundColor = '#FFFFFF',
+  title,
+  description,
+  image,
+  canonicalURL,
+  noindex = false
+} = Astro.props;
 
+// SEO Meta Tags
+const siteTitle = title || `${restaurant?.name} - Menú Digital` || 'Menú Digital'
+const siteDescription = description || restaurant?.description || 'Descubre nuestro delicioso menú digital'
+const siteImage = image || restaurant?.imageCover || restaurant?.imageProfile || '/default-og-image.jpg'
+const siteURL = canonicalURL || new URL(Astro.url.pathname, Astro.site)
+
+// Structured Data para SEO
+const restaurantStructuredData = restaurant ? {
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "name": restaurant.name,
+  "description": restaurant.description,
+  "url": siteURL,
+  "image": siteImage,
+  "telephone": restaurant.phone,
+  "address": restaurant.address ? {
+    "@type": "PostalAddress",
+    "streetAddress": restaurant.address
+  } : undefined,
+  "openingHours": restaurant.schedule,
+  "servesCuisine": restaurant.cuisineType,
+  "priceRange": restaurant.priceRange,
+  "paymentAccepted": restaurant.paymentMethods,
+  "aggregateRating": restaurant.analytics?.averageRating ? {
+    "@type": "AggregateRating",
+    "ratingValue": restaurant.analytics.averageRating,
+    "reviewCount": restaurant.analytics.reviewsCount || 0
+  } : undefined
+} : null
+
+// Preload critical resources
+const criticalFonts = [
+  restaurant?.fontFamily && `/fonts/${restaurant.fontFamily}.woff2`
+].filter(Boolean)
+
+// Color scheme meta for better dark mode support
+const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('dark') ? 'dark' : 'light'
 ---
 
 <!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-
-		<title>Astro Basics</title>
-	</head>
-	<body style={`--font-family:${restaurant?.fontFamily }; --bg-color:${backgroundColor} `} >
-		<slot />
-		<ModalManager client:load  />
-	</body>
+<html lang="es" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- SEO Meta Tags -->
+    <title>{siteTitle}</title>
+    <meta name="description" content={siteDescription} />
+    <link rel="canonical" href={siteURL} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={siteURL} />
+    <meta property="og:title" content={siteTitle} />
+    <meta property="og:description" content={siteDescription} />
+    <meta property="og:image" content={siteImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_ES" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={siteURL} />
+    <meta property="twitter:title" content={siteTitle} />
+    <meta property="twitter:description" content={siteDescription} />
+    <meta property="twitter:image" content={siteImage} />
+    
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content={restaurant?.primaryColor || '#FF4500'} />
+    <meta name="color-scheme" content={colorScheme} />
+    <meta name="format-detection" content="telephone=yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content={restaurant?.name || 'Menú Digital'} />
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    
+    <!-- Preload Critical Resources -->
+    {criticalFonts.map(font => 
+      <link rel="preload" href={font} as="font" type="font/woff2" crossorigin />
+    )}
+    
+    <!-- DNS Prefetch for external resources -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    
+    <!-- Font Awesome with performance optimization -->
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
+      crossorigin="anonymous" 
+      referrerpolicy="no-referrer"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link 
+        rel="stylesheet" 
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous"
+      />
+    </noscript>
+    
+    <!-- Structured Data -->
+    {restaurantStructuredData && (
+      <script type="application/ld+json" set:html={JSON.stringify(restaurantStructuredData)} />
+    )}
+    
+    <!-- Generator -->
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Accessibility Enhancement -->
+    <meta name="referrer" content="origin-when-cross-origin" />
+    
+    <!-- Performance Hints -->
+    <link rel="preload" href="/styles/critical.css" as="style" />
+    
+    <!-- Service Worker Registration -->
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('SW registered: ', registration))
+            .catch(registrationError => console.log('SW registration failed: ', registrationError));
+        });
+      }
+    </script>
+  </head>
+  
+  <body 
+    style={`
+      --font-family: ${restaurant?.fontFamily || 'system-ui, -apple-system, sans-serif'}; 
+      --bg-color: ${backgroundColor};
+      --primary-color: ${restaurant?.primaryColor || '#FF4500'};
+      --secondary-color: ${restaurant?.secondaryColor || '#FF6B35'};
+      --text-color: ${backgroundColor === '#000000' ? '#ffffff' : '#333333'};
+    `}
+    data-theme={colorScheme}
+  >
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+    
+    <!-- Loading indicator -->
+    <!-- <div id="loading-indicator" class="loading-indicator" aria-hidden="true">
+      <div class="loading-spinner">
+        <div class="spinner-circle"></div>
+        <span class="loading-text">Cargando menú...</span>
+      </div>
+    </div> -->
+    
+    <!-- Main content with proper landmark -->	
+    <main id="main-content" role="main">
+      <slot />
+    </main>
+    
+    <!-- Modal Manager -->
+    <ModalManager client:load  />
+    
+    <!-- Error Boundary for JavaScript errors -->
+    <div id="error-boundary" class="error-boundary" style="display: none;" role="alert">
+      <div class="error-content">
+        <h2>¡Oops! Algo salió mal</h2>
+        <p>Estamos experimentando problemas técnicos. Por favor, recarga la página.</p>
+        <button onclick="window.location.reload()" class="retry-button">
+          Recargar página
+        </button>
+      </div>
+    </div>
+  </body>
 </html>
 
 <style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100vh;
-		font-family: var(--font-family);
-		background-color: var(--bg-color);
-		min-height: 100vh;
-	}
+  /* Critical CSS - Above the fold */
+  html {
+    box-sizing: border-box;
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+  
+  /* Skip link for accessibility */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 0 0 4px 4px;
+    z-index: 9999;
+    font-weight: 600;
+    transition: top 0.3s;
+  }
+  
+  .skip-link:focus {
+    top: 0;
+  }
+  
+  /* Loading indicator */
+  .loading-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9998;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  
+  .loading-indicator.hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+  .loading-spinner {
+    text-align: center;
+  }
+  
+  .spinner-circle {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+  
+  .loading-text {
+    display: block;
+    color: var(--text-color);
+    font-weight: 500;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Error boundary */
+  .error-boundary {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(220, 38, 38, 0.95);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9997;
+  }
+  
+  .error-content {
+    text-align: center;
+    padding: 2rem;
+    max-width: 400px;
+  }
+  
+  .error-content h2 {
+    margin: 0 0 1rem;
+    font-size: 1.5rem;
+  }
+  
+  .error-content p {
+    margin: 0 0 1.5rem;
+    opacity: 0.9;
+  }
+  
+  .retry-button {
+    background: white;
+    color: #dc2626;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .retry-button:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Focus management for better accessibility */
+  :focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+  
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+  
+  /* Reduced motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    body {
+      background: white;
+      color: black;
+    }
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    body[data-theme="dark"] {
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+  }
+  
+  /* Print styles */
+  @media print {
+    .skip-link,
+    .loading-indicator,
+    .error-boundary {
+      display: none !important;
+    }
+    
+    body {
+      background: white !important;
+      color: black !important;
+    }
+  }
 </style>
+
+<!-- Critical JavaScript for performance and UX -->
+<script is:inline>
+  // Performance monitoring
+  if ('performance' in window && 'PerformanceObserver' in window) {
+    // Monitor Largest Contentful Paint
+    new PerformanceObserver((entryList) => {
+      for (const entry of entryList.getEntries()) {
+        console.log('LCP:', entry.startTime);
+      }
+    }).observe({entryTypes: ['largest-contentful-paint']});
+    
+    // Monitor Cumulative Layout Shift
+    new PerformanceObserver((entryList) => {
+      for (const entry of entryList.getEntries()) {
+        if (!entry.hadRecentInput) {
+          console.log('CLS:', entry.value);
+        }
+      }
+    }).observe({entryTypes: ['layout-shift']});
+  }
+  
+  // Hide loading indicator when page is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) {
+      setTimeout(() => {
+        loadingIndicator.classList.add('hidden');
+        setTimeout(() => {
+          loadingIndicator.style.display = 'none';
+        }, 300);
+      }, 500);
+    }
+  });
+  
+  // Error boundary for JavaScript errors
+  window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+    const errorBoundary = document.getElementById('error-boundary');
+    if (errorBoundary) {
+      errorBoundary.style.display = 'flex';
+    }
+  });
+  
+  // Unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+  });
+  
+  // Online/offline status
+  window.addEventListener('online', () => {
+    console.log('Connection restored');
+  });
+  
+  window.addEventListener('offline', () => {
+    console.log('Connection lost');
+  });
+</script>

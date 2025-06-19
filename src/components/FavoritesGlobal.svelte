@@ -710,8 +710,9 @@
     }
     
     .empty-state {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--color-primary-dark) 100%);
+        background: var(--primary-gradient-bold);
         border-radius: 1.25rem;
+        color: white;
         padding: 2rem 1.5rem;
         text-align: center;
         box-shadow: 0 8px 20px rgba(163, 29, 29, 0.15);
@@ -759,7 +760,7 @@
     .explore-button {
         display: flex;
         align-items: center;
-        background-color: white;
+        background-color: var(--secondary-color);
         color: var(--primary-color);
         padding: 0.75rem 1.25rem;
         border-radius: 2rem;

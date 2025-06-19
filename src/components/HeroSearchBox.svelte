@@ -811,7 +811,7 @@ function showDishDetails(dish:DishWithRatings) {
     align-items: center;
     gap: 4px;
     background: var(--bg-secondary);
-    border: 1.5px dashed var(--bg--accent);
+    border: 1.5px dashed var(--bg-accent);
     border-radius: 24px;
     padding: 8px 12px;
     font-size: 0.8rem;
@@ -854,7 +854,7 @@ function showDishDetails(dish:DishWithRatings) {
     top: calc(100% - 8px);
     left: 0;
     right: 0;
-    background: white;
+    background: var(--bg-primary);
     border: 2px solid var(--primary-color, #ff6b35);
     border-top: none;
     border-radius: 0 0 16px 16px;
@@ -873,7 +873,7 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .results-section:not(:last-child) {
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--bg-tertiary);
   }
 
   .section-header {
@@ -883,8 +883,8 @@ function showDishDetails(dish:DishWithRatings) {
     padding: 8px 16px;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #64748b;
-    background: #f8fafc;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
     margin-bottom: 4px;
   }
 
@@ -903,7 +903,7 @@ function showDishDetails(dish:DishWithRatings) {
 
   .result-item:hover,
   .result-item.focused {
-    background: #f8fafc;
+    background: var(--bg-secondary);
   }
 
   .item-image {
@@ -912,7 +912,7 @@ function showDishDetails(dish:DishWithRatings) {
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
-    background: #f1f5f9;
+    background: var(--bg-tertiary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -926,7 +926,7 @@ function showDishDetails(dish:DishWithRatings) {
 
   .placeholder-icon {
     font-size: 1.5rem;
-    color: #94a3b8;
+    color: var(--text-light);
   }
 
   .item-content {
@@ -936,7 +936,7 @@ function showDishDetails(dish:DishWithRatings) {
 
   .item-title {
     font-weight: 600;
-    color: #0D1B2A;
+    color: var(--text-primary);
     margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -955,7 +955,7 @@ function showDishDetails(dish:DishWithRatings) {
     align-items: center;
     gap: 12px;
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--text-muted);
     margin-bottom: 2px;
   }
 
@@ -971,7 +971,7 @@ function showDishDetails(dish:DishWithRatings) {
 
   .item-description {
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: var(--text-light);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -979,7 +979,7 @@ function showDishDetails(dish:DishWithRatings) {
 
   .view-all-section {
     padding: 8px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--bg-tertiary);
   }
 
   .view-all-btn {
@@ -989,7 +989,7 @@ function showDishDetails(dish:DishWithRatings) {
     justify-content: space-between;
     padding: 12px 16px;
     border: none;
-    background: #f8fafc;
+    background: var(--bg-tertiary);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1016,13 +1016,13 @@ function showDishDetails(dish:DishWithRatings) {
 
   .empty-title {
     font-weight: 600;
-    color: #0D1B2A;
+    color: var(--text-primary);
     margin-bottom: 4px;
   }
 
   .empty-subtitle {
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-muted);
   }
 
   /* Mobile optimizations */
@@ -1098,15 +1098,15 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .search-dropdown::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--bg-tertiary);
   }
 
   .search-dropdown::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--bg-surface);
     border-radius: 3px;
   }
 
   .search-dropdown::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--text-light);
   }
 </style>

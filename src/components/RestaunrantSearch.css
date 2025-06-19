@@ -97,9 +97,9 @@
     left: 0;
     right: 0;
     z-index: var(--z-fixed, 300);
-    background: rgba(248, 250, 252, 0.95);
+    background: var(--bg-surface);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    border-bottom: 1px solid var(--bg-glass);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
 
@@ -184,7 +184,7 @@
   /* Grids */
   .restaurants-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 24px;
     margin-bottom: 40px;
   }
@@ -199,7 +199,7 @@
 
   .dishes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 24px;
     margin-bottom: 40px;
   }
@@ -217,6 +217,7 @@
     display: flex;
     justify-content: center;
     padding: 4rem 20px;
+    
   }
 
   @media (max-width: 768px) {
@@ -239,12 +240,13 @@
   }
 
   .loading-card {
-    background: white;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     padding: 40px 32px;
     border-radius: 24px;
     text-align: center;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-    border: 1px solid #f1f5f9;
+    border: 1px solid var(--bg-tertiary);
     max-width: 400px;
     width: 100%;
     backdrop-filter: blur(10px);
@@ -260,7 +262,7 @@
   .loading-spinner {
     width: 44px;
     height: 44px;
-    border: 3px solid #f1f5f9;
+    border: 3px solid var(--bg-tertiary);
     border-top: 3px solid var(--primary-color, #ff6b35);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -274,14 +276,14 @@
 
   .loading-card h3 {
     margin: 0 0 12px 0;
-    color: #0D1B2A;
+    color: var(--text-primary);
     font-size: 1.3rem;
     font-weight: 700;
   }
 
   .loading-card p {
     margin: 0;
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.95rem;
   }
 
@@ -322,18 +324,18 @@
 
   .error-card,
   .empty-card {
-    background: white;
+    background: var(--bg-primary);
     padding: 40px 32px;
     border-radius: 24px;
     text-align: center;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-    border: 1px solid #f1f5f9;
+    border: 1px solid var(--bg-tertiary);
     max-width: 480px;
     width: 100%;
   }
 
   .error-card {
-    border: 2px solid #fecaca;
+    border: 2px solid var(--error-light)
   }
 
   @media (max-width: 768px) {
@@ -358,17 +360,17 @@
   }
 
   .error-content h3 {
-    color: #dc2626;
+    color: var(--error);
   }
 
   .empty-card h3 {
-    color: #0D1B2A;
+    color: var(--text-primary)
   }
 
   .error-content p,
   .empty-card p {
     margin: 0 0 24px 0;
-    color: #64748b;
+    color: var(--text-muted);
     line-height: 1.6;
   }
 
@@ -385,18 +387,18 @@
 
   .retry-btn {
     background: var(--primary-color, #ff6b35);
-    color: white;
+    color: var(--text-inverse);
   }
 
   .retry-btn:hover {
-    background: #e55a2b;
+    background: var(--primary-color);
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
   }
 
   .clear-filters-btn {
-    background: #0D1B2A;
-    color: white;
+    background: var(--secondary-color);
+    color: var(--text-inverse);
   }
 
   .clear-filters-btn:hover {

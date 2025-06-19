@@ -1,15 +1,16 @@
 ---
+// src/pages/[username]/favorites.astro
+// Favoritos optimizado manteniendo la estructura simple original
 import FavoritesDishes from '../../components/FavoritesDishes.svelte'
 import type { LinkTree, Restaurant } from '../../interfaces';
 import type { Category } from '../../interfaces/categories';
 import type { Dish } from '../../interfaces/dish';
 import Layout from '../../layouts/Layout.astro';
-import { fetchLinksByUsername } from '../../services/apiService';
-import { fetchAllRestaurantDataByUsername, fetchDishesByUsername } from '../../services/apiService';
+import { fetchLinksByUsername, fetchAllRestaurantDataByUsername } from '../../services/apiService';
 
-const {username} = Astro.params;
+const { username } = Astro.params;
 
-if(!username){
+if (!username) {
     return Astro.redirect('/404');
 }
 
@@ -19,12 +20,23 @@ let dishesInfo: Dish[] | null = null;
 let errorMessage: string | null = null;
 let linksTreeInfo: LinkTree | null = null;
 
-
 try {
-    const data = await fetchAllRestaurantDataByUsername(username);
-    linksTreeInfo = await fetchLinksByUsername(username);
-    dishesInfo = data.dishes
+    // Optimización: fetch paralelo con Promise.all
+    const [data, linksData] = await Promise.all([
+        fetchAllRestaurantDataByUsername(username),
+        fetchLinksByUsername(username)
+    ]);
+    
     restaurantInfo = data.restaurant;
+    categoriesInfo = data.categories;
+    dishesInfo = data.dishes;
+    linksTreeInfo = linksData;
+
+    // Verificar que el restaurante existe y está activo
+    if (!restaurantInfo || !restaurantInfo.active) {
+        return Astro.redirect('/404');
+    }
+
     console.log('Datos obtenidos:', {
         restaurant: restaurantInfo,
         linksTree: linksTreeInfo,
@@ -33,15 +45,33 @@ try {
             secondary: restaurantInfo?.secondaryColor
         }
     });
-} catch( error){
+} catch (error) {
     console.error('Error al obtener datos:', error);
-    dishesInfo = []
+    errorMessage = error instanceof Error ? error.message : 'Error al cargar datos';
+    dishesInfo = [];
+    
+    // Si es un 404, redirigir
+    if (error instanceof Error && error.message.includes('404')) {
+        return Astro.redirect('/404');
+    }
 }
 
 // Validar y proveer valores por defecto para los colores
 const primaryColor = restaurantInfo?.primaryColor || '#FF4500';
 const secondaryColor = restaurantInfo?.secondaryColor || '#FF4500';
 const backgroundColor = linksTreeInfo?.backgroundColor || '#FFFFFF';
+
+// SEO optimizado para favoritos
+const pageTitle = restaurantInfo 
+    ? `Favoritos - ${restaurantInfo.name}`
+    : 'Favoritos';
+
+const pageDescription = restaurantInfo 
+    ? `Tus platillos favoritos de ${restaurantInfo.name}`
+    : 'Tus platillos favoritos';
+
+const canonicalURL = new URL(`/${username}/favorites`, Astro.site);
+const ogImage = restaurantInfo?.imageCover || restaurantInfo?.imageProfile;
 
 console.log('Colores finales a pasar al componente:', {
     primaryColor,
@@ -50,7 +80,14 @@ console.log('Colores finales a pasar al componente:', {
 });
 ---
 
-<Layout restaurant={restaurantInfo!} backgroundColor={backgroundColor}>
+<Layout 
+    restaurant={restaurantInfo!} 
+    backgroundColor={backgroundColor}
+    title={pageTitle}
+    description={pageDescription}
+    image={ogImage}
+    canonicalURL={canonicalURL}
+>
     <FavoritesDishes 
         username={restaurantInfo?.username} 
         transition:persist 

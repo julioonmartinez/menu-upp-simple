@@ -49,6 +49,8 @@
   } from '../interfaces/dishRating';
   import CardDishCompact from './Cards/CardDishCompact.svelte';
     import RestaurantCardCompact from './RestaurantCardCompact.svelte';
+    import CardDishDyanmic from './Cards/CardDishDyanmic.svelte';
+    import CardDishSvelte from './Cards/CardDishSvelte.svelte';
 
   // Detección de browser para Astro
   const isBrowser = typeof window !== 'undefined';
@@ -569,7 +571,7 @@
                     easing: quintOut 
                   }}
                 >
-                  <CardDishCompact 
+                  <CardDishSvelte
                     item={dish}
                     index={index} storeMode={false}
                   />
@@ -700,7 +702,7 @@
                       easing: quintOut 
                     }}
                   >
-                    <CardDishCompact item={dish} index={index} storeMode={false} />
+                    <CardDishDyanmic item={dish} index={index} storeMode={false} />
                   </div>
                 {/each}
               </div>
