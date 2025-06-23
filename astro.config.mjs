@@ -8,7 +8,11 @@ export default defineConfig({
     runtime: 'serverless'
   }),
   site: 'https://menu-upp-basic.vercel.app',
-  integrations: [svelte()],
+  integrations: [svelte({
+      compilerOptions: {
+        hydratable: true
+      }
+    })],
   server: {
     port: 3000,
     host: true

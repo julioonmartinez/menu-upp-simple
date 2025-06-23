@@ -2,10 +2,13 @@
   // Header.svelte - Navegación principal
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  
+  import { isAuthenticated } from '../stores/authStore';
+    import { authStore } from '../stores/authStore';
   // Props
   export let showShadow = false;
   export let transparent = false;
+
+  console.log('auth', authStore.getIsAuthenticated)
 
   // Estado del componente
   let isScrolled = false;
@@ -125,6 +128,11 @@
          
         </button> -->
         <!-- Favorites -->
+        {#if isAuthenticated}
+         <a class="btn btn-ghost btn-sm "  href="/dashboard">Mi cuenta</a>
+        {:else}
+         <a class="btn btn-ghost btn-sm" href="/login">Crea una cuenta</a>
+        {/if}
         <a
           class="action-btn favorites-btn"
           title="Favoritos"

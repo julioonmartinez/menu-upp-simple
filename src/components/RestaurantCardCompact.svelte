@@ -1,4 +1,5 @@
 <script lang="ts">
+  //RestaunratCardcompact.svelte
   import { createEventDispatcher, onMount } from 'svelte';
   import { fly, scale, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
@@ -6,6 +7,14 @@
   import RatingSystem from './RatingSystem.svelte';
   import type { RestaurantSearchResult } from '../interfaces/restaurantRating.js';
   import { canUserRate } from '../stores/ratingStore.js';
+
+    import { 
+    restaurantFavoritesStore,
+    popularRestaurants,
+    favoritesLoading,
+    useRestaurantFavorites
+  } from '../stores/restaurantFavoritesStore.ts';
+
   
   // ✅ NUEVAS IMPORTACIONES para favoritos
   import { 
@@ -133,6 +142,11 @@
           'toggle'
         );
       }
+
+    let result20 = await restaurantFavoritesStore.toggleFavorite(restaurant.id!)
+     console.log(result20)
+
+
 
       // Actualizar estado basado en la respuesta
       isLiked = result.action === 'added';

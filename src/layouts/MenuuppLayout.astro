@@ -3,7 +3,8 @@
 import Header from '../components/Header.svelte'; // 👈 AGREGAR ESTA LÍNEA
 import '../styles/reset.css';
 import '../styles/global-styles.css';
-import ModalManager from '../components/ ModalManager.svelte'
+import ModalManager from '../components/ ModalManager.svelte';
+import AuthInitializer from '../components/AuthInitializer.svelte';
 export interface Props {
   title: string;
   description?: string;
@@ -173,6 +174,11 @@ const {
 </head>
 
 <body class="page-loading">
+  <!-- Inicializador de autenticación (invisible) -->
+  <AuthInitializer 
+    client:load 
+    
+  />
   <!-- Header fijo -->
  {showHeader &&  <Header 
     client:load 
