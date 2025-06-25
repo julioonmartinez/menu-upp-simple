@@ -239,58 +239,79 @@ class LinkTreeStore {
   // ===== MÉTODOS PARA LINKTREE =====
 
   /**
-   * Obtiene el LinkTree de un restaurante por ID
-   */
-  async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = false): Promise<ApiResult<LinkTree>> {
-    // Verificar cache si no es forzado
-    if (!forceReload) {
-      const currentState = this.getCurrentState();
-      const cached = currentState.linkTrees.find(lt => lt.restaurantId === restaurantId);
-      
-      if (cached) {
-        this.setCurrentLinkTree(cached);
-        return {
-          success: true,
-          data: cached
-        };
-      }
+ * Obtiene el LinkTree de un restaurante por ID
+ */
+async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = false): Promise<ApiResult<LinkTree | null>> {
+  // Verificar cache si no es forzado
+  if (!forceReload) {
+    const currentState = this.getCurrentState();
+    const cached = currentState.linkTrees.find(lt => lt.restaurantId === restaurantId);
+    
+    if (cached) {
+      this.setCurrentLinkTree(cached);
+      return {
+        success: true,
+        data: cached
+      };
     }
+  }
 
-    this.setLoadingCurrent(true);
-    this.clearError();
+  this.setLoadingCurrent(true);
+  this.clearError();
 
-    try {
-      const result = await linkTreeService.getLinkTreeByRestaurant(restaurantId);
+  try {
+    const result = await linkTreeService.getLinkTreeByRestaurant(restaurantId);
 
-      if (result.success && result.data) {
+    if (result.success) {
+      // Caso 1: LinkTree encontrado
+      if (result.data) {
         this.setCurrentLinkTree(result.data);
         this.addToCache(result.data);
         this.setLoadingCurrent(false);
 
         return {
           success: true,
-          data: result.data
+          data: result.data,
+          restaurant: result.restaurant
         };
-      } else {
+      } 
+      // Caso 2: No hay LinkTree pero restaurante existe
+      else {
+        this.setCurrentLinkTree(null);
         this.setLoadingCurrent(false);
-        this.setError(result.error || 'Error cargando LinkTree del restaurante');
         
         return {
-          success: false,
-          error: result.error || 'Error cargando LinkTree del restaurante'
+          success: true,
+          data: null,
+          restaurant: result.restaurant,
+          message: result.message || 'No existe LinkTree para este restaurante',
+          errorType: 'LINKTREE_NOT_FOUND'
         };
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido cargando LinkTree';
+    } 
+    // Caso 3: Error real (restaurante no existe, permisos, etc.)
+    else {
       this.setLoadingCurrent(false);
-      this.setError(errorMessage);
+      this.setError(result.error || 'Error cargando LinkTree del restaurante');
       
       return {
         success: false,
-        error: errorMessage
+        error: result.error || 'Error cargando LinkTree del restaurante',
+        errorType: result.errorType
       };
     }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido cargando LinkTree';
+    this.setLoadingCurrent(false);
+    this.setError(errorMessage);
+    
+    return {
+      success: false,
+      error: errorMessage,
+      errorType: 'NETWORK_ERROR'
+    };
   }
+}
 
   /**
    * Obtiene el LinkTree por username del restaurante
@@ -1325,38 +1346,38 @@ export const linkTreesIsAuthenticated = linkTreeStore.isAuthenticated;
  * Hook personalizado para usar en componentes Svelte
  */
 export function useLinkTrees() {
-  const state = linkTreeStore.getCurrentState();
+  // const state = linkTreeStore.getCurrentState();
 
   return {
-    // Estado general
-    isLoading: state.isLoading,
-    isLoadingCurrent: state.isLoadingCurrent,
-    isCreating: state.isCreating,
-    isUpdating: state.isUpdating,
-    isDeleting: state.isDeleting,
-    isUploadingImage: state.isUploadingImage,
-    isLoadingLinks: state.isLoadingLinks,
-    isCreatingLink: state.isCreatingLink,
-    isUpdatingLink: state.isUpdatingLink,
-    isDeletingLink: state.isDeletingLink,
-    isRegisteringClick: state.isRegisteringClick,
-    isLoadingAnalytics: state.isLoadingAnalytics,
+    // Stores reactivos (estos SÍ son reactivos)
+    currentLinkTree: linkTreeStore.currentLinkTree,
+    currentLinks: linkTreeStore.currentLinks,
+    currentAnalytics: linkTreeStore.currentAnalytics,
+    isLoading: linkTreeStore.isLoading,
+    isLoadingCurrent: linkTreeStore.isLoadingCurrent,
+    isCreating: linkTreeStore.isCreating,
+    isUpdating: linkTreeStore.isUpdating,
+    isDeleting: linkTreeStore.isDeleting,
+    isUploadingImage: linkTreeStore.isUploadingImage,
+    isLoadingLinks: linkTreeStore.isLoadingLinks,
+    isCreatingLink: linkTreeStore.isCreatingLink,
+    isUpdatingLink: linkTreeStore.isUpdatingLink,
+    isDeletingLink: linkTreeStore.isDeletingLink,
+    isRegisteringClick: linkTreeStore.isRegisteringClick,
+    isLoadingAnalytics: linkTreeStore.isLoadingAnalytics,
     
-    // Errores
-    error: state.error,
-    createError: state.createError,
-    updateError: state.updateError,
-    deleteError: state.deleteError,
-    imageError: state.imageError,
-    linkError: state.linkError,
-    analyticsError: state.analyticsError,
+    // Errores como stores reactivos
+    error: linkTreeStore.error,
+    createError: linkTreeStore.createError,
+    updateError: linkTreeStore.updateError,
+    deleteError: linkTreeStore.deleteError,
+    imageError: linkTreeStore.imageError,
+    linkError: linkTreeStore.linkError,
+    analyticsError: linkTreeStore.analyticsError,
     
-    // Datos
-    linkTrees: state.linkTrees,
-    currentLinkTree: state.currentLinkTree,
-    currentLinks: state.currentLinks,
-    currentAnalytics: state.currentAnalytics,
-    isAuthenticated: state.isAuthenticated,
+    // Datos como stores reactivos
+    linkTrees: linkTreeStore.linkTrees,
+    isAuthenticated: linkTreeStore.isAuthenticated,
     
     // Métodos para LinkTree
     loadLinkTreeByRestaurant: linkTreeStore.loadLinkTreeByRestaurant.bind(linkTreeStore),

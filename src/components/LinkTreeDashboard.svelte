@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { createEventDispatcher } from 'svelte';
   import type { LinkTree, Link, LinkTreeAnalytics } from '../interfaces/links.ts';
+  import type { Restaurant } from '../interfaces/restaurant.ts';
   import { 
     formatClickCount, 
     getLinkTreePublicUrl,
@@ -10,142 +11,250 @@
     groupLinksByType,
     LINK_TYPE_LABELS 
   } from '../interfaces/links.ts';
-  import { useLinkTrees,  } from '../stores/linkTreeStore.ts';
+  import { useLinkTrees } from '../stores/linkTreeStore.ts';
+  import { useRestaurants } from '../stores/restaurantStore.ts';
   import LinkManager from './LinkManager.svelte';
+  import type { ApiResult } from '../services/linkTreeService.ts';
 
   // Props
-  export let restaurantId: string;
-  export let linkTree: LinkTree | null = null;
-
-  // Event dispatcher
-  const dispatch = createEventDispatcher<{
-    editLinkTree: LinkTree;
-    createLinkTree: string; // restaurantId
-    deleteLinkTree: LinkTree;
-    shareLink: string;
+  const { restaurantId, linkTree = null } = $props<{
+    restaurantId: string;
+    linkTree?: LinkTree | null;
   }>();
 
-  // Store state
+  // Event dispatcher
+  const dispatch = createEventDispatcher();
+
+  // Svelte 5 state
+  let showDeleteConfirm = $state(false);
+  let showShareModal = $state(false);
+  let activeTab = $state('overview');
+  let loadResult = $state<ApiResult<LinkTree | null> | null>(null);
+  let isInitialLoading = $state(true);
+
+  // Stores - Usando directamente los stores reactivos
   const {
-    currentLinkTree,
-    currentLinks,
-    currentAnalytics,
-    isLoadingCurrent,
-    isLoadingAnalytics,
-    isDeleting,
-    error,
+    currentLinkTree: currentLinkTreeStore,
+    currentAnalytics: currentAnalyticsStore,
+    isLoadingCurrent: isLoadingCurrentStore,
+    isLoadingAnalytics: isLoadingAnalyticsStore,
+    isDeleting: isDeletingStore,
+    error: errorStore,
     loadLinkTreeByRestaurant,
     loadAnalytics,
     deleteLinkTree,
-    createLinkTree // <-- Asegura que esté aquí
+    createLinkTree
   } = useLinkTrees();
 
-  // Local state
-  let displayLinkTree: LinkTree | null = null;
-  let analytics: LinkTreeAnalytics | null = null;
-  let showDeleteConfirm = false;
-  let showShareModal = false;
-  let activeTab = 'overview';
+  const {
+    currentRestaurant: currentRestaurantStore,
+    isLoading: isLoadingRestaurantStore,
+    error: restaurantErrorStore,
+    loadRestaurant
+  } = useRestaurants();
 
-  // Reactive statements
-  $: displayLinkTree = linkTree || currentLinkTree;
-  $: analytics = currentAnalytics;
-  $: isLoading = isLoadingCurrent;
-  $: analyticsLoading = isLoadingAnalytics;
-  $: errorMessage = error;
+  // Estados derivados usando los stores reactivos
+  let currentLinkTree = $derived(linkTree || $currentLinkTreeStore);
+  let currentRestaurant = $derived($currentRestaurantStore || loadResult?.restaurant || null);
+  let currentAnalytics = $derived($currentAnalyticsStore);
+  
+  // Estados de loading usando stores reactivos
+  let isLoadingData = $derived($isLoadingCurrentStore || $isLoadingRestaurantStore);
+  let isLoadingAnalytics = $derived($isLoadingAnalyticsStore);
+  
+  // Errores usando stores reactivos
+  let errorMessage = $derived($errorStore || $restaurantErrorStore);
 
-  // Computed values
-  $: publicUrl = displayLinkTree ? getLinkTreePublicUrl(displayLinkTree) : '';
-  $: safeLinks = displayLinkTree && Array.isArray(displayLinkTree.links) ? displayLinkTree.links : [];
-  $: activeLinks = displayLinkTree ? getActiveLinks(safeLinks) : [];
-  $: linksByType = displayLinkTree ? groupLinksByType(safeLinks) : {};
-  $: totalLinks = safeLinks.length;
-  $: activeLinkCount = activeLinks.length;
+  // Estado de la aplicación - SIMPLIFICADO
+  let appState = $derived.by(() => {
+    console.log('🔄 Calculating appState:', {
+      isInitialLoading,
+      isLoadingData,
+      loadResult: loadResult ? {
+        success: loadResult.success,
+        hasData: !!loadResult.data,
+        hasRestaurant: !!loadResult.restaurant,
+        errorType: loadResult.errorType
+      } : null,
+      currentLinkTree: !!currentLinkTree,
+      currentRestaurant: !!currentRestaurant
+    });
 
-  // Initialize
-  onMount(async () => {
-    if (!displayLinkTree) {
-      await loadLinkTreeData();
+    // Si estamos en carga inicial o cargando datos
+    if (isInitialLoading || isLoadingData) {
+      return 'loading';
     }
-    
-    if (displayLinkTree) {
-      await loadAnalyticsData();
+
+    // Si hay un resultado de carga y falló
+    if (loadResult && !loadResult.success) {
+      if (loadResult.errorType === 'RESTAURANT_NOT_FOUND') return 'restaurant_not_found';
+      if (loadResult.errorType === 'PERMISSION_DENIED') return 'permission_denied';
+      if (loadResult.errorType === 'NETWORK_ERROR') return 'network_error';
+      return 'unknown_error';
     }
+
+    // Si tenemos resultado exitoso pero sin LinkTree
+    if (loadResult && loadResult.success && loadResult.data === null) {
+      return 'no_linktree';
+    }
+
+    // Si tenemos LinkTree y restaurante
+    if (currentLinkTree && currentRestaurant) {
+      return 'dashboard';
+    }
+
+    // Si no tenemos LinkTree pero sí restaurante
+    if (!currentLinkTree && currentRestaurant) {
+      return 'no_linktree';
+    }
+
+    // Estado por defecto
+    return 'loading';
   });
 
-  // Load LinkTree data
+  // Estados derivados para el LinkTree
+  let publicUrl = $derived(currentLinkTree ? getLinkTreePublicUrl(currentLinkTree) : '');
+  let safeLinks = $derived(currentLinkTree && Array.isArray(currentLinkTree.links) ? currentLinkTree.links : []);
+  let activeLinks = $derived(currentLinkTree ? getActiveLinks(safeLinks) : []);
+  let linksByType = $derived(currentLinkTree ? groupLinksByType(safeLinks) : {});
+  let totalLinks = $derived(safeLinks.length);
+  let activeLinkCount = $derived(activeLinks.length);
+
+  // onMount
+  onMount(async () => {
+    console.log('🚀 Component mounted, loading data...');
+    await loadAllData();
+  });
+
+  // Función principal para cargar datos
+  async function loadAllData() {
+    try {
+      isInitialLoading = true;
+      
+      // 1. Cargar restaurante
+      console.log('📍 Loading restaurant:', restaurantId);
+      await loadRestaurantData();
+      
+      // 2. Cargar LinkTree solo si no viene como prop
+      if (!linkTree) {
+        console.log('🔗 Loading LinkTree for restaurant:', restaurantId);
+        await loadLinkTreeData();
+      }
+      
+      // 3. Cargar analytics si tenemos LinkTree
+      if (currentLinkTree) {
+        console.log('📊 Loading analytics for LinkTree:', currentLinkTree.id);
+        await loadAnalyticsData();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading data:', error);
+    } finally {
+      isInitialLoading = false;
+      console.log('✅ Initial loading complete');
+    }
+  }
+
+  // Loaders individuales
+  async function loadRestaurantData() {
+    try {
+      await loadRestaurant(restaurantId);
+      console.log('✅ Restaurant loaded:', $currentRestaurantStore?.name);
+    } catch (err) {
+      console.error('❌ Error loading restaurant:', err);
+    }
+  }
+
   async function loadLinkTreeData() {
     try {
-      await loadLinkTreeByRestaurant(restaurantId);
+      const result = await loadLinkTreeByRestaurant(restaurantId);
+      loadResult = result;
+      console.log('📊 LinkTree load result:', {
+        success: result.success,
+        hasData: !!result.data,
+        hasRestaurant: !!result.restaurant,
+        errorType: result.errorType
+      });
     } catch (err) {
-      console.error('Error loading LinkTree:', err);
+      console.error('❌ Error loading LinkTree:', err);
+      loadResult = {
+        success: false,
+        error: err instanceof Error ? err.message : 'Error desconocido',
+        errorType: 'NETWORK_ERROR'
+      };
     }
   }
 
-  // Load analytics data
   async function loadAnalyticsData() {
-    if (!displayLinkTree?.id) return;
-    
+    if (!currentLinkTree?.id) return;
     try {
-      await loadAnalytics(displayLinkTree.id);
+      await loadAnalytics(currentLinkTree.id);
+      console.log('📈 Analytics loaded');
     } catch (err) {
-      console.error('Error loading analytics:', err);
+      console.error('❌ Error loading analytics:', err);
     }
   }
 
-  // Handle edit LinkTree
+  // Actions
   function handleEditLinkTree() {
-    if (displayLinkTree) {
-      dispatch('editLinkTree', displayLinkTree);
+    if (currentLinkTree) {
+      dispatch('editLinkTree', currentLinkTree);
     }
   }
 
-  // Handle create LinkTree
   async function handleCreateLinkTree() {
     try {
-      const result = await createLinkTree({ restaurantId });
+      if (!currentRestaurant) {
+        alert('Error: No se pudieron cargar los datos del restaurante');
+        return;
+      }
+      
+      const linkTreeData = {
+        restaurantId,
+        customSlug: currentRestaurant.username,
+        title: `${currentRestaurant.name} - Enlaces`,
+        description: `Encuentra todos los enlaces de ${currentRestaurant.name}`,
+        isPublic: true
+      };
+      
+      console.log('🆕 Creating LinkTree:', linkTreeData);
+      const result = await createLinkTree(linkTreeData);
+      
       if (result.success && result.linkTree) {
-        // Actualiza el estado local y muestra el nuevo LinkTree
+        console.log('✅ LinkTree created successfully');
+        // Recargar datos después de crear
         await loadLinkTreeData();
       } else {
         alert(result.error || 'No se pudo crear el LinkTree');
       }
     } catch (err) {
-      console.error('Error creando LinkTree:', err);
+      console.error('❌ Error creating LinkTree:', err);
       alert('Error creando LinkTree');
     }
   }
 
-  // Handle delete LinkTree
   async function handleDeleteLinkTree() {
-    if (!displayLinkTree) return;
-    
+    if (!currentLinkTree) return;
     showDeleteConfirm = false;
-    
     try {
-      const result = await deleteLinkTree(displayLinkTree.id!);
-      
+      const result = await deleteLinkTree(currentLinkTree.id!);
       if (result.success) {
-        dispatch('deleteLinkTree', displayLinkTree);
+        dispatch('deleteLinkTree', currentLinkTree);
       }
     } catch (err) {
       console.error('Error deleting LinkTree:', err);
     }
   }
 
-  // Handle share
   function handleShare() {
     showShareModal = true;
   }
 
-  // Copy to clipboard
   async function copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
       alert('¡Enlace copiado al portapapeles!');
     } catch (err) {
-      console.error('Error copying to clipboard:', err);
-      // Fallback
       const textArea = document.createElement('textarea');
       textArea.value = text;
       document.body.appendChild(textArea);
@@ -156,19 +265,14 @@
     }
   }
 
-  // Get analytics summary
-  function getAnalyticsSummary() {
-    if (!analytics) return null;
-    
+  let analyticsSummary = $derived.by(() => {
+    if (!currentAnalytics) return null;
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    const todayViews = analytics.views.daily.find(d => d.date === today)?.count || 0;
-    const yesterdayViews = analytics.views.daily.find(d => d.date === yesterday)?.count || 0;
-    
-    const todayClicks = analytics.clicks.daily.find(d => d.date === today)?.count || 0;
-    const yesterdayClicks = analytics.clicks.daily.find(d => d.date === yesterday)?.count || 0;
-    
+    const todayViews = currentAnalytics.views.daily.find(d => d.date === today)?.count || 0;
+    const yesterdayViews = currentAnalytics.views.daily.find(d => d.date === yesterday)?.count || 0;
+    const todayClicks = currentAnalytics.clicks.daily.find(d => d.date === today)?.count || 0;
+    const yesterdayClicks = currentAnalytics.clicks.daily.find(d => d.date === yesterday)?.count || 0;
     return {
       todayViews,
       yesterdayViews,
@@ -177,63 +281,137 @@
       viewsChange: yesterdayViews > 0 ? ((todayViews - yesterdayViews) / yesterdayViews * 100) : 0,
       clicksChange: yesterdayClicks > 0 ? ((todayClicks - yesterdayClicks) / yesterdayClicks * 100) : 0
     };
-  }
+  });
 
-  $: analyticsSummary = getAnalyticsSummary();
+  // Effect para debug (puedes comentar en producción)
+  $effect(() => {
+    console.log('🔄 Reactive state update:', {
+      appState,
+      currentLinkTree: !!currentLinkTree,
+      currentRestaurant: !!currentRestaurant,
+      isInitialLoading,
+      isLoadingData,
+      loadResult: loadResult ? {
+        success: loadResult.success,
+        hasData: !!loadResult.data,
+        hasRestaurant: !!loadResult.restaurant,
+        errorType: loadResult.errorType
+      } : null
+    });
+  });
 </script>
 
 <div class="linktree-dashboard">
   <!-- Loading State -->
-  {#if isLoading}
+  {#if appState === 'loading'}
     <div class="loading-state">
       <div class="loading-spinner"></div>
-      <p>Cargando LinkTree...</p>
+      <p>Cargando información...</p>
+      <small>Estado: {appState}</small>
     </div>
   
-  <!-- Error State -->
-  {:else if errorMessage}
+  <!-- Restaurant Not Found -->
+  {:else if appState === 'restaurant_not_found'}
+    <div class="error-state">
+      <div class="error-icon">🏪</div>
+      <h3>Restaurante No Encontrado</h3>
+      <p>No se encontró el restaurante con el ID especificado.</p>
+      <p><small>ID: {restaurantId}</small></p>
+      <button class="btn btn-primary" on:click={loadAllData}>
+        Reintentar
+      </button>
+    </div>
+  
+  <!-- Permission Denied -->
+  {:else if appState === 'permission_denied'}
+    <div class="error-state">
+      <div class="error-icon">🔒</div>
+      <h3>Sin Permisos</h3>
+      <p>No tienes permisos para ver este LinkTree.</p>
+      <button class="btn btn-primary" on:click={() => window.history.back()}>
+        Volver
+      </button>
+    </div>
+  
+  <!-- Network Error -->
+  {:else if appState === 'network_error'}
+    <div class="error-state">
+      <div class="error-icon">🌐</div>
+      <h3>Error de Conexión</h3>
+      <p>No se pudo conectar con el servidor. Verifica tu conexión a internet.</p>
+      <button class="btn btn-primary" on:click={loadAllData}>
+        Reintentar
+      </button>
+    </div>
+  
+  <!-- Unknown Error -->
+  {:else if appState === 'unknown_error'}
     <div class="error-state">
       <div class="error-icon">⚠️</div>
       <h3>Error</h3>
-      <p>{errorMessage}</p>
-      <button class="btn btn-primary" on:click={loadLinkTreeData}>
+      <p>{loadResult?.error || 'Ha ocurrido un error desconocido'}</p>
+      <button class="btn btn-primary" on:click={loadAllData}>
         Reintentar
       </button>
     </div>
   
   <!-- No LinkTree State -->
-  {:else if !displayLinkTree}
+  {:else if appState === 'no_linktree'}
     <div class="empty-state">
       <div class="empty-icon">🔗</div>
       <h3>No tienes un LinkTree</h3>
-      <p>Crea tu primera página de enlaces para comenzar a compartir todos tus links importantes en un solo lugar.</p>
+      <p>Crea tu primera página de enlaces para <strong>{currentRestaurant?.name}</strong> y comparte todos tus links importantes en un solo lugar.</p>
+      <div class="empty-info">
+        <p><strong>Tu LinkTree será creado con la URL:</strong></p>
+        <code class="url-preview">/{currentRestaurant?.username}</code>
+      </div>
       <button class="btn btn-primary" on:click={handleCreateLinkTree}>
         <i class="icon-plus"></i>
-        Crear LinkTree
+        Crear LinkTree para {currentRestaurant?.name}
       </button>
+      
+      <!-- Debug info -->
+      <details style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
+        <summary>Debug Info</summary>
+        <pre>{JSON.stringify({
+          appState,
+          hasCurrentRestaurant: !!currentRestaurant,
+          restaurantName: currentRestaurant?.name,
+          hasCurrentLinkTree: !!currentLinkTree,
+          loadResultSuccess: loadResult?.success,
+          loadResultData: loadResult?.data,
+          hasLoadResultRestaurant: !!loadResult?.restaurant,
+          isInitialLoading,
+          isLoadingData
+        }, null, 2)}</pre>
+      </details>
     </div>
   
   <!-- Dashboard Content -->
-  {:else}
+  {:else if appState === 'dashboard'}
     <!-- Header -->
     <div class="dashboard-header">
       <div class="header-content">
         <div class="linktree-info">
           <div class="linktree-title">
-            <h1>{displayLinkTree.title || 'Mi LinkTree'}</h1>
-            <span class="status" class:public={displayLinkTree.isPublic} class:private={!displayLinkTree.isPublic}>
-              {displayLinkTree.isPublic ? 'Público' : 'Privado'}
+            <h1>{currentLinkTree?.title || `${currentRestaurant?.name} - Enlaces`}</h1>
+            <span class="status" class:public={currentLinkTree?.isPublic} class:private={!currentLinkTree?.isPublic}>
+              {currentLinkTree?.isPublic ? 'Público' : 'Privado'}
             </span>
           </div>
           
-          {#if displayLinkTree.description}
-            <p class="linktree-description">{displayLinkTree.description}</p>
+          {#if currentLinkTree?.description}
+            <p class="linktree-description">{currentLinkTree.description}</p>
           {/if}
           
           <div class="linktree-meta">
             <span class="meta-item">
               <i class="icon-link"></i>
               {activeLinkCount} de {totalLinks} enlaces activos
+            </span>
+            <span class="meta-item">
+              <i class="icon-store"></i>
+              Restaurante: {currentRestaurant?.name}
             </span>
             {#if publicUrl}
               <span class="meta-item">
@@ -305,11 +483,11 @@
                 <i class="icon-eye"></i>
               </div>
               <div class="stat-content">
-                <div class="stat-value">{displayLinkTree.analytics?.totalVisits || 0}</div>
+                <div class="stat-value">{currentLinkTree?.analytics?.totalVisits || 0}</div>
                 <div class="stat-label">Visitas Totales</div>
                 {#if analyticsSummary}
-                  <div class="stat-change" class:positive={analyticsSummary.viewsChange > 0} class:negative={analyticsSummary.viewsChange < 0}>
-                    {analyticsSummary.viewsChange > 0 ? '+' : ''}{analyticsSummary.viewsChange.toFixed(1)}% vs ayer
+                  <div class="stat-change" class:positive={(analyticsSummary.viewsChange || 0) > 0} class:negative={(analyticsSummary.viewsChange || 0) < 0}>
+                    {(analyticsSummary.viewsChange || 0) > 0 ? '+' : ''}{analyticsSummary.viewsChange.toFixed(1)}% vs ayer
                   </div>
                 {/if}
               </div>
@@ -320,7 +498,7 @@
                 <i class="icon-mouse-pointer"></i>
               </div>
               <div class="stat-content">
-                <div class="stat-value">{displayLinkTree.analytics?.totalClicks || 0}</div>
+                <div class="stat-value">{currentLinkTree?.analytics?.totalClicks || 0}</div>
                 <div class="stat-label">Clics Totales</div>
                 {#if analyticsSummary}
                   <div class="stat-change" class:positive={analyticsSummary.clicksChange > 0} class:negative={analyticsSummary.clicksChange < 0}>
@@ -335,7 +513,7 @@
                 <i class="icon-users"></i>
               </div>
               <div class="stat-content">
-                <div class="stat-value">{displayLinkTree.analytics?.uniqueVisitors || 0}</div>
+                <div class="stat-value">{currentLinkTree?.analytics?.uniqueVisitors || 0}</div>
                 <div class="stat-label">Visitantes Únicos</div>
               </div>
             </div>
@@ -354,9 +532,9 @@
           <!-- Recent Activity -->
           <div class="recent-activity">
             <h3>Enlaces Populares</h3>
-            {#if (analytics?.clicks.byLink.length || 0 ) > 0}
+            {#if (currentAnalytics?.clicks.byLink.length || 0) > 0}
               <div class="popular-links">
-                {#each (analytics?.clicks.byLink || [] ).slice(0, 5) as linkStat}
+                {#each (currentAnalytics?.clicks.byLink || []).slice(0, 5) as linkStat}
                   <div class="popular-link">
                     <div class="link-info">
                       <div class="link-name">{linkStat.linkTitle}</div>
@@ -365,7 +543,7 @@
                     <div class="click-bar">
                       <div 
                         class="click-fill" 
-                        style="width: {(linkStat.count / Math.max(...(analytics?.clicks.byLink || [] ).map(l => l.count))) * 100}%"
+                        style="width: {(linkStat.count / Math.max(...(currentAnalytics?.clicks.byLink || []).map((l: any) => l.count))) * 100}%"
                       ></div>
                     </div>
                   </div>
@@ -382,7 +560,7 @@
       {:else if activeTab === 'links'}
         <!-- Links Tab -->
         <LinkManager 
-          linkTreeId={displayLinkTree.id!}
+          linkTreeId={currentLinkTree?.id!}
           links={safeLinks}
           editable={true}
           showAnalytics={true}
@@ -394,24 +572,23 @@
       {:else if activeTab === 'analytics'}
         <!-- Analytics Tab -->
         <div class="analytics-tab">
-          {#if analyticsLoading}
+          {#if isLoadingAnalytics}
             <div class="loading-state">
               <div class="loading-spinner"></div>
               <p>Cargando analíticas...</p>
             </div>
-          {:else if analytics}
+          {:else if currentAnalytics}
             <div class="analytics-content">
-              <!-- Views Chart -->
               <div class="chart-section">
                 <h3>Visitas por Día</h3>
                 <div class="chart-container">
-                  {#if analytics.views.daily.length > 0}
+                  {#if currentAnalytics?.views.daily && currentAnalytics.views.daily.length > 0}
                     <div class="simple-chart">
-                      {#each analytics.views.daily.slice(-7) as day}
+                      {#each currentAnalytics.views.daily.slice(-7) as day}
                         <div class="chart-bar">
                           <div 
                             class="bar-fill" 
-                            style="height: {(day.count / Math.max(...analytics.views.daily.map(d => d.count))) * 100}%"
+                            style="height: {(day.count / Math.max(...currentAnalytics.views.daily.map((d: any) => d.count))) * 100}%"
                           ></div>
                           <div class="bar-label">{new Date(day.date).toLocaleDateString('es', { weekday: 'short' })}</div>
                           <div class="bar-value">{day.count}</div>
@@ -430,13 +607,13 @@
               <div class="chart-section">
                 <h3>Clics por Día</h3>
                 <div class="chart-container">
-                  {#if analytics.clicks.daily.length > 0}
+                  {#if currentAnalytics?.clicks.daily && currentAnalytics.clicks.daily.length > 0}
                     <div class="simple-chart">
-                      {#each analytics.clicks.daily.slice(-7) as day}
+                      {#each currentAnalytics.clicks.daily.slice(-7) as day}
                         <div class="chart-bar">
                           <div 
                             class="bar-fill" 
-                            style="height: {(day.count / Math.max(...analytics.clicks.daily.map(d => d.count))) * 100}%"
+                            style="height: {(day.count / Math.max(...currentAnalytics.clicks.daily.map((d: any) => d.count))) * 100}%"
                           ></div>
                           <div class="bar-label">{new Date(day.date).toLocaleDateString('es', { weekday: 'short' })}</div>
                           <div class="bar-value">{day.count}</div>
@@ -462,6 +639,28 @@
         </div>
       {/if}
     </div>
+
+  <!-- Estado inesperado -->
+  {:else}
+    <div class="error-state">
+      <div class="error-icon">❓</div>
+      <h3>Estado Inesperado</h3>
+      <p>El componente está en un estado inesperado: <code>{appState}</code></p>
+      <button class="btn btn-primary" on:click={loadAllData}>
+        Recargar
+      </button>
+      <details style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
+        <summary>Debug Info</summary>
+        <pre>{JSON.stringify({
+          appState,
+          currentLinkTree: !!currentLinkTree,
+          currentRestaurant: !!currentRestaurant,
+          isInitialLoading,
+          isLoadingData,
+          loadResult
+        }, null, 2)}</pre>
+      </details>
+    </div>
   {/if}
 </div>
 
@@ -479,6 +678,9 @@
       <div class="modal-content">
         <p>¿Estás seguro de que quieres eliminar este LinkTree?</p>
         <p><strong>Esta acción no se puede deshacer.</strong></p>
+        {#if currentRestaurant}
+          <p class="warning-text">Se eliminará el LinkTree de <strong>{currentRestaurant.name}</strong> con URL: <code>/{currentRestaurant.username}</code></p>
+        {/if}
       </div>
       
       <div class="modal-actions">
@@ -488,9 +690,9 @@
         <button 
           class="btn btn-danger" 
           on:click={handleDeleteLinkTree}
-          disabled={isDeleting}
+          disabled={$isDeletingStore}
         >
-          {#if isDeleting}
+          {#if $isDeletingStore}
             <i class="icon-loader spinning"></i>
             Eliminando...
           {:else}
@@ -523,6 +725,9 @@
               Copiar
             </button>
           </div>
+          {#if currentRestaurant}
+            <p class="url-info">Tu LinkTree está disponible en: <strong>/{currentRestaurant.username}</strong></p>
+          {/if}
         </div>
         
         <div class="share-buttons">
@@ -593,6 +798,38 @@
   .empty-icon {
     font-size: 4rem;
     margin-bottom: 1rem;
+  }
+
+  .empty-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .url-preview {
+    background: #f1f3f4;
+    color: #1a73e8;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  .url-info {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .warning-text {
+    color: #dc2626;
+    font-size: 0.875rem;
+    background: #fef2f2;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
   }
 
   .dashboard-header {

@@ -1,15 +1,16 @@
-<!-- src/components/RestaurantManagement.svelte - Svelte 5 -->
+<!-- src/components/RestaurantManagement.svelte - Con Vista de Lista -->
 <script>
   import { onMount, createEventDispatcher } from 'svelte';
   import { restaurantStore } from '../stores/restaurantStore.ts';
   import { restaurantUtils } from '../utils/restaurantUtils.ts';
   import CreateRestaurant from './CreateRestaurant.svelte';
   import RestaurantCard from './RestaurantCard20.svelte';
+  import RestaurantListItem from './RestaurantListItem.svelte';
   
   // Props
   let {
     currentUser = null,
-    view = $bindable('grid'), // 'grid', 'list', 'analytics'
+    
     showCreateButton = true,
     maxRestaurants = null
   } = $props();
@@ -20,16 +21,16 @@
   let showCreateModal = $state(false);
   let selectedRestaurant = $state(null);
   let searchQuery = $state('');
-  let sortBy = $state('updatedAt'); // 'name', 'createdAt', 'updatedAt', 'completeness'
-  let sortOrder = $state('desc'); // 'asc', 'desc'
-  let filterBy = $state('all'); // 'all', 'complete', 'incomplete', 'active', 'inactive'
+  let sortBy = $state('updatedAt');
+  let sortOrder = $state('desc');
+  let filterBy = $state('all');
   
-  // Estados derivados del store - usando runes
+  // Estados derivados del store
   let loading = $derived($restaurantStore.isLoadingUser);
   let restaurants = $derived($restaurantStore.userRestaurants);
   let apiError = $derived($restaurantStore.error);
   
-  // Restaurantes filtrados y ordenados - usando $derived
+  // Restaurantes filtrados y ordenados
   let filteredRestaurants = $derived(getFilteredAndSortedRestaurants(
     restaurants || [],
     searchQuery, 
@@ -45,10 +46,7 @@
   let canCreateMore = $derived(maxRestaurants ? (restaurants?.length || 0) < maxRestaurants : true);
   
   onMount(async () => {
-    // Limpiar errores
     restaurantStore.clearAllErrors();
-    
-    // Cargar restaurantes del usuario
     try {
       await restaurantStore.loadUserRestaurants();
     } catch (error) {
@@ -58,14 +56,12 @@
   
   // Funciones de filtrado y ordenamiento
   function getFilteredAndSortedRestaurants(restaurants, query, filter, sort, order) {
-    // Verificar que restaurants sea un array válido
     if (!Array.isArray(restaurants)) {
       return [];
     }
     
     let filtered = [...restaurants];
     
-    // Aplicar búsqueda
     if (query && query.trim()) {
       const searchLower = query.toLowerCase();
       filtered = filtered.filter(restaurant => 
@@ -76,7 +72,6 @@
       );
     }
     
-    // Aplicar filtros
     switch (filter) {
       case 'complete':
         filtered = filtered.filter(r => {
@@ -98,7 +93,6 @@
         break;
     }
     
-    // Aplicar ordenamiento
     filtered.sort((a, b) => {
       let comparison = 0;
       
@@ -179,7 +173,7 @@
     };
   }
   
-  // Manejadores de eventos
+  // Event handlers
   function handleCreateClick() {
     if (!canCreateMore) {
       alert(`Has alcanzado el límite máximo de ${maxRestaurants} restaurantes`);
@@ -190,30 +184,21 @@
   
   async function handleRestaurantCreated(event) {
     showCreateModal = false;
-    
-    // Recargar restaurantes
     try {
       await restaurantStore.loadUserRestaurants(true);
     } catch (error) {
       console.error('Error reloading restaurants:', error);
     }
-    
-    dispatch('restaurantCreated', {
-      restaurant: event.detail.restaurant
-    });
+    dispatch('restaurantCreated', { restaurant: event.detail.restaurant });
   }
   
   function handleEditRestaurant(event) {
     selectedRestaurant = event.detail.restaurant;
-    
-    dispatch('editRestaurant', {
-      restaurant: event.detail.restaurant
-    });
+    dispatch('editRestaurant', { restaurant: event.detail.restaurant });
   }
   
   async function handleDeleteRestaurant(event) {
     const restaurant = event.detail.restaurant;
-    
     const confirmed = confirm(
       `¿Estás seguro de que quieres eliminar "${restaurant.name}"?\n\nEsta acción no se puede deshacer.`
     );
@@ -221,11 +206,8 @@
     if (confirmed) {
       try {
         const result = await restaurantStore.deleteRestaurant(restaurant.id);
-        
         if (result.success) {
-          dispatch('restaurantDeleted', {
-            restaurant
-          });
+          dispatch('restaurantDeleted', { restaurant });
         }
       } catch (error) {
         console.error('Error deleting restaurant:', error);
@@ -234,9 +216,7 @@
   }
   
   function handleViewRestaurant(event) {
-    dispatch('viewRestaurant', {
-      restaurant: event.detail.restaurant
-    });
+    dispatch('viewRestaurant', { restaurant: event.detail.restaurant });
   }
   
   async function handleRefresh() {
@@ -256,7 +236,6 @@
     filterBy = 'all';
   }
   
-  // Funciones de utilidad
   function getCompletenessColor(score) {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
@@ -272,94 +251,80 @@
   }
 </script>
 
-<div class="restaurant-management">
+<div class="restaurant-management container">
   <!-- Header con estadísticas y controles -->
-  <div class="management-header">
+  <div class="management-header card mb-2xl">
     <!-- Estadísticas resumidas -->
-    <div class="stats-overview">
-      <div class="stat-card">
-        <div class="stat-value">{stats.total}</div>
-        <div class="stat-label">Restaurantes</div>
+    <div class="stats-overview grid gap-lg grid-cols-2 md:grid-cols-4 mb-xl">
+      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
+        <div class="stat-value text-2xl font-bold text-primary">{stats.total}</div>
+        <div class="stat-label text-sm text-muted mt-xs">Restaurantes</div>
       </div>
-      
-      <div class="stat-card">
-        <div class="stat-value">{stats.averageCompleteness}%</div>
-        <div class="stat-label">Completitud Promedio</div>
+      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
+        <div class="stat-value text-2xl font-bold text-primary">{stats.averageCompleteness}%</div>
+        <div class="stat-label text-sm text-muted mt-xs">Completitud Promedio</div>
       </div>
-      
-      <div class="stat-card">
-        <div class="stat-value">{stats.totalVisits}</div>
-        <div class="stat-label">Visitas Totales</div>
+      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
+        <div class="stat-value text-2xl font-bold text-primary">{stats.totalVisits}</div>
+        <div class="stat-label text-sm text-muted mt-xs">Visitas Totales</div>
       </div>
-      
-      <div class="stat-card">
-        <div class="stat-value">{stats.averageRating.toFixed(1)}</div>
-        <div class="stat-label">Rating Promedio</div>
+      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
+        <div class="stat-value text-2xl font-bold text-primary">{stats.averageRating.toFixed(1)}</div>
+        <div class="stat-label text-sm text-muted mt-xs">Rating Promedio</div>
       </div>
     </div>
     
     <!-- Controles de vista -->
-    <div class="view-controls">
-      <div class="search-box">
-        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
+    <div class="view-controls flex flex-wrap gap-md items-center">
+      
+      <!-- Buscador -->
+      <div class="search-box relative flex-1 min-w-[200px]">
+        <i class="fa-solid fa-magnifying-glass absolute left-md top-1/2 -translate-y-1/2 text-muted"></i>
         <input
           type="text"
           placeholder="Buscar restaurantes..."
           bind:value={searchQuery}
-          class="search-input"
+          class="input pl-2xl"
         />
       </div>
-      
-      <div class="filter-controls">
-        <select bind:value={filterBy} class="filter-select">
+
+      <!-- Controles de filtro -->
+      <div class="filter-controls flex gap-xs items-center">
+        <select bind:value={filterBy} class="input">
           <option value="all">Todos</option>
           <option value="complete">Completos</option>
           <option value="incomplete">Incompletos</option>
           <option value="active">Activos</option>
           <option value="inactive">Inactivos</option>
         </select>
-        
-        <select bind:value={sortBy} class="filter-select">
+        <select bind:value={sortBy} class="input">
           <option value="updatedAt">Última actualización</option>
           <option value="createdAt">Fecha de creación</option>
           <option value="name">Nombre</option>
           <option value="completeness">Completitud</option>
         </select>
-        
         <button
-          class="sort-toggle"
+          class="btn-icon"
           onclick={toggleSortOrder}
           title={sortOrder === 'asc' ? 'Cambiar a descendente' : 'Cambiar a ascendente'}
         >
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {#if sortOrder === 'asc'}
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m0 0l4-4m0 0l4 4m-4-4v12"/>
-            {:else}
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m0 0l4-4m0 0l4 4m-4-4v12"/>
-            {/if}
-          </svg>
+          <i class={sortOrder === 'asc' ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'}></i>
         </button>
       </div>
-      
-      <div class="action-controls">
+
+      <!-- Acciones -->
+      <div class="action-controls flex gap-xs items-center">
         <button class="btn-icon" onclick={handleRefresh} title="Actualizar">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
+          <i class="fa-solid fa-arrows-rotate"></i>
         </button>
-        
         {#if showCreateButton}
           <button
             class="btn btn-primary"
             onclick={handleCreateClick}
             disabled={!canCreateMore || loading}
           >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Crear Restaurante
+            <i class="fa-solid fa-plus"></i>
+            <span class="desktop-only">Crear Restaurante</span>
           </button>
         {/if}
       </div>
@@ -367,46 +332,34 @@
   </div>
 
   <!-- Contenido principal -->
-  <div class="management-content">
+  <div class="management-content min-h-[400px]">
     {#if loading}
-      <!-- Estado de carga -->
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>Cargando restaurantes...</p>
+      <div class="loading-state flex flex-col items-center justify-center p-4xl text-center bg-white rounded-xl shadow">
+        <span class="spinner-large animate-spin mb-md"></span>
+        <p class="text-lg text-muted">Cargando restaurantes...</p>
       </div>
     {:else if apiError}
-      <!-- Estado de error -->
-      <div class="error-state">
-        <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-        </svg>
-        <h3>Error cargando restaurantes</h3>
-        <p>{apiError}</p>
+      <div class="error-state flex flex-col items-center justify-center p-4xl text-center bg-white rounded-xl shadow">
+        <i class="fa-solid fa-circle-exclamation text-4xl text-error mb-md"></i>
+        <h3 class="text-xl font-semibold text-error mb-xs">Error cargando restaurantes</h3>
+        <p class="text-muted mb-md">{apiError}</p>
         <button class="btn btn-primary" onclick={handleRefresh}>
           Intentar de nuevo
         </button>
       </div>
     {:else if filteredRestaurants.length === 0}
-      <!-- Estado vacío -->
-      <div class="empty-state">
+      <div class="empty-state flex flex-col items-center justify-center p-4xl text-center bg-white rounded-xl shadow">
         {#if searchQuery || filterBy !== 'all'}
-          <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <h3>No se encontraron restaurantes</h3>
-          <p>Intenta cambiar los filtros de búsqueda</p>
-          <button
-            class="btn btn-secondary"
-            onclick={clearFilters}
-          >
+          <i class="fa-solid fa-magnifying-glass text-4xl text-accent mb-md"></i>
+          <h3 class="text-xl font-semibold text-primary mb-xs">No se encontraron restaurantes</h3>
+          <p class="text-muted mb-md">Intenta cambiar los filtros de búsqueda</p>
+          <button class="btn btn-secondary" onclick={clearFilters}>
             Limpiar filtros
           </button>
         {:else}
-          <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-          </svg>
-          <h3>Aún no tienes restaurantes</h3>
-          <p>Crea tu primer restaurante para empezar</p>
+          <i class="fa-solid fa-utensils text-4xl text-accent mb-md"></i>
+          <h3 class="text-xl font-semibold text-primary mb-xs">Aún no tienes restaurantes</h3>
+          <p class="text-muted mb-md">Crea tu primer restaurante para empezar</p>
           {#if showCreateButton && canCreateMore}
             <button class="btn btn-primary" onclick={handleCreateClick}>
               Crear mi primer restaurante
@@ -415,116 +368,45 @@
         {/if}
       </div>
     {:else}
-      <!-- Lista de restaurantes -->
-      <div class="restaurants-container">
-        {#if view === 'analytics'}
-          <!-- Vista de análisis -->
-          <div class="analytics-view">
-            {#each filteredRestaurants as restaurant (restaurant.id)}
-              {@const analysis = restaurantUtils.analyzeRestaurantCompleteness(restaurant)}
-              <div class="analytics-card">
-                <div class="analytics-header">
-                  <div class="restaurant-basic-info">
-                    {#if restaurant.logo}
-                      <img src={restaurant.logo} alt="Logo" class="mini-logo" />
-                    {:else}
-                      <div class="mini-logo-placeholder">
-                        {restaurant.name.charAt(0).toUpperCase()}
-                      </div>
-                    {/if}
-                    <div>
-                      <h4 class="restaurant-name">{restaurant.name}</h4>
-                      {#if restaurant.username}
-                        <p class="restaurant-username">@{restaurant.username}</p>
-                      {/if}
-                    </div>
-                  </div>
-                  
-                  <div class="completeness-score">
-                    <div class="score-circle {getCompletenessColor(analysis?.score || 0)}">
-                      {analysis?.score || 0}%
-                    </div>
-                    <span class="score-label {getCompletenessColor(analysis?.score || 0)}">
-                      {getCompletenessLabel(analysis?.score || 0)}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="analytics-details">
-                  <div class="completed-fields">
-                    <h5>Campos completados ({analysis?.completedFields?.length || 0})</h5>
-                    <div class="field-tags">
-                      {#each (analysis?.completedFields || []).slice(0, 5) as field}
-                        <span class="field-tag completed">{field}</span>
-                      {/each}
-                      {#if (analysis?.completedFields?.length || 0) > 5}
-                        <span class="field-tag more">+{(analysis?.completedFields?.length || 0) - 5}</span>
-                      {/if}
-                    </div>
-                  </div>
-                  
-                  {#if (analysis?.missingFields?.length || 0) > 0}
-                    <div class="missing-fields">
-                      <h5>Campos pendientes ({analysis?.missingFields?.length || 0})</h5>
-                      <div class="field-tags">
-                        {#each (analysis?.missingFields || []).slice(0, 3) as field}
-                          <span class="field-tag missing">{field}</span>
-                        {/each}
-                        {#if (analysis?.missingFields?.length || 0) > 3}
-                          <span class="field-tag more">+{(analysis?.missingFields?.length || 0) - 3}</span>
-                        {/if}
-                      </div>
-                    </div>
-                  {/if}
-                </div>
-                
-                <div class="analytics-actions">
-                  <button
-                    class="btn btn-sm btn-outline"
-                    onclick={() => handleEditRestaurant({ detail: { restaurant } })}
-                  >
-                    Completar información
-                  </button>
-                </div>
+      <div class="restaurants-container-wrapper">
+        <div class="restaurants-container bg-white rounded-xl p-xl shadow">
+            <!-- Vista de Lista Compacta -->
+            <div class="restaurants-list">
+              <div class="list-header mb-lg">
+                <h3 class="text-lg font-semibold text-primary">
+                  {filteredRestaurants.length} restaurante{filteredRestaurants.length !== 1 ? 's' : ''}
+                </h3>
               </div>
-            {/each}
-          </div>
-        {:else}
-          <!-- Vista de tarjetas (grid o lista) -->
-          <div class="restaurants-grid" class:list-view={view === 'list'}>
-            {#each filteredRestaurants as restaurant (restaurant.id)}
-              <RestaurantCard
-                {restaurant}
-                compact={view === 'list'}
-                showActions={true}
-                showOwnerActions={true}
-                currentUserId={currentUser?.id}
-                on:edit={handleEditRestaurant}
-                on:delete={handleDeleteRestaurant}
-                on:view={handleViewRestaurant}
-              />
-            {/each}
-          </div>
-        {/if}
+              <div class="restaurants-list-container">
+                {#each filteredRestaurants as restaurant (restaurant.id)}
+                  <RestaurantListItem
+                    {restaurant}
+                    currentUserId={currentUser?.id}
+                    showActions={true}
+                    on:edit={handleEditRestaurant}
+                    on:delete={handleDeleteRestaurant}
+                    on:view={handleViewRestaurant}
+                  />
+                {/each}
+              </div>
+            </div>
+        </div>
       </div>
     {/if}
   </div>
 
   <!-- Modal de creación -->
   {#if showCreateModal}
-    <div class="modal-overlay" onclick={() => showCreateModal = false}>
-      <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+    <div class="modal-overlay flex items-center justify-center p-md">
+      <div class="modal-content relative max-w-xl w-full max-h-[90vh] overflow-y-auto rounded-xl shadow bg-white" onclick={(e) => e.stopPropagation()}>
         <CreateRestaurant
           on:created={handleRestaurantCreated}
         />
-        
         <button
-          class="modal-close"
+          class="modal-close absolute top-md right-md w-8 h-8 bg-white border border-accent rounded-lg text-muted flex items-center justify-center transition-all z-10"
           onclick={() => showCreateModal = false}
         >
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
     </div>
@@ -532,520 +414,228 @@
 </div>
 
 <style>
-  .restaurant-management {
+  /* SELECTOR DE VISTA */
+  .view-selector {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    border: 1px solid var(--bg-accent);
+  }
+
+  .view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    min-height: 36px;
+  }
+
+  .view-toggle:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .view-toggle.active {
+    background: var(--bg-primary);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .view-toggle i {
+    font-size: 1rem;
+  }
+
+  /* GRID OPTIMIZADO */
+  .restaurants-grid-optimized {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    justify-items: center;
+    align-items: start;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
   }
 
-  /* Header */
-  .management-header {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  @media (min-width: 640px) {
+    .restaurants-grid-optimized {
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.75rem;
+    }
   }
 
-  .stats-overview {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+  @media (min-width: 1024px) {
+    .restaurants-grid-optimized {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 360px));
+      gap: 2rem;
+    }
   }
 
-  .stat-card {
-    text-align: center;
-    padding: 1rem;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+  /* LISTA DE RESTAURANTES */
+  .restaurants-list {
+    max-width: 900px;
+    margin: 0 auto;
   }
 
-  .stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1e293b;
-    line-height: 1;
-  }
-
-  .stat-label {
-    font-size: 0.875rem;
-    color: #64748b;
-    margin-top: 0.25rem;
-  }
-
-  .view-controls {
+  .restaurants-list-container {
     display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
-  .search-box {
-    position: relative;
-    flex: 1;
-    min-width: 250px;
+  .list-header {
+    padding-bottom: 0.75rem;
+    /* border-bottom: 1px solid var(--bg-accent); */
   }
 
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1rem;
-    height: 1rem;
-    color: #64748b;
-  }
-
-  .search-input {
+  /* CONTENEDOR PRINCIPAL */
+  .restaurants-container-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
     width: 100%;
-    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    background: white;
   }
 
-  .search-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  /* ESTILOS PARA ANALYTICS */
+  .score-circle.text-green-600 { 
+    border-color: var(--success); 
+    color: var(--success); 
   }
-
-  .filter-controls {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+  .score-circle.text-yellow-600 { 
+    border-color: var(--warning); 
+    color: var(--warning); 
   }
-
-  .filter-select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    background: white;
+  .score-circle.text-orange-600 { 
+    border-color: #ea580c; 
+    color: #ea580c; 
   }
-
-  .sort-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .sort-toggle:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-  }
-
-  .sort-toggle svg {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #64748b;
-  }
-
-  .action-controls {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-  }
-
-  /* Contenido principal */
-  .management-content {
-    min-height: 400px;
-  }
-
-  /* Estados especiales */
-  .loading-state,
-  .error-state,
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .loading-spinner {
-    width: 3rem;
-    height: 3rem;
-    border: 3px solid #e2e8f0;
-    border-top: 3px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  .error-icon,
-  .empty-icon {
-    width: 4rem;
-    height: 4rem;
-    color: #64748b;
-    margin-bottom: 1rem;
-  }
-
-  /* Contenedor de restaurantes */
-  .restaurants-container {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .restaurants-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .restaurants-grid.list-view {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  /* Vista de análisis */
-  .analytics-view {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .analytics-card {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1.25rem;
-    background: #f8fafc;
-  }
-
-  .analytics-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .restaurant-basic-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .mini-logo {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 6px;
-    object-fit: cover;
-    border: 2px solid white;
-  }
-
-  .mini-logo-placeholder {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 6px;
-    background: #3b82f6;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.875rem;
-    border: 2px solid white;
-  }
-
-  .restaurant-name {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1e293b;
-  }
-
-  .restaurant-username {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #64748b;
-  }
-
-  .completeness-score {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .score-circle {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    border: 3px solid currentColor;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.875rem;
-  }
-
-  .score-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .analytics-details {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .analytics-details h5 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #475569;
-  }
-
-  .field-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .score-circle.text-red-600 { 
+    border-color: var(--error); 
+    color: var(--error); 
   }
 
   .field-tag {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
   }
 
   .field-tag.completed {
-    background: #dcfce7;
-    color: #166534;
+    background: var(--success-bg);
+    color: var(--success);
   }
 
   .field-tag.missing {
-    background: #fed7d7;
-    color: #c53030;
+    background: var(--error-bg);
+    color: var(--error);
   }
 
   .field-tag.more {
-    background: #e2e8f0;
-    color: #475569;
+    background: var(--bg-accent);
+    color: var(--text-secondary);
   }
 
-  .analytics-actions {
-    display: flex;
-    justify-content: flex-end;
+  /* LOADING STATE */
+  .spinner-large {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid var(--bg-accent);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
   }
 
-  /* Botones */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
-  .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .view-controls {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    .view-selector {
+      order: -1;
+      align-self: center;
+    }
+
+    .filter-controls {
+      flex-wrap: wrap;
+    }
+
+    .action-controls {
+      justify-content: center;
+    }
   }
 
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
+  @media (max-width: 640px) {
+    .view-toggle span {
+      display: none;
+    }
+
+    .restaurants-grid-optimized {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
   }
 
-  .btn-primary:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  .btn-secondary {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background: #e2e8f0;
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-  }
-
-  .btn-outline:hover:not(:disabled) {
-    background: #f8fafc;
-    color: #475569;
-  }
-
-  .btn-sm {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-  }
-
-  .btn-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-icon:hover {
-    background: #f8fafc;
-    color: #475569;
-  }
-
-  .btn-icon svg {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  /* Modal */
+  /* MODAL */
   .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
+    z-index: var(--z-modal);
   }
 
   .modal-content {
     position: relative;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-2xl);
     max-width: 600px;
-    width: 100%;
+    width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   }
 
   .modal-close {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    width: 2rem;
-    height: 2rem;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    color: #64748b;
+    width: 32px;
+    height: 32px;
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     z-index: 10;
-    backdrop-filter: blur(8px);
   }
 
   .modal-close:hover {
-    background: white;
-    color: #475569;
-  }
-
-  .modal-close svg {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  /* Clases de color */
-  .text-green-600 { color: #059669; }
-  .text-yellow-600 { color: #d97706; }
-  .text-orange-600 { color: #ea580c; }
-  .text-red-600 { color: #dc2626; }
-
-  /* Animaciones */
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .management-header {
-      padding: 1rem;
-    }
-
-    .stats-overview {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .view-controls {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .search-box {
-      min-width: auto;
-    }
-
-    .filter-controls {
-      justify-content: space-between;
-    }
-
-    .restaurants-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .analytics-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .modal-overlay {
-      padding: 0.5rem;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .stats-overview {
-      grid-template-columns: 1fr;
-    }
-
-    .filter-controls {
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .filter-select {
-      width: 100%;
-    }
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transform: scale(1.05);
   }
 </style>

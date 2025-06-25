@@ -3,10 +3,17 @@
 import { type LinkTree, type Link, LinkType } from '../interfaces/links.ts';
 
 // Types para resultados de API
-export interface ApiResult<T = any> {
+export interface ApiResult<T> {
   success: boolean;
   data?: T;
   error?: string;
+  errorType?: 'RESTAURANT_NOT_FOUND' | 'PERMISSION_DENIED' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR' | 'LINKTREE_NOT_FOUND';
+  restaurant?: {
+    id: string;
+    name: string;
+    username: string;
+  };
+  message?: string;
 }
 
 // API Error interface
@@ -127,42 +134,78 @@ class LinkTreeService {
   // ===== MÉTODOS PARA LINKTREE =====
 
   /**
-   * Obtiene el LinkTree de un restaurante por ID
-   */
-  async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree>> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/linktrees/restaurant/${restaurantId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+ * Obtiene el LinkTree de un restaurante por ID
+ */
+/**
+ * Obtiene el LinkTree de un restaurante por ID
+ */
+async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree | null>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/linktrees/restaurant/${restaurantId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
         }
-      );
+      }
+    );
 
-      if (!response.ok) {
-        const errorData: ApiError = await response.json();
+    // Leer el body una sola vez
+    const responseData = await response.json();
+    console.log( 'resposnedar', responseData)
+
+    if (!response.ok) {
+      // Distinguir entre diferentes tipos de error
+      if (response.status === 404) {
         return {
           success: false,
-          error: errorData.detail || 'Error obteniendo LinkTree del restaurante'
+          error: responseData.detail || 'Restaurante no encontrado',
+          errorType: 'RESTAURANT_NOT_FOUND'
+        };
+      } else if (response.status === 403) {
+        return {
+          success: false,
+          error: responseData.detail || 'No tienes permisos para ver este LinkTree',
+          errorType: 'PERMISSION_DENIED'
+        };
+      } else {
+        return {
+          success: false,
+          error: responseData.detail || 'Error obteniendo LinkTree del restaurante',
+          errorType: 'UNKNOWN_ERROR'
         };
       }
-
-      const data: LinkTree = await response.json();
+    }
+    
+    // Verificar si el LinkTree existe
+    if (!responseData.linkTree) {
+      // No hay LinkTree, pero el restaurante existe
       return {
         success: true,
-        data: this.formatLinkTreeDates(data)
-      };
-    } catch (error) {
-      console.error('Error obteniendo LinkTree del restaurante:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido obteniendo LinkTree'
+        data: null,
+        restaurant: responseData.restaurant,
+        message: responseData.message || 'No existe LinkTree para este restaurante'
       };
     }
-  }
 
+    // LinkTree existe
+    const linkTree: LinkTree = this.formatLinkTreeDates(responseData.linkTree);
+    return {
+      success: true,
+      data: linkTree,
+      restaurant: responseData.restaurant
+    };
+    
+  } catch (error) {
+    console.error('Error obteniendo LinkTree del restaurante:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error de red obteniendo LinkTree',
+      errorType: 'NETWORK_ERROR'
+    };
+  }
+}
   /**
    * Obtiene el LinkTree de un restaurante por username
    */

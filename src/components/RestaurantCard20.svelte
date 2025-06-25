@@ -1,4 +1,4 @@
-<!-- src/components/RestaurantCard.svelte -->
+<!-- src/components/RestaurantCard.svelte - Optimizado para Grid Responsive -->
 <script>
   import { createEventDispatcher } from 'svelte';
   import { restaurantService } from '../services/restaurantService.ts';
@@ -60,26 +60,32 @@
       ? description.substring(0, maxLength) + '...' 
       : description;
   }
+  
+  function getCompletenessColor(completeness) {
+    if (completeness >= 80) return 'text-green-600';
+    if (completeness >= 50) return 'text-yellow-600';
+    return 'text-red-600';
+  }
 </script>
 
-<div class="restaurant-card" class:compact class:incomplete={!isComplete}>
+<div class="restaurant-card card flex flex-col {compact ? 'compact' : ''}">
   <!-- Imagen de portada -->
   {#if !compact && (restaurant.imageCover || restaurant.image)}
-    <div class="card-cover">
+    <div class="card-cover modern-cover">
       <img
         src={restaurant.imageCover || restaurant.image}
         alt="Portada de {restaurant.name}"
-        class="cover-image"
+        class="cover-image modern-cover-image"
         on:error={handleImageError}
       />
       {#if imageError}
-        <div class="cover-placeholder">
+        <div class="cover-placeholder modern-cover-placeholder">
           <svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 15l2-2 2 2 4-4"/>
           </svg>
         </div>
       {/if}
-      
       <!-- Badges de estado en la portada -->
       <div class="cover-badges">
         {#if !restaurant.active}
@@ -92,7 +98,6 @@
           <span class="badge premium">Premium</span>
         {/if}
       </div>
-      
       <!-- Acciones del propietario en la portada -->
       {#if showOwnerActions && canEdit}
         <div class="cover-actions">
@@ -112,10 +117,10 @@
   {/if}
 
   <!-- Contenido principal -->
-  <div class="card-content">
+  <div class="card-content flex flex-col gap-lg p-xl">
     <!-- Header con logo y nombre -->
-    <div class="card-header">
-      <div class="restaurant-info">
+    <div class="card-header flex items-center justify-between">
+      <div class="restaurant-info flex items-center gap-md flex-1">
         <!-- Logo -->
         <div class="logo-container">
           {#if restaurant.logo && !logoError}
@@ -131,23 +136,26 @@
             </div>
           {/if}
         </div>
-        
         <!-- Información básica -->
-        <div class="basic-info">
-          <h3 class="restaurant-name">{restaurant.name}</h3>
-          
+        <div class="basic-info flex flex-col min-w-0">
+          <div class="flex items-center gap-xs">
+            <h3 class="restaurant-name m-0">{restaurant.name}</h3>
+            <!-- Indicador de completitud tipo semáforo -->
+            {#if !isComplete}
+              <span class="completeness-indicator" title="Completitud: {restaurant.completeness || 0}%">
+                <span class="circle-indicator {getCompletenessColor(restaurant.completeness || 0)}"></span>
+                <span class="completeness-text">{restaurant.completeness || 0}%</span>
+              </span>
+            {/if}
+          </div>
           {#if restaurant.username}
             <p class="restaurant-username">@{restaurant.username}</p>
           {/if}
-          
           <!-- Badges compactos para modo compacto -->
           {#if compact}
-            <div class="compact-badges">
+            <div class="compact-badges flex gap-xs mt-xs">
               {#if !restaurant.active}
                 <span class="badge-mini inactive">●</span>
-              {/if}
-              {#if !isComplete}
-                <span class="badge-mini incomplete">!</span>
               {/if}
               {#if restaurant.planType === 'premium'}
                 <span class="badge-mini premium">★</span>
@@ -156,14 +164,11 @@
           {/if}
         </div>
       </div>
-      
       <!-- Acciones del header para modo compacto -->
       {#if compact && showOwnerActions && canEdit}
         <div class="header-actions">
           <button class="action-btn-small" on:click={handleEdit} title="Editar">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
+            <i class="fa-solid fa-pen" style="font-size:1rem;"></i>
           </button>
         </div>
       {/if}
@@ -178,40 +183,31 @@
 
     <!-- Información adicional -->
     {#if !compact}
-      <div class="restaurant-details">
+      <div class="restaurant-details flex flex-col gap-xs mt-xs">
         {#if restaurant.address}
-          <div class="detail-item">
-            <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
+          <div class="detail-item flex items-center gap-xs text-muted text-sm">
+            <i class="fa-solid fa-location-dot detail-fa"></i>
             <span>{formatAddress(restaurant.address)}</span>
           </div>
         {/if}
         
         {#if restaurant.phone}
-          <div class="detail-item">
-            <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-            </svg>
+          <div class="detail-item flex items-center gap-xs text-muted text-sm">
+            <i class="fa-solid fa-phone detail-fa"></i>
             <span>{restaurant.phone}</span>
           </div>
         {/if}
         
         {#if restaurant.cuisineType && restaurant.cuisineType.length > 0}
-          <div class="detail-item">
-            <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h4a1 1 0 011 1v2m3 0V1.5A1.5 1.5 0 0014.5 0h-5A1.5 1.5 0 008 1.5V4m8 0h3a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h3"/>
-            </svg>
+          <div class="detail-item flex items-center gap-xs text-muted text-sm">
+            <i class="fa-solid fa-bowl-food detail-fa"></i>
             <span>{restaurant.cuisineType.slice(0, 2).join(', ')}</span>
           </div>
         {/if}
         
         {#if restaurant.priceRange}
-          <div class="detail-item">
-            <svg class="detail-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-            </svg>
+          <div class="detail-item flex items-center gap-xs text-muted text-sm">
+            <i class="fa-solid fa-money-bill-wave detail-fa"></i>
             <span class="price-range price-{restaurant.priceRange}">
               {#if restaurant.priceRange === 'low'}$ Económico
               {:else if restaurant.priceRange === 'medium'}$$ Moderado
@@ -259,272 +255,206 @@
 
     <!-- Acciones -->
     {#if showActions}
-      <div class="card-actions">
-        <button class="action-btn-text" on:click={handleView}>
-          <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-          </svg>
-          Ver
-        </button>
-        <a class="btn btn-ghost"  href={`/dashboard/restaurant/${restaurant.id }`}>ir</a>
-        
-        <a href={publicUrl} target="_blank" class="action-btn-text">
-          <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-          </svg>
+      <div class="card-actions flex gap-md justify-end border-t border-accent pt-md mt-auto">
+        <a href={`/${restaurant.username}`} target="_blank" class="btn btn-outline flex items-center gap-xs text-sm">
+          <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:1rem;"></i>
           Visitar
         </a>
-        
-        {#if showOwnerActions && canEdit}
-          <button class="action-btn-text" on:click={handleEdit}>
-            <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
-            Editar
-          </button>
-        {/if}
+        <a href={`/dashboard/restaurant/${restaurant.id}`} class="btn btn-secondary flex items-center gap-xs text-sm" on:click={handleEdit}>
+          <i class="fa-solid fa-pen" style="font-size:1rem;"></i>
+          Editar
+        </a>
       </div>
     {/if}
   </div>
 </div>
 
 <style>
+  /* CARD BASE - Tamaño optimizado para grid responsive */
   .restaurant-card {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 2px 8px 0 rgba(30, 41, 59, 0.06);
+    border-radius: 1.25rem;
     overflow: hidden;
-    transition: all 0.2s ease;
+    background: #fff;
+    
+    /* TAMAÑO FIJO OPTIMIZADO - Evita estiramiento */
+    width: 100%;
+    max-width: 360px;
+    min-width: 300px;
+    min-height: 400px;
+    
+    /* Centrado automático en el grid */
+    margin: 0 auto;
+    
+    /* Optimización para el grid */
     display: flex;
     flex-direction: column;
+    align-self: start;
   }
 
   .restaurant-card:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 24px 0 rgba(30, 41, 59, 0.13);
+    transform: translateY(-2px) scale(1.012);
   }
 
+  /* MODO COMPACTO - Para vista lista */
   .restaurant-card.compact {
-    border-radius: 8px;
+    max-width: 100%;
+    min-width: 300px;
+    min-height: 200px;
+    flex-direction: row;
   }
 
-  .restaurant-card.incomplete {
-    border-color: #f59e0b;
-    background: linear-gradient(135deg, #fffbeb 0%, white 100%);
-  }
-
-  /* Portada */
-  .card-cover {
+  /* IMAGEN DE PORTADA - Proporción fija */
+  .modern-cover {
     position: relative;
-    height: 160px;
+    border-radius: 1.25rem 1.25rem 0 0;
     overflow: hidden;
-  }
-
-  .cover-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-
-  .restaurant-card:hover .cover-image {
-    transform: scale(1.05);
-  }
-
-  .cover-placeholder {
+    height: 160px; /* Altura fija para consistencia */
+    background: var(--bg-accent, #f3f4f6);
+    box-shadow: 0 2px 12px 0 rgba(30, 41, 59, 0.10);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    color: #9ca3af;
-  }
-
-  .placeholder-icon {
-    width: 3rem;
-    height: 3rem;
-  }
-
-  .cover-badges {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .cover-actions {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  /* Contenido */
-  .card-content {
-    padding: 1.25rem;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .restaurant-card.compact .card-content {
-    padding: 1rem;
-    gap: 0.75rem;
-  }
-
-  /* Header */
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .restaurant-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
-  }
-
-  .logo-container {
     flex-shrink: 0;
   }
 
-  .restaurant-logo {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 8px;
+  .modern-cover-image {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border: 2px solid #f3f4f6;
+    border-radius: 1.25rem 1.25rem 0 0;
+    background: #f3f4f6;
+    transition: filter 0.2s;
   }
 
-  .restaurant-card.compact .restaurant-logo {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 6px;
+  .modern-cover-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f3f4f6 60%, #e0e7ef 100%);
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+
+  .modern-cover-placeholder .placeholder-icon {
+    width: 3rem;
+    height: 3rem;
+    color: #cbd5e1;
+    opacity: 0.7;
+    display: block;
+    margin: auto;
+  }
+
+  /* CONTENIDO - Distribución optimizada */
+  .card-content {
+    padding: 1.25rem;
+    gap: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Permite que el contenido se contraiga */
+  }
+
+  /* LOGO Y INFORMACIÓN BÁSICA */
+  .logo-container {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+  }
+
+  .restaurant-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .logo-placeholder {
-    width: 3rem;
-    height: 3rem;
+    width: 48px;
+    height: 48px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: var(--primary-color, #ff6b35);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 0.875rem;
-    border: 2px solid #f3f4f6;
+    font-weight: 600;
+    font-size: 16px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
-  .restaurant-card.compact .logo-placeholder {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 0.75rem;
-  }
-
-  .basic-info {
-    flex: 1;
-    min-width: 0;
-  }
-
+  /* NOMBRE Y TÍTULO */
   .restaurant-name {
-    margin: 0 0 0.25rem 0;
     font-size: 1.125rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-primary);
     line-height: 1.3;
-    word-break: break-word;
-  }
-
-  .restaurant-card.compact .restaurant-name {
-    font-size: 1rem;
-    margin-bottom: 0.125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
   }
 
   .restaurant-username {
-    margin: 0;
     font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
+    color: var(--text-muted);
+    margin: 0;
+    margin-top: 2px;
   }
 
-  .restaurant-card.compact .restaurant-username {
-    font-size: 0.8rem;
+  /* DESCRIPCIÓN */
+  .restaurant-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
   }
 
-  .compact-badges {
-    display: flex;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
-  }
-
-  .header-actions {
-    display: flex;
+  /* DETALLES DEL RESTAURANTE */
+  .restaurant-details {
     gap: 0.5rem;
     flex-shrink: 0;
-  }
-
-  /* Descripción */
-  .restaurant-description {
-    margin: 0;
-    color: #6b7280;
-    line-height: 1.5;
-    font-size: 0.9rem;
-  }
-
-  .restaurant-card.compact .restaurant-description {
-    font-size: 0.85rem;
-    line-height: 1.4;
-  }
-
-  /* Detalles */
-  .restaurant-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
   }
 
   .detail-item {
-    display: flex;
+    padding: 0.25rem 0;
+    border-radius: 4px;
+    transition: background 0.2s;
     align-items: center;
-    gap: 0.5rem;
-    color: #6b7280;
-    font-size: 0.875rem;
   }
 
-  .detail-icon {
-    width: 1rem;
-    height: 1rem;
+  .detail-item:hover {
+    background: var(--bg-accent, #f3f4f6);
+  }
+
+  .detail-fa {
+    font-size: 1em;
+    min-width: 1.1em;
+    text-align: center;
+    opacity: 0.85;
     flex-shrink: 0;
   }
 
-  .price-range {
-    font-weight: 600;
-  }
-
-  .price-low { color: #059669; }
-  .price-medium { color: #d97706; }
-  .price-high { color: #dc2626; }
-  .price-premium { color: #7c3aed; }
-
-  /* Analytics */
+  /* ANALYTICS */
   .analytics-section {
-    border-top: 1px solid #f3f4f6;
-    padding-top: 0.75rem;
+    flex-shrink: 0;
+    margin-top: auto;
   }
 
   .analytics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 0.75rem;
   }
 
@@ -534,10 +464,9 @@
 
   .analytics-value {
     display: block;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--primary-color);
   }
 
   .analytics-label {
@@ -546,176 +475,206 @@
     justify-content: center;
     gap: 0.25rem;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-top: 0.25rem;
   }
 
   .star-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-    color: #f59e0b;
+    width: 12px;
+    height: 12px;
+    color: #fbbf24;
   }
 
-  /* Badges */
-  .badge {
-    padding: 0.25rem 0.5rem;
+  /* BADGES Y ESTADOS */
+  .badge, .badge-mini {
     border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.025em;
+    padding: 0.25rem 0.5rem;
   }
 
-  .badge.inactive {
+  .badge.inactive, .badge-mini.inactive {
     background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-    backdrop-filter: blur(8px);
+    color: #ef4444;
+  }
+
+  .badge.premium, .badge-mini.premium {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
   }
 
   .badge.incomplete {
     background: rgba(245, 158, 11, 0.1);
-    color: #d97706;
-    backdrop-filter: blur(8px);
+    color: #f59e0b;
   }
 
-  .badge.premium {
-    background: rgba(124, 58, 237, 0.1);
-    color: #7c3aed;
-    backdrop-filter: blur(8px);
-  }
-
-  .badge-mini {
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
-
-  .badge-mini.inactive { color: #dc2626; }
-  .badge-mini.incomplete { color: #d97706; }
-  .badge-mini.premium { color: #f59e0b; }
-
-  /* Acciones */
-  .card-actions {
+  /* ACCIONES */
+  .cover-badges {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
     display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-    border-top: 1px solid #f3f4f6;
-    padding-top: 0.75rem;
-    margin-top: auto;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
-  .action-btn,
-  .action-btn-small {
+  .cover-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 6px;
-    color: #374151;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(8px);
+    gap: 0.5rem;
   }
 
   .action-btn {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
   }
 
-  .action-btn-small {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .action-btn svg,
-  .action-btn-small svg {
-    width: 1.125rem;
-    height: 1.125rem;
-  }
-
-  .action-btn-small svg {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .action-btn:hover,
-  .action-btn-small:hover {
+  .action-btn:hover {
     background: white;
-    border-color: #d1d5db;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: var(--primary-color);
+    transform: scale(1.05);
   }
 
   .action-btn.danger:hover {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #dc2626;
+    color: #ef4444;
   }
 
-  .action-btn-text {
+  .action-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .card-actions {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bg-accent);
+    flex-shrink: 0;
+  }
+
+  /* INDICADOR DE COMPLETITUD */
+  .completeness-indicator {
     display: flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: none;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    color: #6b7280;
-    font-size: 0.875rem;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+  }
+
+  .circle-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .completeness-text {
     font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
   }
 
-  .action-btn-text:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-    color: #374151;
-  }
-
-  .action-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  /* Responsive */
-  @media (max-width: 640px) {
+  /* RESPONSIVE ADJUSTMENTS */
+  @media (max-width: 639px) {
+    .restaurant-card {
+      max-width: 100%;
+      min-width: 280px;
+    }
+    
     .card-content {
       padding: 1rem;
     }
-
-    .restaurant-card.compact .card-content {
-      padding: 0.75rem;
-    }
-
-    .restaurant-info {
-      gap: 0.5rem;
-    }
-
-    .restaurant-logo {
-      width: 2.5rem;
-      height: 2.5rem;
-    }
-
-    .logo-placeholder {
-      width: 2.5rem;
-      height: 2.5rem;
-      font-size: 0.75rem;
-    }
-
+    
     .restaurant-name {
       font-size: 1rem;
+      max-width: 180px;
     }
+  }
 
-    .card-actions {
-      flex-wrap: wrap;
-      justify-content: center;
+  @media (min-width: 640px) and (max-width: 767px) {
+    .restaurant-card {
+      max-width: 340px;
     }
+  }
 
-    .analytics-grid {
-      grid-template-columns: repeat(3, 1fr);
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .restaurant-card {
+      max-width: 350px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .restaurant-card {
+      max-width: 360px;
+    }
+  }
+
+  /* MODO COMPACTO ESPECÍFICO */
+  .restaurant-card.compact .card-content {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .restaurant-card.compact .restaurant-description {
+    -webkit-line-clamp: 2;
+  }
+
+  .restaurant-card.compact .modern-cover {
+    height: 120px;
+  }
+
+  /* LOADING STATES */
+  .spinner-large {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid var(--bg-accent);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ACCESSIBILITY */
+  @media (prefers-reduced-motion: reduce) {
+    .restaurant-card:hover {
+      transform: none;
+    }
+    
+    .action-btn:hover {
+      transform: none;
+    }
+  }
+
+  /* DARK MODE SUPPORT */
+  @media (prefers-color-scheme: dark) {
+    .restaurant-card {
+      background: var(--bg-primary, #1e293b);
+      border: 1px solid var(--bg-accent, #475569);
+    }
+    
+    .action-btn {
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--text-light, #94a3b8);
+    }
+    
+    .action-btn:hover {
+      background: var(--bg-tertiary, #334155);
     }
   }
 </style>

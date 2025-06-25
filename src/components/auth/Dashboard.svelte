@@ -1,21 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Restaurant } from '../../interfaces/restaurant';
-  import { userRestaurants , useRestaurants } from '../../stores/restaurantStore';
-  import { favorites, favoritesCount } from '../../stores/restaurantFavoritesStore';
+  import {   useRestaurants } from '../../stores/restaurantStore';
+  import { useRestaurantFavorites } from '../../stores/restaurantFavoritesStore';
   import { get } from 'svelte/store';
 
-  let userRests: Restaurant[] = [];
-  let favs: Restaurant[] = [];
-  let favsTotal: number = 0;
+  const { favorites, favoritesCount,  } = useRestaurantFavorites();
+  const {userRestaurants} = useRestaurants();
+  let userRests: Restaurant[] = $derived($userRestaurants) ;
+  let favs: Restaurant[] = $derived($favorites);
+  let favsTotal: number = $derived($favoritesCount) ;
 
   // Suscribirse a las stores reactivas
-  $: userRests = get(userRestaurants) || [];
-  $: favs = get(favorites) || [];
-  $: favsTotal = get(favoritesCount) || 0;
+  // $: userRests = get(userRestaurants) || [];
+  // $: favs = get(favorites) || [];
+  // $: favsTotal = get(favoritesCount) || 0;
+
+ 
 
   function goToMyRestaurants() {
-    window.location.href = '/dashboard/restaurants';
+    window.location.href = '/dashboard/restaurant-create';
   }
   function goToFavorites() {
     window.location.href = '/favorites';

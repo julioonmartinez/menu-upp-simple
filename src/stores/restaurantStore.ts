@@ -947,32 +947,33 @@ export const restaurantsIsAuthenticated = restaurantStore.isAuthenticated;
  * Hook personalizado para usar en componentes Svelte
  */
 export function useRestaurants() {
-  const state = restaurantStore.getCurrentState();
+  // const state = restaurantStore.getCurrentState();
 
   return {
     // Estado general
-    isLoading: state.isLoading,
-    isLoadingAll: state.isLoadingAll,
-    isLoadingUser: state.isLoadingUser,
-    isCreating: state.isCreating,
-    isUpdating: state.isUpdating,
-    isDeleting: state.isDeleting,
-    isUploadingImage: state.isUploadingImage,
-    isCheckingUsername: state.isCheckingUsername,
+   // Stores reactivos (estos SÍ son reactivos)
+    allRestaurants: restaurantStore.allRestaurants,
+    userRestaurants: restaurantStore.userRestaurants,
+    currentRestaurant: restaurantStore.currentRestaurant,
+    isLoading: restaurantStore.isLoading,
+    isLoadingAll: restaurantStore.isLoadingAll,
+    isLoadingUser: restaurantStore.isLoadingUser,
+    isCreating: restaurantStore.isCreating,
+    isUpdating: restaurantStore.isUpdating,
+    isDeleting: restaurantStore.isDeleting,
+    isUploadingImage: restaurantStore.isUploadingImage,
+    isCheckingUsername: restaurantStore.isCheckingUsername,
     
-    // Errores
-    error: state.error,
-    createError: state.createError,
-    updateError: state.updateError,
-    deleteError: state.deleteError,
-    usernameError: state.usernameError,
-    imageError: state.imageError,
+    // Errores como stores reactivos
+    error: restaurantStore.error,
+    createError: restaurantStore.createError,
+    updateError: restaurantStore.updateError,
+    deleteError: restaurantStore.deleteError,
+    usernameError: restaurantStore.usernameError,
+    imageError: restaurantStore.imageError,
     
-    // Datos
-    allRestaurants: state.allRestaurants,
-    userRestaurants: state.userRestaurants,
-    currentRestaurant: state.currentRestaurant,
-    isAuthenticated: state.isAuthenticated,
+    // Otros stores
+    isAuthenticated: restaurantStore.isAuthenticated,
     
     // Métodos
     loadAllRestaurants: restaurantStore.loadAllRestaurants.bind(restaurantStore),

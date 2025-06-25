@@ -1,0 +1,630 @@
+<!-- src/components/RestaurantListItem.svelte - Vista Compacta para Lista -->
+<script>
+  import { createEventDispatcher } from 'svelte';
+  import { restaurantService } from '../services/restaurantService.ts';
+  
+  export let restaurant;
+  export let currentUserId = null;
+  export let showActions = true;
+  
+  const dispatch = createEventDispatcher();
+  
+  // Estados locales
+  let logoError = false;
+  
+  // Propiedades derivadas
+  // $: canEdit = currentUserId && restaurantService.utils.canEditRestaurant(restaurant, currentUserId);
+  $: isComplete = restaurantService.utils.isRestaurantComplete(restaurant);
+  $: completenessScore = restaurant.completeness || 0;
+  
+  // Funciones de navegación
+  function handleCardClick() {
+    // Click general en la card lleva a editar
+    window.location.href = `/dashboard/restaurant/${restaurant.id}`;
+  }
+  
+  function handleEdit(event) {
+    event.stopPropagation(); // Evitar que se dispare el click de la card
+    window.location.href = `/dashboard/restaurant/${restaurant.id}`;
+  }
+  
+  function handleVisit(event) {
+    event.stopPropagation(); // Evitar que se dispare el click de la card
+    if (restaurant.username) {
+      console.log(restaurant)
+      window.location.href = `/${restaurant.username}`;
+    }
+  }
+  
+  function handleDelete(event) {
+    event.stopPropagation(); // Evitar que se dispare el click de la card
+    dispatch('delete', { restaurant });
+  }
+  
+  // Funciones auxiliares (sin cambios)
+  function handleLogoError() {
+    logoError = true;
+  }
+  
+  function getInitials(name) {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+  
+  function getStatusColor() {
+    if (!restaurant.active) return 'status-inactive';
+    if (!isComplete) return 'status-incomplete';
+    return 'status-active';
+  }
+  
+  function getCompletenessColor(score) {
+    if (score >= 80) return 'completeness-high';
+    if (score >= 60) return 'completeness-medium';
+    if (score >= 40) return 'completeness-low';
+    return 'completeness-critical';
+  }
+</script>
+
+<div 
+  class="restaurant-list-item {getStatusColor()}"
+  on:click={handleCardClick}
+  on:keydown={(e) => e.key === 'Enter' && handleCardClick()}
+  role="button"
+  tabindex="0"
+>
+  <!-- Imagen/Logo -->
+  <div class="item-avatar">
+    {#if restaurant.logo && !logoError}
+      <img
+        src={restaurant.logo}
+        alt="Logo de {restaurant.name}"
+        class="avatar-image"
+        on:error={handleLogoError}
+      />
+    {:else if restaurant.imageCover || restaurant.image}
+      <img
+        src={restaurant.imageCover || restaurant.image}
+        alt="Imagen de {restaurant.name}"
+        class="avatar-image"
+        on:error={handleLogoError}
+      />
+    {:else}
+      <div class="avatar-placeholder">
+        {getInitials(restaurant.name)}
+      </div>
+    {/if}
+  </div>
+
+  <!-- Información Principal -->
+  <div class="item-info">
+    <div class="info-primary">
+      <h4 class="restaurant-name">{restaurant.name}</h4>
+      <div class="status-indicators">
+        <!-- Estado del restaurante -->
+        <span class="status-dot {getStatusColor()}"></span>
+        
+        <!-- Indicador de completitud -->
+        {#if !isComplete}
+          <span class="completeness-badge {getCompletenessColor(completenessScore)}">
+            {completenessScore}%
+          </span>
+        {/if}
+        
+        <!-- Badge Premium -->
+        {#if restaurant.planType === 'premium'}
+          <span class="premium-badge">
+            <i class="fa-solid fa-crown"></i>
+          </span>
+        {/if}
+      </div>
+    </div>
+    
+    <div class="info-secondary">
+      {#if restaurant.username}
+        <span class="username">@{restaurant.username}</span>
+      {/if}
+      
+      {#if restaurant.cuisineType && restaurant.cuisineType.length > 0}
+        <span class="cuisine-type">{restaurant.cuisineType[0]}</span>
+      {/if}
+      
+      {#if restaurant.analytics?.averageRating > 0}
+        <span class="rating">
+          <i class="fa-solid fa-star"></i>
+          {restaurant.analytics.averageRating.toFixed(1)}
+        </span>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  {#if showActions}
+    <div class="item-actions">
+      <!-- Botón Visitar -->
+      {#if restaurant.username}
+        <button
+          class="action-btn visit-btn"
+          on:click={handleVisit}
+          title="Visitar restaurante"
+        >
+          <i class="fa-solid fa-external-link-alt"></i>
+          <span class="action-text">Visitar</span>
+        </button>
+      {/if}
+      
+      <!-- Botón Editar -->
+      <button
+        class="action-btn edit-btn"
+        on:click={handleEdit}
+        title="Editar restaurante"
+      >
+        <i class="fa-solid fa-pen"></i>
+        <span class="action-text">Editar</span>
+      </button>
+      
+      <!-- Botón Eliminar -->
+      <button
+        class="action-btn delete-btn"
+        on:click={handleDelete}
+        title="Eliminar restaurante"
+      >
+        <i class="fa-solid fa-trash"></i>
+        <span class="action-text">Eliminar</span>
+      </button>
+    </div>
+  {/if}
+</div>
+
+<style>
+  /* CONTENEDOR PRINCIPAL */
+  .restaurant-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    position: relative;
+    min-height: 80px;
+  }
+
+  .restaurant-list-item:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+  }
+
+  /* ESTADOS DEL ITEM */
+  .restaurant-list-item.status-inactive {
+    opacity: 0.7;
+    border-left: 4px solid var(--error);
+  }
+
+  .restaurant-list-item.status-incomplete {
+    border-left: 4px solid var(--warning);
+  }
+
+  .restaurant-list-item.status-active {
+    border-left: 4px solid var(--success);
+  }
+
+  /* AVATAR/IMAGEN */
+  .item-avatar {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    position: relative;
+  }
+
+  .avatar-image {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+    border: 2px solid var(--bg-accent);
+    background: var(--bg-tertiary);
+  }
+
+  .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-lg);
+    background: var(--primary-gradient);
+    color: var(--text-inverse);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--weight-bold);
+    font-size: 1.25rem;
+    border: 2px solid var(--bg-accent);
+  }
+
+  /* INFORMACIÓN PRINCIPAL */
+  .item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .info-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .restaurant-name {
+    font-size: 1.125rem;
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 250px;
+  }
+
+  .status-indicators {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.status-active {
+    background: var(--success);
+  }
+
+  .status-dot.status-inactive {
+    background: var(--error);
+  }
+
+  .status-dot.status-incomplete {
+    background: var(--warning);
+  }
+
+  /* INFORMACIÓN SECUNDARIA */
+  .info-secondary {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+  }
+
+  .username {
+    font-weight: var(--weight-medium);
+    color: var(--primary-color);
+  }
+
+  .cuisine-type {
+    padding: 0.125rem 0.5rem;
+    background: var(--bg-accent);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
+    text-transform: capitalize;
+  }
+
+  .rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: var(--weight-medium);
+    color: var(--warning);
+  }
+
+  .rating i {
+    font-size: 0.75rem;
+  }
+
+  /* BADGES */
+  .completeness-badge {
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
+  }
+
+  .completeness-badge.completeness-high {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .completeness-badge.completeness-medium {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .completeness-badge.completeness-low {
+    background: #fef3cd;
+    color: #b45309;
+  }
+
+  .completeness-badge.completeness-critical {
+    background: var(--error-bg);
+    color: var(--error);
+  }
+
+  .premium-badge {
+    color: #7c3aed;
+    font-size: 0.875rem;
+  }
+
+  /* ACCIONES */
+  .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    flex-wrap: nowrap;
+  }
+
+  .restaurant-list-item:hover .item-actions {
+    opacity: 1;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--bg-accent);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    min-width: fit-content;
+  }
+
+  .action-btn:hover {
+    transform: scale(1.05);
+    background: var(--bg-tertiary);
+  }
+
+  .action-text {
+    display: none;
+  }
+
+  .visit-btn:hover {
+    color: var(--info);
+    background: var(--info-bg);
+  }
+
+  .edit-btn:hover {
+    color: var(--primary-color);
+    background: rgba(255, 107, 53, 0.1);
+  }
+
+  .delete-btn:hover {
+    color: var(--error);
+    background: var(--error-bg);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .restaurant-list-item {
+      /* flex-direction: column; */
+      flex-wrap: wrap;
+      align-items: stretch;
+      padding: 1rem;
+      gap: 0.75rem;
+      min-height: auto;
+    }
+
+    .restaurant-list-item:hover {
+      transform: none;
+    }
+
+    /* Fila superior: Avatar + Info */
+    .item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .item-avatar {
+      width: 48px;
+      height: 48px;
+    }
+
+    .restaurant-name {
+      font-size: 1rem;
+      max-width: none;
+    }
+
+    /* Acciones en una fila separada */
+    .item-actions {
+      opacity: 1;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--bg-accent);
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      flex: 1;
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .action-text {
+      display: inline;
+    }
+
+    /* Reorganizar el layout para móvil */
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .info-primary {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .info-secondary {
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .restaurant-list-item {
+      padding: 0.75rem;
+    }
+
+    .action-btn {
+      padding: 0.625rem 0.375rem;
+      font-size: 0.75rem;
+    }
+
+    .action-text {
+      font-size: 0.7rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .item-actions {
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 0.75rem;
+    }
+
+    .status-indicators {
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+
+    .info-secondary {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
+  /* ACCESIBILIDAD */
+  .restaurant-list-item:focus-within,
+  .restaurant-list-item:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  .action-btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* DARK MODE */
+  @media (prefers-color-scheme: dark) {
+    .restaurant-list-item {
+      background: var(--bg-primary);
+      border-color: var(--bg-accent);
+    }
+
+    .restaurant-list-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .avatar-image,
+    .avatar-placeholder {
+      border-color: var(--bg-accent);
+    }
+
+    .action-btn {
+      background: var(--bg-tertiary);
+    }
+
+    .action-btn:hover {
+      background: var(--bg-accent);
+    }
+  }
+
+  /* ANIMACIONES */
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .restaurant-list-item {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  /* ESTADOS DE LOADING */
+  .restaurant-list-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .restaurant-list-item.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* MOTION REDUCED */
+  @media (prefers-reduced-motion: reduce) {
+    .restaurant-list-item,
+    .action-btn {
+      transition: none;
+      animation: none;
+    }
+
+    .restaurant-list-item:hover {
+      transform: none;
+    }
+
+    .action-btn:hover {
+      transform: none;
+    }
+  }
+</style>

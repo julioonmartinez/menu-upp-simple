@@ -28,6 +28,7 @@
         await restaurantFavoritesStore.loadUserFavorites();
         await dishRatingStore.loadFavoriteDishes()
         await restaurantStore.loadUserRestaurants() 
+        
         console.log('Favorites loaded successfully');
       }
       

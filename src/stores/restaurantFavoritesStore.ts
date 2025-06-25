@@ -524,25 +524,24 @@ export const favoritesError = restaurantFavoritesStore.error;
 export const favoritesPagination = restaurantFavoritesStore.pagination;
 export const hasFavorites = restaurantFavoritesStore.hasFavorites;
 export const favoriteIds = restaurantFavoritesStore.favoriteIds;
-
 /**
- * Hook personalizado para usar en componentes Svelte
+ * Hook personalizado para usar en componentes Svelte - VERSIÓN CORREGIDA
  */
 export function useRestaurantFavorites() {
-  const state = restaurantFavoritesStore.getCurrentState();
-
+  // Devolver stores reactivos en lugar de valores estáticos
   return {
-    // Estado
-    favorites: state.favorites,
-    popularRestaurants: state.popularRestaurants,
-    favoritesCount: state.favoritesCount,
-    isLoading: state.isLoading,
-    isLoadingPopular: state.isLoadingPopular,
-    error: state.error,
-    pagination: state.pagination,
-    hasFavorites: state.favorites.length > 0,
+    // Stores reactivos (estos SÍ son reactivos)
+    favorites: restaurantFavoritesStore.favorites,
+    popularRestaurants: restaurantFavoritesStore.popularRestaurants,
+    favoritesCount: restaurantFavoritesStore.favoritesCount,
+    isLoading: restaurantFavoritesStore.isLoading,
+    isLoadingPopular: restaurantFavoritesStore.isLoadingPopular,
+    error: restaurantFavoritesStore.error,
+    pagination: restaurantFavoritesStore.pagination,
+    hasFavorites: restaurantFavoritesStore.hasFavorites,
+    favoriteIds: restaurantFavoritesStore.favoriteIds,
 
-    // Métodos
+    // Métodos (estos no cambian)
     loadFavorites: restaurantFavoritesStore.loadUserFavorites.bind(restaurantFavoritesStore),
     loadMoreFavorites: restaurantFavoritesStore.loadMoreFavorites.bind(restaurantFavoritesStore),
     refreshFavorites: restaurantFavoritesStore.refreshFavorites.bind(restaurantFavoritesStore),
@@ -553,7 +552,11 @@ export function useRestaurantFavorites() {
     findFavoriteRestaurant: restaurantFavoritesStore.findFavoriteRestaurant.bind(restaurantFavoritesStore),
     loadPopularRestaurants: restaurantFavoritesStore.loadPopularRestaurants.bind(restaurantFavoritesStore),
     checkMultipleFavorites: restaurantFavoritesStore.checkMultipleFavorites.bind(restaurantFavoritesStore),
-    clearError: restaurantFavoritesStore.clearError.bind(restaurantFavoritesStore)
+    clearError: restaurantFavoritesStore.clearError.bind(restaurantFavoritesStore),
+    
+    // Stores derivados útiles
+    filterFavorites: restaurantFavoritesStore.filterFavorites.bind(restaurantFavoritesStore),
+    favoritesByDate: restaurantFavoritesStore.favoritesByDate
   };
 }
 

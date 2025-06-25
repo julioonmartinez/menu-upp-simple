@@ -35,19 +35,18 @@ const pageDescription = 'Gestiona tus restaurantes, crea nuevos y edita la infor
 ---
 
 <MenuuppLayout title={pageTitle} description={pageDescription}>
-  <main class="dashboard-main">
+  <main class="dashboard-main bg-gray min-h-screen">
     <!-- Header de la página -->
-    <section class="page-header">
+    <section class="page-header bg-white border-b border-accent py-4 md:py-8">
       <div class="container">
-        <div class="header-content">
-          <div class="breadcrumb">
-            <a href="/dashboard">Dashboard</a>
-            <span class="separator">/</span>
-            <span class="current">Restaurantes</span>
+        <div class="header-content text-center">
+          <div class="breadcrumb flex items-center justify-center gap-xs mb-sm text-sm text-muted">
+            <a href="/dashboard" class="text-accent hover:text-primary transition-fast">Dashboard</a>
+            <span class="separator text-accent">/</span>
+            <span class="current font-semibold text-primary">Restaurantes</span>
           </div>
-          
-          <h1 class="page-title">Gestión de Restaurantes</h1>
-          <p class="page-description">
+          <h1 class="page-title text-4xl font-bold text-primary mb-xs leading-tight">Gestión de Restaurantes</h1>
+          <p class="page-description text-lg text-muted max-w-xl mx-auto leading-relaxed">
             Crea y administra tus restaurantes digitales. Desde aquí puedes configurar 
             la información básica, subir imágenes y gestionar todos los aspectos de tu negocio.
           </p>
@@ -56,61 +55,52 @@ const pageDescription = 'Gestiona tus restaurantes, crea nuevos y edita la infor
     </section>
 
     <!-- Contenido principal -->
-    <section class="dashboard-content">
+    <section class="dashboard-content py-3xl">
       <div class="container">
         <!-- Dashboard de restaurantes (Componente Svelte 5) -->
         <RestaurantDashboard 
           currentUser={userData}
           client:load 
         />
-        
         <!-- Información adicional y guías -->
-        <div class="help-section">
-          <div class="help-grid">
-            <div class="help-card">
-              <div class="help-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+        <div class="help-section mt-xl">
+          <div class="help-grid grid gap-lg grid-cols-1 md:grid-cols-3">
+            <div class="help-card card text-center grid gap-sm">
+              <div class="help-icon flex items-center justify-center mx-auto mb-md bg-gradient-primary rounded-full w-10 h-10 text-inverse">
+                <i class="fa-solid fa-seedling fa-lg"></i>
               </div>
-              <h3>Primeros Pasos</h3>
-              <p>
+              <h3 class="text-lg font-semibold text-primary mb-xs">Primeros Pasos</h3>
+              <p class="text-muted leading-normal mb-md">
                 Crea tu primer restaurante con información básica. 
                 Luego podrás agregar menús, imágenes y personalizar el diseño.
               </p>
-              <a href="/docs/getting-started" class="help-link">
+              <a href="/docs/getting-started" class="help-link text-accent font-semibold text-sm hover:text-primary transition-fast">
                 Ver guía completa
               </a>
             </div>
-            
-            <div class="help-card">
-              <div class="help-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
+            <div class="help-card card text-center grid gap-sm">
+              <div class="help-icon flex items-center justify-center mx-auto mb-md bg-gradient-primary rounded-full w-10 h-10 text-inverse">
+                <i class="fa-solid fa-image fa-lg"></i>
               </div>
-              <h3>Optimizar Imágenes</h3>
-              <p>
+              <h3 class="text-lg font-semibold text-primary mb-xs">Optimizar Imágenes</h3>
+              <p class="text-muted leading-normal mb-md">
                 Usa imágenes de alta calidad para logo, portada y platillos. 
                 Recomendamos formato webp y tamaños optimizados.
               </p>
-              <a href="/docs/images" class="help-link">
+              <a href="/docs/images" class="help-link text-accent font-semibold text-sm hover:text-primary transition-fast">
                 Guía de imágenes
               </a>
             </div>
-            
-            <div class="help-card">
-              <div class="help-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
+            <div class="help-card card text-center grid gap-sm">
+              <div class="help-icon flex items-center justify-center mx-auto mb-md bg-gradient-primary rounded-full text-inverse">
+                <i class="fa-solid fa-qrcode fa-lg"></i>
               </div>
-              <h3>Código QR</h3>
-              <p>
+              <h3 class="text-lg font-semibold text-primary mb-xs">Código QR</h3>
+              <p class="text-muted leading-normal mb-md">
                 Genera códigos QR personalizados para que tus clientes 
                 accedan fácilmente a tu menú digital.
               </p>
-              <a href="/docs/qr-codes" class="help-link">
+              <a href="/docs/qr-codes" class="help-link text-accent font-semibold text-sm hover:text-primary transition-fast">
                 Generar QR
               </a>
             </div>
@@ -122,277 +112,25 @@ const pageDescription = 'Gestiona tus restaurantes, crea nuevos y edita la infor
 </MenuuppLayout>
 
 <style>
-  /* Estilos base para la página */
+  /* Solo estilos locales estrictamente necesarios */
   .dashboard-main {
-    min-height: calc(100vh - 4rem);
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    /* El fondo y min-height ahora usan utilidades globales */
   }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-
-  /* Header de la página */
-  .page-header {
-    background: white;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 2rem 0 3rem;
-  }
-
-  .header-content {
-    text-align: center;
-  }
-
-  .breadcrumb {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .breadcrumb a {
-    color: #3b82f6;
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .breadcrumb a:hover {
-    color: #2563eb;
-  }
-
-  .separator {
-    color: #d1d5db;
-  }
-
-  .current {
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .page-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 1rem 0;
-    line-height: 1.2;
-  }
-
-  .page-description {
-    font-size: 1.125rem;
-    color: #6b7280;
-    max-width: 600px;
-    margin: 0 auto;
-    line-height: 1.6;
-  }
-
-  /* Contenido del dashboard */
-  .dashboard-content {
-    padding: 3rem 0;
-  }
-
-  /* Sección de ayuda */
-  .help-section {
-    margin-top: 2rem;
-  }
-
-  .help-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .help-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.2s;
-  }
-
-  .help-card:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-
   .help-icon {
-    width: 3rem;
-    height: 3rem;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    color: white;
+    justify-self: center;
+    box-shadow: var(--shadow-sm);
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem; /* Ajuste para iconos FontAwesome */
+  
   }
-
-  .help-icon svg {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .help-card h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0 0 0.75rem 0;
-  }
-
-  .help-card p {
-    color: #6b7280;
-    line-height: 1.5;
-    margin: 0 0 1rem 0;
-  }
-
-  .help-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #3b82f6;
-    font-weight: 600;
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.2s;
-  }
-
-  .help-link:hover {
-    color: #2563eb;
-  }
-
-  /* Modal global */
-  :global(.modal-overlay) {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-    backdrop-filter: blur(4px);
-  }
-
-  :global(.modal-content) {
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Sistema de notificaciones */
-  :global(.notification) {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    z-index: 1001;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    max-width: 300px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  :global(.notification.show) {
-    transform: translateX(0);
-  }
-
-  :global(.notification-success) {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  }
-
-  :global(.notification-error) {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  }
-
-  :global(.notification-info) {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  }
-
-  :global(.notification-warning) {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  }
-
-  /* Tooltips */
-  :global(.tooltip) {
-    position: absolute;
-    background: #1f2937;
-    color: white;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    z-index: 1002;
-    pointer-events: none;
-    white-space: nowrap;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  :global(.tooltip::before) {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 4px solid transparent;
-    border-top-color: #1f2937;
-  }
-
-  /* Responsive design */
   @media (max-width: 768px) {
-    .page-header {
-      padding: 1.5rem 0 2rem;
-    }
-
-    .page-title {
-      font-size: 2rem;
-    }
-
-    .page-description {
-      font-size: 1rem;
-    }
-
-    .dashboard-content {
-      padding: 2rem 0;
-    }
-
-    .help-grid {
-      grid-template-columns: 1fr;
-    }
-
-    :global(.modal-overlay) {
-      padding: 0.5rem;
-    }
-
-    :global(.notification) {
-      right: 0.5rem;
-      top: 0.5rem;
-      max-width: calc(100vw - 1rem);
-    }
+    .page-title { font-size: var(--font-2xl); }
+    .dashboard-content { padding: var(--spacing-xl) 0; }
+    .help-grid { grid-template-columns: 1fr; }
   }
-
   @media (max-width: 480px) {
-    .breadcrumb {
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .page-title {
-      font-size: 1.75rem;
-    }
+    .breadcrumb { flex-direction: column; gap: var(--spacing-xs); }
+    .page-title { font-size: var(--font-xl); }
   }
 </style>

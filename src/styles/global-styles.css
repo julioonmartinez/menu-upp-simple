@@ -137,6 +137,36 @@
   --container-lg: 1024px;
   --container-xl: 1280px;
   --container-2xl: 1400px;
+
+   /* Tamaños de card optimizados */
+  --card-min-width: 300px;
+  --card-max-width: 360px;
+  --card-preferred-width: 340px;
+  
+  /* Espaciado de grid dinámico */
+  --grid-gap-mobile: 1rem;
+  --grid-gap-tablet: 1.5rem;
+  --grid-gap-desktop: 2rem;
+  --grid-gap-large: 2.5rem;
+  
+  /* Contenedor máximo para evitar estiramiento */
+  --grid-container-max: 1600px;
+  --grid-container-optimal: 1400px;
+
+   /* Colores específicos para estados de lista */
+  --list-item-hover: rgba(255, 107, 53, 0.05);
+  --list-item-active: rgba(255, 107, 53, 0.1);
+  --list-border-active: rgba(255, 107, 53, 0.3);
+  
+  /* Espaciado específico para lista */
+  --list-item-padding: 0.875rem 1.25rem;
+  --list-item-gap: 1rem;
+  --list-avatar-size: 56px;
+  --list-action-size: 32px;
+  
+  /* Transiciones para lista */
+  --list-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --list-hover-transform: translateX(4px);
 }
 
 /* Escalado responsive - Desktop */
@@ -938,5 +968,741 @@ button:focus-visible {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ====================================
+   SISTEMA DE GRID AUTO-RESPONSIVE
+   ==================================== */
+
+/* Clase base para grids de cards optimizados */
+.grid-cards-responsive {
+  display: grid;
+  gap: var(--grid-gap-mobile);
+  width: 100%;
+  justify-items: center;
+  align-items: start;
+  
+  /* Grid que se adapta automáticamente */
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
+  
+  /* Evitar que las cards se estiren demasiado */
+  max-width: var(--grid-container-optimal);
+  margin: 0 auto;
+  
+  /* Centrar el contenido si sobra espacio */
+  justify-content: center;
+}
+
+/* ====================================
+   BREAKPOINTS ESPECÍFICOS PARA CARDS
+   ==================================== */
+
+/* Mobile Small (320px+) */
+@media (min-width: 320px) {
+  .grid-cards-responsive {
+    grid-template-columns: minmax(280px, 1fr);
+    gap: var(--grid-gap-mobile);
+  }
+}
+
+/* Mobile Large (480px+) */
+@media (min-width: 480px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--grid-gap-mobile);
+  }
+}
+
+/* Tablet (640px+) - 2 columnas óptimas */
+@media (min-width: 640px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--grid-gap-tablet);
+    max-width: 760px; /* 2 cards + gap */
+  }
+}
+
+/* Tablet Large (768px+) */
+@media (min-width: 768px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--grid-gap-tablet);
+    max-width: 800px;
+  }
+}
+
+/* Desktop Small (1024px+) - 3 columnas óptimas */
+@media (min-width: 1024px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(320px, var(--card-max-width)));
+    gap: var(--grid-gap-desktop);
+    max-width: 1200px; /* 3 cards + gaps */
+  }
+}
+
+/* Desktop Medium (1280px+) */
+@media (min-width: 1280px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 350px));
+    gap: var(--grid-gap-desktop);
+    max-width: 1400px; /* 4 cards + gaps */
+  }
+}
+
+/* Desktop Large (1536px+) - 4-5 columnas máximo */
+@media (min-width: 1536px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 340px));
+    gap: var(--grid-gap-large);
+    max-width: var(--grid-container-max);
+  }
+}
+
+/* Ultra Wide (1920px+) - Evitar expansión excesiva */
+@media (min-width: 1920px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 330px));
+    gap: var(--grid-gap-large);
+    max-width: 1800px; /* 5 cards máximo */
+  }
+}
+
+/* ====================================
+   VARIANTES DEL GRID
+   ==================================== */
+
+/* Grid compacto para modo lista */
+.grid-cards-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  max-width: 800px;
+  margin: 0 auto;
+  justify-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .grid-cards-list {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    max-width: 900px;
+  }
+}
+
+/* Grid denso para muchos elementos */
+.grid-cards-dense {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  justify-items: center;
+  max-width: var(--grid-container-optimal);
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .grid-cards-dense {
+    grid-template-columns: repeat(auto-fill, minmax(290px, 320px));
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-cards-dense {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 310px));
+    gap: 1.5rem;
+  }
+}
+
+/* ====================================
+   CONTENEDORES ESPECIALIZADOS
+   ==================================== */
+
+/* Wrapper principal para evitar overflow */
+.grid-container-wrapper {
+  width: 100%;
+  overflow: hidden;
+  padding: 0 var(--spacing-lg);
+}
+
+@media (min-width: 768px) {
+  .grid-container-wrapper {
+    padding: 0 var(--spacing-xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-container-wrapper {
+    padding: 0 var(--spacing-2xl);
+  }
+}
+
+/* Contenedor con centrado automático */
+.grid-container-centered {
+  max-width: var(--grid-container-optimal);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+/* ====================================
+   UTILIDADES DE ESPACIADO ADAPTATIVO
+   ==================================== */
+
+/* Gaps dinámicos según el contenido */
+.gap-responsive-sm {
+  gap: 0.75rem;
+}
+
+.gap-responsive-md {
+  gap: 1rem;
+}
+
+.gap-responsive-lg {
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .gap-responsive-sm { gap: 1rem; }
+  .gap-responsive-md { gap: 1.5rem; }
+  .gap-responsive-lg { gap: 2rem; }
+}
+
+@media (min-width: 1024px) {
+  .gap-responsive-sm { gap: 1.25rem; }
+  .gap-responsive-md { gap: 2rem; }
+  .gap-responsive-lg { gap: 2.5rem; }
+}
+
+/* ====================================
+   CLASES DE CONTROL DE TAMAÑO
+   ==================================== */
+
+/* Prevenir que las cards se estiren */
+.card-size-controlled {
+  width: 100%;
+  max-width: var(--card-max-width);
+  min-width: var(--card-min-width);
+  margin: 0 auto;
+}
+
+/* Tamaños específicos para diferentes contextos */
+.card-size-compact {
+  max-width: 300px;
+  min-width: 260px;
+}
+
+.card-size-standard {
+  max-width: var(--card-max-width);
+  min-width: var(--card-min-width);
+}
+
+.card-size-expanded {
+  max-width: 400px;
+  min-width: 320px;
+}
+
+/* ====================================
+   ASPECTOS RATIO PARA CARDS
+   ==================================== */
+
+/* Mantener proporciones consistentes */
+.card-aspect-controlled {
+  aspect-ratio: 4/5; /* Proporción vertical óptima */
+}
+
+.card-aspect-wide {
+  aspect-ratio: 3/2; /* Para modo horizontal */
+}
+
+.card-aspect-square {
+  aspect-ratio: 1/1; /* Para casos especiales */
+}
+
+/* ====================================
+   OPTIMIZACIONES PARA PERFORMANCE
+   ==================================== */
+
+/* Mejorar rendering de grids grandes */
+.grid-optimized {
+  contain: layout style;
+  will-change: scroll-position;
+}
+
+/* Lazy loading para cards fuera del viewport */
+.card-lazy {
+  content-visibility: auto;
+  contain-intrinsic-size: 360px 400px;
+}
+
+/* ====================================
+   ESTADOS ESPECIALES
+   ==================================== */
+
+/* Grid en modo loading */
+.grid-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.grid-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Grid vacío */
+.grid-empty {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ====================================
+   ACCESIBILIDAD Y PREFERENCIAS
+   ==================================== */
+
+/* Respetar preferencias de movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .grid-cards-responsive,
+  .grid-cards-list,
+  .grid-cards-dense {
+    transition: none;
+  }
+  
+  .grid-loading::after {
+    animation: none;
+  }
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  .grid-cards-responsive,
+  .grid-cards-list {
+    gap: calc(var(--grid-gap-desktop) * 1.5);
+  }
+}
+
+/* ====================================
+   UTILIDADES PARA BOTONES ICON
+   ==================================== */
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--bg-accent);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.875rem;
+}
+
+.btn-icon:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.btn-icon:active {
+  transform: scale(0.95);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ====================================
+   ESTILOS PARA INPUTS EN CONTROLES
+   ==================================== */
+
+.input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--bg-accent);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-base);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-normal);
+  min-height: 44px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.input::placeholder {
+  color: var(--text-light);
+}
+
+/* Select específico */
+select.input {
+  cursor: pointer;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  appearance: none;
+}
+
+/* ====================================
+   UTILIDADES DE POSICIÓN PARA ICONOS
+   ==================================== */
+
+.absolute {
+  position: absolute;
+}
+
+.relative {
+  position: relative;
+}
+
+.left-md {
+  left: var(--spacing-md);
+}
+
+.top-1\/2 {
+  top: 50%;
+}
+
+.-translate-y-1\/2 {
+  transform: translateY(-50%);
+}
+
+.pl-2xl {
+  padding-left: var(--spacing-2xl);
+}
+
+/* ====================================
+   UTILIDADES PARA EL LAYOUT DE CONTROLES
+   ==================================== */
+
+.view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.filter-controls {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.action-controls {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ====================================
+   ESTILOS PARA ESTADOS VACÍOS Y LOADING
+   ==================================== */
+
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4xl);
+  text-align: center;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  min-height: 400px;
+}
+
+.loading-state .spinner-large {
+  margin-bottom: var(--spacing-md);
+}
+
+.error-state i,
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.error-state i {
+  color: var(--error);
+}
+
+.empty-state i {
+  color: var(--text-light);
+}
+
+.error-state h3,
+.empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--spacing-xs);
+}
+
+.error-state h3 {
+  color: var(--error);
+}
+
+.empty-state h3 {
+  color: var(--text-primary);
+}
+
+.error-state p,
+.empty-state p {
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-md);
+  max-width: 400px;
+}
+
+/* ====================================
+   RESPONSIVE PARA CONTROLES
+   ==================================== */
+
+@media (max-width: 768px) {
+  .view-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .filter-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .action-controls {
+    justify-content: center;
+  }
+
+  .search-box {
+    min-width: auto;
+  }
+
+  .input {
+    min-height: 48px; /* Mejor target táctil en móvil */
+  }
+
+  .btn-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 640px) {
+  .filter-controls select.input {
+    min-width: 120px;
+  }
+
+  .loading-state,
+  .error-state,
+  .empty-state {
+    padding: var(--spacing-2xl);
+    min-height: 300px;
+  }
+
+  .error-state h3,
+  .empty-state h3 {
+    font-size: 1.125rem;
+  }
+}
+
+/* ====================================
+   UTILIDADES PARA STATS OVERVIEW
+   ==================================== */
+
+.stats-overview {
+  display: grid;
+  gap: var(--spacing-lg);
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: var(--spacing-xl);
+}
+
+@media (min-width: 768px) {
+  .stats-overview {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--bg-accent);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  text-align: center;
+  transition: all var(--transition-normal);
+}
+
+.stat-card:hover {
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: var(--weight-bold);
+  color: var(--primary-color);
+  line-height: 1;
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-label {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  font-weight: var(--weight-medium);
+}
+
+/* ====================================
+   UTILIDADES PARA HEADERS
+   ==================================== */
+
+.management-header {
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-accent);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.management-content {
+  min-height: 400px;
+}
+
+/* ====================================
+   CLASES RESPONSIVE ADICIONALES
+   ==================================== */
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: inline;
+  }
+}
+
+.mobile-only {
+  display: inline;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* ====================================
+   MEJORAS DE ACCESIBILIDAD
+   ==================================== */
+
+.btn-icon:focus-visible,
+.input:focus-visible,
+.view-toggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  .btn-icon,
+  .input,
+  .view-toggle {
+    border-width: 2px;
+  }
+
+  .stat-card {
+    border-width: 2px;
+  }
+}
+
+/* Movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .btn-icon:hover,
+  .stat-card:hover {
+    transform: none;
+  }
+
+  .view-toggle,
+  .btn-icon,
+  .input {
+    transition: none;
+  }
+}
+
+/* ====================================
+   DARK MODE SUPPORT
+   ==================================== */
+
+@media (prefers-color-scheme: dark) {
+  .btn-icon {
+    background: var(--bg-tertiary);
+    border-color: var(--bg-accent);
+    color: var(--text-light);
+  }
+
+  .btn-icon:hover {
+    background: var(--bg-accent);
+    color: var(--text-primary);
+  }
+
+  .input {
+    background: var(--bg-tertiary);
+    border-color: var(--bg-accent);
+    color: var(--text-primary);
+  }
+
+  .input:focus {
+    background: var(--bg-primary);
+  }
+
+  .stat-card {
+    background: var(--bg-tertiary);
+    border-color: var(--bg-accent);
+  }
+
+  .stat-card:hover {
+    background: var(--bg-accent);
+  }
+
+  .management-header {
+    background: var(--bg-primary);
+    border-color: var(--bg-accent);
+  }
+
+  .loading-state,
+  .error-state,
+  .empty-state {
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+  }
 }
 
