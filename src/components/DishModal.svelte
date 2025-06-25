@@ -2,43 +2,22 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { quintOut, elasticOut } from 'svelte/easing';
-  
+  import { dishRatingStore } from '../stores/dishRatingStore';
   import Modal from '../components/Modal.svelte';
   
-  // Stores
-  import { 
-    dishRatingStore, 
-    rateDishAnonymously, 
-    commentDishAnonymously,
-    canUserRateThisDish,
-    getUserRatingForDish,
-    canUserCommentThisDish,
-    getUserCommentForDish
-  } from '../stores/dishStore';
-  
-  import { favoritesStore } from '../stores/favoritesStore';
-  
-  // Services
-  import { 
-    fetchDishRatings, 
-    fetchDishRatingStats 
-  } from '../services/apiDishService';
+  // Importar types de la nueva interfaz
+  import type { Dish, DishComment, DishRatingStats } from '../interfaces/dishRating20';
 
   //Estilos
   import './DishModal.css'
-  
-  // Types
-  import type { DishWithRatings, DishCommentsResponse, DishRatingStats } from '../interfaces/dishRating';
 
   const dispatch = createEventDispatcher();
 
-  // Props que vienen del modalStore
-  const { dish } = $props<{ dish: DishWithRatings }>();
+  // Props que vienen del modalStore - actualizado el tipo
+  const { dish } = $props<{ dish: Dish }>();
 
   // Estados del componente
   let loading = $state(false);
-  let commentsData = $state<DishCommentsResponse | null>(null);
-  let statsData = $state<DishRatingStats | null>(null);
   let error = $state<string | null>(null);
   
   // Estados de interacción
@@ -53,20 +32,65 @@
   // Referencias del DOM
   let commentInput: HTMLTextAreaElement;
 
-  // Datos reactivos del store
-  const dishStore = $derived($dishRatingStore);
-  const favStore = $derived($favoritesStore);
-
-  // Verificar si el usuario puede interactuar
-  const canRate = $derived(canUserRateThisDish(dish.id!));
-  const canComment = $derived(canUserCommentThisDish(dish.id!));
-  const userRating = $derived(getUserRatingForDish(dish.id!));
-  const userComment = $derived(getUserCommentForDish(dish.id!));
-  const isUserFavorite = $derived(favStore.allDishes.find(d => d.id === dish.id)?.userFav || false);
+  // Usar directamente los stores del dishRatingStore para evitar complejidad
+  const dishCommentsStore = dishRatingStore.getDishComments(dish.id);
+  const dishStatsStore = dishRatingStore.getDishStats(dish.id);
+  const userRatingStore = dishRatingStore.getUserRatingForDish(dish.id);
+  const userCommentStore = dishRatingStore.getUserCommentForDish(dish.id);
+  const isDishFavoriteStore = dishRatingStore.isDishFavorite(dish.id);
 
   // Loading states del store
-  const isRatingInProgress = $derived(dishStore.ratingsInProgress[dish.id!] || false);
-  const isCommentInProgress = $derived(dishStore.commentsInProgress[dish.id!] || false);
+  const isLoadingCommentsStore = dishRatingStore.isDishCommentsLoading(dish.id);
+  const isLoadingStatsStore = dishRatingStore.isDishStatsLoading(dish.id);
+  const isRatingInProgressStore = dishRatingStore.isCreatingRating(dish.id);
+  const isCommentInProgressStore = dishRatingStore.isCreatingComment(dish.id);
+  const isTogglingFavoriteStore = dishRatingStore.isTogglingFavorite(dish.id);
+
+  // Convertir stores a valores derivados para usar en el script
+  const dishComments = $derived($dishCommentsStore || []);
+  const dishStats = $derived($dishStatsStore);
+  const userRating = $derived($userRatingStore);
+  const userComment = $derived($userCommentStore);
+  const isDishFavorite = $derived($isDishFavoriteStore || false);
+  const isLoadingComments = $derived($isLoadingCommentsStore || false);
+  const isLoadingStats = $derived($isLoadingStatsStore || false);
+  const isRatingInProgress = $derived($isRatingInProgressStore || false);
+  const isCommentInProgress = $derived($isCommentInProgressStore || false);
+  const isTogglingFavorite = $derived($isTogglingFavoriteStore || false);
+
+  // Verificar si el usuario puede interactuar
+  const canRate = $derived(!userRating); // Puede valorar si no ha valorado antes
+  const canComment = $derived(!userComment); // Puede comentar si no ha comentado antes
+
+  // Obtener paginación para comentarios
+  const commentsPaginationStore = dishRatingStore.getDishCommentsPagination(dish.id);
+  const commentsPagination = $derived($commentsPaginationStore);
+
+  // Datos combinados para mostrar
+  const commentsData = $derived({
+    comments: dishComments || [],
+    pagination: commentsPagination || {
+      total: 0,
+      page: 1,
+      limit: 10,
+      total_pages: 0,
+      has_next: false,
+      has_prev: false
+    },
+    stats: {
+      total_registered: (dishComments || []).filter(c => !c.anonymous).length,
+      total_anonymous: (dishComments || []).filter(c => c.anonymous).length
+    }
+  });
+
+  const statsData = $derived(dishStats || {
+    averageRating: dish.rating || 0,
+    totalRatings: dish.reviewsCount || 0,
+    totalComments: (dishComments || []).length,
+    registeredRatings: 0,
+    anonymousRatings: 0,
+    ratingDistribution: {}
+  });
 
   // Cargar datos al montar
   onMount(() => {
@@ -81,97 +105,45 @@
     try {
       console.log('🔄 Cargando datos del platillo:', dish.id);
       
+      // Usar las funciones directas del store
       const [commentsResult, statsResult] = await Promise.allSettled([
-        fetchDishRatings(dish.id!, 1, 10, true),
-        fetchDishRatingStats(dish.id!)
+        dishRatingStore.loadDishComments(dish.id, 20, 1, true),
+        dishRatingStore.loadDishStats(dish.id)
       ]);
       
-      if (commentsResult.status === 'fulfilled') {
-        commentsData = commentsResult.value;
-        console.log('✅ Comentarios cargados:', commentsData.comments?.length || 0);
-      } else {
+      if (commentsResult.status === 'rejected') {
         console.warn('⚠️ No se pudieron cargar comentarios:', commentsResult.reason);
-        commentsData = {
-          comments: [],
-          pagination: {
-            total: 0,
-            page: 1,
-            limit: 10,
-            total_pages: 0,
-            has_next: false,
-            has_prev: false
-          },
-          stats: {
-            total_registered: 0,
-            total_anonymous: 0
-          }
-        };
       }
       
-      if (statsResult.status === 'fulfilled') {
-        statsData = statsResult.value;
-        console.log('✅ Estadísticas cargadas:', statsData);
-      } else {
+      if (statsResult.status === 'rejected') {
         console.warn('⚠️ No se pudieron cargar estadísticas:', statsResult.reason);
-        statsData = {
-          averageRating: dish.rating || 0,
-          totalRatings: dish.reviewsCount || 0,
-          totalComments: 0,
-          registeredRatings: 0,
-          anonymousRatings: 0,
-          ratingDistribution: {}
-        };
       }
       
     } catch (err) {
       console.error('❌ Error cargando datos del platillo:', err);
       error = err instanceof Error ? err.message : 'Error cargando datos del platillo';
-      
-      // Datos de fallback seguros
-      commentsData = {
-        comments: [],
-        pagination: {
-          total: 0,
-          page: 1,
-          limit: 10,
-          total_pages: 0,
-          has_next: false,
-          has_prev: false
-        },
-        stats: {
-          total_registered: 0,
-          total_anonymous: 0
-        }
-      };
-      
-      statsData = {
-        averageRating: dish.rating || 0,
-        totalRatings: dish.reviewsCount || 0,
-        totalComments: 0,
-        registeredRatings: 0,
-        anonymousRatings: 0,
-        ratingDistribution: {}
-      };
     } finally {
       loading = false;
     }
   }
 
   async function handleRating(rating: number) {
-    if (!canRate || isRatingInProgress || rating === userRating) return;
+    if (!canRate || isRatingInProgress || rating === userRating?.rating) return;
     
     selectedRating = rating;
     
     try {
-      const success = await rateDishAnonymously(dish.id!, rating);
-      if (success) {
-        loadDishData();
+      const result = await dishRatingStore.createRating(dish.id, { rating });
+      
+      if (result.success) {
         showToast('¡Valoración enviada con éxito!', 'success');
       } else {
-        showToast(dishStore.lastError || 'Error al enviar valoración', 'error');
+        showToast(result.error || 'Error al enviar valoración', 'error');
+        selectedRating = 0; // Reset en caso de error
       }
     } catch (error) {
       showToast('Error al enviar valoración', 'error');
+      selectedRating = 0; // Reset en caso de error
     }
   }
 
@@ -181,21 +153,19 @@
     isSubmitting = true;
     
     try {
-      const success = await commentDishAnonymously(
-        dish.id!, 
-        commentText.trim(),
-        selectedRating > 0 ? selectedRating : undefined
-      );
+      const result = await dishRatingStore.createComment(dish.id, {
+        comment: commentText.trim(),
+        rating: selectedRating > 0 ? selectedRating : undefined
+      });
       
-      if (success) {
+      if (result.success) {
         commentText = '';
         selectedRating = 0;
         showCommentForm = false;
         
-        loadDishData();
         showToast('¡Comentario enviado con éxito!', 'success');
       } else {
-        showToast(dishStore.lastError || 'Error al enviar comentario', 'error');
+        showToast(result.error || 'Error al enviar comentario', 'error');
       }
     } catch (error) {
       showToast('Error al enviar comentario', 'error');
@@ -206,11 +176,16 @@
 
   async function toggleFavorite() {
     try {
-      await favoritesStore.toggleFavorite(dish.id!);
-      showToast(
-        isUserFavorite ? 'Eliminado de favoritos' : 'Agregado a favoritos', 
-        'success'
-      );
+      const result = await dishRatingStore.toggleFavorite(dish.id);
+      
+      if (result.success && result.data) {
+        showToast(
+          result.data.userFav ? 'Agregado a favoritos' : 'Eliminado de favoritos', 
+          'success'
+        );
+      } else {
+        showToast(result.error || 'Error al actualizar favoritos', 'error');
+      }
     } catch (error) {
       showToast('Error al actualizar favoritos', 'error');
     }
@@ -240,11 +215,28 @@
   }
 
   function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return new Intl.RelativeTimeFormat('es', { numeric: 'auto' }).format(
-      Math.floor((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-      'day'
-    );
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      if (diffMinutes < 1) return 'Ahora mismo';
+      if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+      if (diffHours < 24) return `Hace ${diffHours}h`;
+      if (diffDays === 1) return 'Ayer';
+      if (diffDays < 7) return `Hace ${diffDays} días`;
+      
+      return date.toLocaleDateString('es-MX', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return 'Fecha inválida';
+    }
   }
 
   function createSafeStars(rating: number): string[] {
@@ -254,6 +246,14 @@
       stars.push('⭐');
     }
     return stars;
+  }
+
+  // Función helper para obtener el rating actual a mostrar
+  function getCurrentRatingToShow(): number {
+    if (userRating?.rating) return userRating.rating;
+    if (hoverRating > 0) return hoverRating;
+    if (selectedRating > 0) return selectedRating;
+    return 0;
   }
 </script>
 
@@ -266,7 +266,7 @@
   <div class="dish-modal-header">
     <button 
       class="close-btn"
-      on:click={() => dispatch('close')}
+      onclick={() => dispatch('close')}
       aria-label="Cerrar modal"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -292,8 +292,8 @@
           class="dish-image"
           class:loaded={imageLoaded}
           loading="lazy"
-          on:load={handleImageLoad}
-          on:error={handleImageError}
+          onload={handleImageLoad}
+          onerror={handleImageError}
         />
       </div>
     {:else}
@@ -316,13 +316,19 @@
     <!-- Botón de favorito superpuesto -->
     <button 
       class="favorite-btn"
-      class:active={isUserFavorite}
-      on:click={toggleFavorite}
-      aria-label={isUserFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+      class:active={isDishFavorite}
+      class:loading={isTogglingFavorite}
+      disabled={isTogglingFavorite}
+      onclick={toggleFavorite}
+      aria-label={isDishFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill={isUserFavorite ? 'currentColor' : 'none'} xmlns="http://www.w3.org/2000/svg">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      {#if isTogglingFavorite}
+        <div class="loading-spinner"></div>
+      {:else}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill={isDishFavorite ? 'currentColor' : 'none'} xmlns="http://www.w3.org/2000/svg">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      {/if}
     </button>
 
     <!-- Badge de rating superpuesto -->
@@ -349,7 +355,13 @@
 
     <!-- Estadísticas -->
     <div class="dish-stats">
-      {#if statsData}
+      {#if isLoadingStats}
+        <div class="loading-stats">
+          <div class="skeleton stat-skeleton"></div>
+          <div class="skeleton stat-skeleton"></div>
+          <div class="skeleton stat-skeleton"></div>
+        </div>
+      {:else if statsData}
         <div class="stat-item">
           <div class="stat-value">⭐ {statsData.averageRating.toFixed(1)}</div>
           <div class="stat-label">{statsData.totalRatings} valoraciones</div>
@@ -381,33 +393,33 @@
           {#each Array(5) as _, i}
             <button
               class="star-btn"
-              class:active={i < (hoverRating || selectedRating)}
-              class:user-rated={i < userRating}
+              class:active={i < getCurrentRatingToShow()}
+              class:user-rated={i < (userRating?.rating || 0)}
               disabled={isRatingInProgress}
-              on:mouseenter={() => hoverRating = i + 1}
-              on:mouseleave={() => hoverRating = 0}
-              on:click={() => handleRating(i + 1)}
+              onmouseenter={() => hoverRating = i + 1}
+              onmouseleave={() => hoverRating = 0}
+              onclick={() => handleRating(i + 1)}
             >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill={i < (hoverRating || selectedRating || userRating) ? 'currentColor' : 'none'} xmlns="http://www.w3.org/2000/svg">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill={i < getCurrentRatingToShow() ? 'currentColor' : 'none'} xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           {/each}
         </div>
-        {#if userRating > 0}
-          <p class="rating-feedback">Has valorado este platillo con {userRating} estrella{userRating !== 1 ? 's' : ''}</p>
+        {#if userRating?.rating && userRating.rating > 0}
+          <p class="rating-feedback">Has valorado este platillo con {userRating.rating} estrella{userRating.rating !== 1 ? 's' : ''}</p>
         {:else if isRatingInProgress}
           <p class="rating-feedback">Enviando valoración...</p>
         {/if}
       </div>
-    {:else if userRating > 0}
+    {:else if userRating?.rating && userRating.rating > 0}
       <div class="rating-section">
         <h3 class="section-title">Tu valoración</h3>
         <div class="user-rating-display">
           {#each Array(5) as _, i}
-            <span class="star-display" class:active={i < userRating}>⭐</span>
+            <span class="star-display" class:active={i < userRating.rating}>⭐</span>
           {/each}
-          <span class="rating-text">{userRating} de 5 estrellas</span>
+          <span class="rating-text">{userRating.rating} de 5 estrellas</span>
         </div>
       </div>
     {/if}
@@ -418,7 +430,7 @@
         {#if !showCommentForm}
           <button 
             class="add-comment-btn"
-            on:click={() => showCommentForm = true}
+            onclick={() => showCommentForm = true}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M8.5 19H16.5C17.8807 19 19 17.8807 19 16.5V7.5C19 6.11929 17.8807 5 16.5 5H7.5C6.11929 5 5 6.11929 5 7.5V18.25C5 18.6642 5.33579 19 5.75 19C5.88807 19 6.01951 18.9481 6.12132 18.8536L8.5 19Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -439,16 +451,16 @@
             <div class="comment-actions">
               <button 
                 class="cancel-btn"
-                on:click={() => { showCommentForm = false; commentText = ''; }}
+                onclick={() => { showCommentForm = false; commentText = ''; }}
               >
                 Cancelar
               </button>
               <button 
                 class="submit-btn"
-                on:click={handleComment}
-                disabled={!commentText.trim() || isSubmitting}
+                onclick={handleComment}
+                disabled={!commentText.trim() || isSubmitting || isCommentInProgress}
               >
-                {#if isSubmitting}
+                {#if isSubmitting || isCommentInProgress}
                   <span class="loading-spinner"></span>
                 {/if}
                 Enviar comentario
@@ -457,11 +469,11 @@
           </div>
         {/if}
       </div>
-    {:else if userComment}
+    {:else if userComment?.comment}
       <div class="user-comment-display">
         <h3 class="section-title">Tu comentario</h3>
         <div class="comment-bubble">
-          <p>{userComment}</p>
+          <p>{userComment.comment}</p>
         </div>
       </div>
     {/if}
@@ -475,7 +487,7 @@
         {/if}
       </h3>
 
-      {#if loading}
+      {#if isLoadingComments}
         <div class="comments-loading">
           {#each Array(3) as _, i}
             <div class="comment-skeleton">
@@ -492,7 +504,7 @@
         <div class="error-state">
           <div class="error-icon">⚠️</div>
           <p>Error cargando comentarios: {error}</p>
-          <button class="retry-btn" on:click={() => loadDishData()}>
+          <button class="retry-btn" onclick={() => loadDishData()}>
             Reintentar
           </button>
         </div>
@@ -526,13 +538,32 @@
             </div>
           {/each}
         </div>
-      {:else if !loading && commentsData}
+
+        <!-- Botón cargar más comentarios si hay más -->
+        {#if commentsData.pagination.has_next}
+          <div class="load-more-section">
+            <button 
+              class="load-more-btn"
+              class:loading={isLoadingComments}
+              disabled={isLoadingComments}
+              onclick={() => dishRatingStore.loadMoreComments(dish.id)}
+            >
+              {#if isLoadingComments}
+                <span class="loading-spinner"></span>
+                Cargando...
+              {:else}
+                Cargar más comentarios
+              {/if}
+            </button>
+          </div>
+        {/if}
+      {:else if !isLoadingComments && commentsData}
         <div class="no-comments">
           <div class="no-comments-icon">💬</div>
           <p>Aún no hay comentarios para este platillo</p>
           <p class="no-comments-subtitle">¡Sé el primero en compartir tu opinión!</p>
         </div>
-      {:else if !loading}
+      {:else if !isLoadingComments}
         <div class="no-comments">
           <div class="no-comments-icon">💬</div>
           <p>No se pudieron cargar los comentarios</p>

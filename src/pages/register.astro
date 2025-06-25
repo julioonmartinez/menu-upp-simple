@@ -1,0 +1,246 @@
+---
+// src/pages/register.astro
+import RegisterForm from '../components/auth/RegisterForm.svelte';
+import MenuuppLayout from '../layouts/MenuuppLayout.astro';
+
+// Verificar si el usuario ya está autenticado
+const { user, isAuthenticated } = Astro.locals;
+
+// Si ya está autenticado, redirigir al dashboard
+if (isAuthenticated && user) {
+  return Astro.redirect('/dashboard');
+}
+
+// Obtener parámetros de la URL
+const { redirect } = Astro.url.searchParams;
+const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard';
+
+// Metadatos de la página
+const title = 'Iniciar Sesión - Menu App';
+const description = 'Inicia sesión en tu cuenta para acceder a todas las funcionalidades de Menu App';
+---
+
+
+  
+<MenuuppLayout title={title} description={description}  >
+
+
+    <!-- Formulario de login -->
+    <RegisterForm
+      client:only="svelte"
+      redirectUrl={redirectUrl}
+    />
+
+  
+  
+</MenuuppLayout>
+
+
+  
+
+    <!-- Estilos críticos inline para mejor performance -->
+  <style>
+    /* Critical CSS - Solo lo mínimo para evitar FOUC */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      overflow-x: hidden;
+    }
+    
+    /* Loading spinner inicial */
+    .initial-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loader-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid #ff6b35;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Ocultar loader cuando la página carga */
+    .loaded .initial-loader {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+  </style>
+
+  
+
+  <style>
+    .login-page {
+      min-height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .bg-pattern {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle at 25px 25px, var(--bg-accent) 2px, transparent 0),
+        radial-gradient(circle at 75px 75px, var(--bg-accent) 1px, transparent 0);
+      background-size: 100px 100px;
+      opacity: 0.3;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .bg-gradient {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        135deg,
+        var(--bg-secondary) 0%,
+        var(--bg-tertiary) 50%,
+        var(--bg-secondary) 100%
+      );
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      33% { transform: translateY(-10px) rotate(1deg); }
+      66% { transform: translateY(5px) rotate(-1deg); }
+    }
+
+    .login-info {
+      padding: var(--spacing-5xl) 0;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--bg-accent);
+      margin-top: auto;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--spacing-3xl);
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .info-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-4xl);
+      }
+    }
+
+    .info-card {
+      padding: var(--spacing-2xl);
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      border: 1px solid var(--bg-accent);
+      transition: all var(--transition-normal);
+    }
+
+    .info-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(255, 107, 53, 0.2);
+    }
+
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      border-radius: var(--radius-full);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    /* Optimizaciones móviles */
+    @media (max-width: 768px) {
+      .login-info {
+        padding: var(--spacing-3xl) 0;
+      }
+
+      .info-card {
+        padding: var(--spacing-xl);
+      }
+
+      .info-icon {
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    /* Modo oscuro */
+    @media (prefers-color-scheme: dark) {
+      .bg-pattern {
+        opacity: 0.1;
+      }
+    }
+
+    /* Reducir animaciones si el usuario lo prefiere */
+    @media (prefers-reduced-motion: reduce) {
+      .bg-pattern {
+        animation: none;
+      }
+
+      .info-card:hover {
+        transform: none;
+      }
+    }
+
+    /* Estados de carga */
+    .login-page:not(.loaded) {
+      pointer-events: none;
+    }
+
+    /* Mejoras de accesibilidad */
+    .info-card:focus-within {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    /* Print styles */
+    @media print {
+      .login-background,
+      .initial-loader {
+        display: none;
+      }
+
+      .login-info {
+        border-top: 2px solid #000;
+        background: #fff;
+      }
+    }
+  </style>

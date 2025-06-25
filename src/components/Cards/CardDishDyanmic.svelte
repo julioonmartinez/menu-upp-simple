@@ -2,7 +2,7 @@
   //CardDishDynamic.svelte
   import { onMount, createEventDispatcher } from 'svelte';
   import type { CartItem, Dish, DishOption } from '../../interfaces/dish';
-
+   import { dishRatingStore } from '../../stores/dishRatingStore';
   import FavoriteButton from '../microcomponentes/FavoriteButton.svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { elasticOut, cubicOut } from 'svelte/easing';
@@ -12,12 +12,14 @@
   import { trackDishInteraction, recordLinkClick } from '../../services/analyticsService';
   
   // Props con valores por defecto
-  export let item: Dish;
-  export let index: number;
-  export let storeMode: boolean = false;
-  export let backgroundColor = '#FFFFFF';
-  export let primaryColor = '#ff6b35';
-  export let secondaryColor = '#FF4500';
+  const {
+    item,
+    index,
+    storeMode = false,
+    backgroundColor = '#FFFFFF',
+    primaryColor = '#ff6b35',
+    secondaryColor = '#FF4500'
+  } = $props();
   
   // Variable reactiva para la calificación del usuario
   let userRating = 0;
@@ -27,21 +29,23 @@
   let showOptions = false;
   let addingToCart = false;
   let selectedOptions: DishOption[] = [];
+  const isDishFavoriteStore = dishRatingStore.isDishFavorite(item.id!);
   
   // Variable reactiva para mantener actualizado el contador de likes
   let favoritesCount = item.favorites || 0;
   
   const dispatch = createEventDispatcher();
   
+  const isDishFavorite = $derived($isDishFavoriteStore || false);
   // Computed para asegurar que los colores estén bien formateados
-  $: formattedPrimaryColor = primaryColor || '#2b2b2b';
-  $: formattedSecondaryColor = secondaryColor || '#FF4500';
-  $: formattedBackgroundColor = backgroundColor || '#FFFFFF';
+  const formattedPrimaryColor = $derived(() => primaryColor || '#2b2b2b');
+  const formattedSecondaryColor = $derived(() => secondaryColor || '#FF4500');
+  const formattedBackgroundColor = $derived(() => backgroundColor || '#FFFFFF');
   
   onMount(() => {
     // Inicializar opciones seleccionadas si existen
     if (item.options) {
-      selectedOptions = item.options.filter(opt => opt.selected).map(opt => ({...opt}));
+      selectedOptions = item.options.filter((opt:any) => opt.selected).map((opt:any) => ({...opt}));
     }
     
     // Hacer visible inmediatamente (las transiciones de Svelte manejarán la animación)
@@ -101,12 +105,16 @@
   }
   
   // Calcula el precio con descuento si existe
-  $: finalPrice = item.discount 
-    ? item.price * (1 - item.discount / 100) 
-    : item.price;
+  const finalPrice = $derived(() =>
+    item.discount
+      ? item.price * (1 - item.discount / 100)
+      : item.price
+  );
   
   // Calcula el precio total con opciones
-  $: totalPrice = finalPrice + selectedOptions.reduce((sum, opt) => sum + opt.price, 0);
+  const totalPrice = $derived(() =>
+    finalPrice() + selectedOptions.reduce((sum, opt) => sum + opt.price, 0)
+  );
   
   // Función para agregar al carrito
   function addToCart(event: Event) {
@@ -124,7 +132,7 @@
         ...item,
         quantity,
         selectedOptions,
-        totalPrice: totalPrice * quantity,
+        totalPrice: totalPrice() * quantity,
         type: 'dish',
         item: item
       };
@@ -191,8 +199,8 @@
   data-item-id={item.id}
   style="--bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
   in:fly={{y: 30, delay: index * 50, duration: 500, easing: cubicOut}}
-  on:click={showDishDetails}
-  on:keydown={(e) => e.key === 'Enter' && showDishDetails(e)}
+  onclick={showDishDetails}
+  onkeydown={(e) => e.key === 'Enter' && showDishDetails(e)}
   role="button"
   tabindex="0"
   aria-label="Ver detalles de {item.name}"
@@ -210,7 +218,7 @@
         src={item.image} 
         alt={item.name} 
         class="dish-image {imageLoaded ? 'loaded' : 'loading'}"
-        on:load={handleImageLoad}
+        onload={handleImageLoad}
         in:fade={{ duration: 400, delay: 100 }}
         out:fade={{ duration: 200 }}
       />
@@ -238,7 +246,7 @@
           <span class="favorites-text">{formatLikesCount(favoritesCount)}</span>
         </div>
       {/if}
-      <FavoriteButton id={item.id!} title={item.name} isSaved={item.userFav} />
+      <FavoriteButton id={item.id!} title={item.name} isSaved={isDishFavorite} />
     </div>
     
     {#if storeMode && !item.inStock}
@@ -254,7 +262,7 @@
       <div class="price-container">
         {#if item.discount && storeMode}
           <span class="original-price">${item.price.toFixed(2)}</span>
-          <span class="discounted-price">${finalPrice.toFixed(2)}</span>
+          <span class="discounted-price">${finalPrice().toFixed(2)}</span>
         {:else}
           <span class="regular-price">${item.price.toFixed(2)}</span>
         {/if}
@@ -304,7 +312,7 @@
                   <input 
                     type="checkbox" 
                     checked={isOptionSelected(option.id)} 
-                    on:change={() => toggleOption(option)}
+                    onchange={() => toggleOption(option)}
                     class="option-checkbox"
                   />
                   <span class="option-name">{option.name}</span>
@@ -319,7 +327,7 @@
           <div class="quantity-controls">
             <button 
               class="quantity-btn"
-              on:click={(e) => handleQuantityChange(e, 'decrement')}
+              onclick={(e) => handleQuantityChange(e, 'decrement')}
               disabled={!item.inStock}
             >
               <svg class="quantity-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,7 +339,7 @@
             
             <button 
               class="quantity-btn"
-              on:click={(e) => handleQuantityChange(e, 'increment')}
+              onclick={(e) => handleQuantityChange(e, 'increment')}
               disabled={!item.inStock}
             >
               <svg class="quantity-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +351,7 @@
           {#if item.options && item.options.length > 0}
             <button 
               class="toggle-options-btn"
-              on:click={toggleOptions}
+              onclick={toggleOptions}
             >
               {showOptions ? 'Ocultar opciones' : 'Ver opciones'} 
               <svg class="toggle-icon {showOptions ? 'rotated' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,7 +365,7 @@
           {#if item.inStock}
             <button 
               class="add-to-cart-btn {addingToCart ? 'loading' : ''}"
-              on:click={addToCart}
+              onclick={addToCart}
               disabled={addingToCart}
             >
               {#if addingToCart}
@@ -372,7 +380,7 @@
                   Agregando...
                 </span>
               {:else}
-                <span>Agregar $ {(totalPrice * quantity).toFixed(2)}</span>
+                <span>Agregar $ {(totalPrice() * quantity).toFixed(2)}</span>
               {/if}
             </button>
           {:else}

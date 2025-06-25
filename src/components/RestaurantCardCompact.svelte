@@ -25,8 +25,8 @@
     getDeviceId,
     hasRestaurantFavoriteLocally
   } from '../services/apiRatingService.js';
-  import { authStore } from '../stores/authStore.js'; // Ajusta la ruta según tu estructura
-  
+  // import { authStore } from '../stores/authStore.js'; // Ajusta la ruta según tu estructura
+  import { isAuthenticated } from '../stores/authStore.ts';
   import './RestaurantCardCompact.css';
 
   // Props
@@ -46,147 +46,232 @@
   let isHovered = $state(false);
   
   // ✅ ESTADO MEJORADO para favoritos
+  let isProcessingLike = $state(false);
+  // ✅ ESTADO REACTIVO MEJORADO para favoritos
   let isLiked = $state(false);
   let likesCount = $state(restaurant.analytics.favoritesCount || 0);
-  let isProcessingLike = $state(false);
   let favoriteInitialized = $state(false);
 
+  // ✅ REACTIVE EFFECT MEJORADO 1: Sincronización principal
+$effect(() => {
+  // Solo sincronizar si estamos autenticados y la store está lista
+  if ($isAuthenticated && !$favoritesLoading && restaurant.id && favoriteInitialized) {
+    const isFavoriteInStore = restaurantFavoritesStore.isRestaurantFavorited(restaurant.id);
+    
+    // Solo actualizar si hay una diferencia real y no estamos procesando
+    if (isFavoriteInStore !== isLiked && !isProcessingLike) {
+      console.log(`🔄 Syncing favorite status for ${restaurant.name}: ${isLiked} -> ${isFavoriteInStore}`);
+      isLiked = isFavoriteInStore;
+    }
+  }
+});
+
+// ✅ REACTIVE EFFECT MEJORADO 2: Inicialización automática
+$effect(() => {
+  // Inicializar automáticamente cuando las condiciones estén listas
+  if ($isAuthenticated && !$favoritesLoading && restaurant.id && !favoriteInitialized) {
+    console.log(`🚀 Auto-initializing favorite status for ${restaurant.name}`);
+    checkAuthenticatedFavoriteStatus();
+  }
+});
+
+// ✅ AÑADIR ESTE NUEVO EFFECT: Debug y forzar sincronización
+$effect(() => {
+  // Debug effect para monitorear cambios
+  if (restaurant.id) {
+    const storeStatus = restaurantFavoritesStore.isRestaurantFavorited(restaurant.id);
+    const favoritesCount = restaurantFavoritesStore.getFavoritesCount();
+    
+    console.log(`📊 [${restaurant.name}] State:`, {
+      isLiked,
+      storeStatus,
+      isAuthenticated: $isAuthenticated,
+      favoritesLoading: $favoritesLoading,
+      favoriteInitialized,
+      isProcessingLike,
+      totalFavorites: favoritesCount
+    });
+  }
+});
+
   // ✅ NUEVAS VARIABLES reactivas para auth
-  let isAuthenticated = $state(false);
-  let userToken = $state('');
+  // let isAuthenticated = $state(false);
+
   let deviceId = $state('');
 
   // ✅ INICIALIZACIÓN en onMount
   onMount(() => {
     // Obtener deviceId
-    deviceId = getDeviceId();
+    if(!isAuthenticated){
+      deviceId = getDeviceId();
+    }
 
-    // Suscribirse al store de autenticación
-    const unsubscribe = authStore.subscribe((auth) => {
-      isAuthenticated = auth.isAuthenticated;
-      userToken = auth.token || '';
-    });
+    
 
     // Verificar estado inicial del favorito (async, pero no como return)
-    checkInitialFavoriteStatus().catch((error) => {
+     checkInitialFavoriteStatus().catch((error) => {
       console.error('❌ Error initializing restaurant card:', error);
     });
 
     // Cleanup subscription
     return () => {
-      unsubscribe();
+     
     };
   });
 
-  // ✅ FUNCIÓN para verificar estado inicial del favorito
+  // ✅ FUNCIÓN para verificar estado de favoritos para usuarios autenticados
+  async function checkAuthenticatedFavoriteStatus() {
+    if (!restaurant.id || !$isAuthenticated || $favoritesLoading) return;
+
+    try {
+      // Primero verificar en el store local (más rápido)
+      const isFavoriteInStore = restaurantFavoritesStore.isRestaurantFavorited(restaurant.id);
+      
+      if (isFavoriteInStore !== isLiked) {
+        isLiked = isFavoriteInStore;
+        console.log(`✅ Updated favorite status from store for ${restaurant.name}: ${isLiked}`);
+      }
+      
+      favoriteInitialized = true;
+      
+    } catch (error) {
+      console.warn('⚠️ Error checking authenticated favorite status:', error);
+      favoriteInitialized = true;
+    }
+  }
+
+   // ✅ FUNCIÓN para verificar estado inicial del favorito
   async function checkInitialFavoriteStatus() {
     if (!restaurant.id) return;
 
     try {
-      if (isAuthenticated && userToken) {
-        // Usuario autenticado: verificar en servidor
-        const status = await checkRestaurantFavoriteStatus(restaurant.id, userToken);
-        isLiked = status.isFavorite;
+      if ($isAuthenticated) {
+        // Usuario autenticado: esperar a que la store esté lista
+        if (!$favoritesLoading) {
+          await checkAuthenticatedFavoriteStatus();
+        }
+        // Si está cargando, el $effect se encargará de actualizar cuando termine
       } else {
         // Usuario anónimo: verificar localmente primero, luego en servidor
         const localStatus = hasRestaurantFavoriteLocally(restaurant.id, deviceId);
         if (localStatus) {
           isLiked = true;
         } else {
-          // Verificar en servidor para anónimos
           try {
             const status = await checkAnonymousRestaurantFavoriteStatus(restaurant.id, deviceId);
             isLiked = status.isFavorite;
           } catch (error) {
-            // Si falla, mantener estado local
             isLiked = localStatus;
           }
         }
+        favoriteInitialized = true;
+        console.log(`✅ Favorite status initialized for anonymous user ${restaurant.name}: ${isLiked}`);
       }
-      
-      favoriteInitialized = true;
-      console.log(`✅ Favorite status initialized for ${restaurant.name}: ${isLiked}`);
       
     } catch (error) {
       console.warn('⚠️ Error checking initial favorite status:', error);
-      favoriteInitialized = true; // Marcar como inicializado aunque falle
+      favoriteInitialized = true;
     }
   }
 
-  // ✅ FUNCIÓN MEJORADA para toggle de favoritos
+ // ✅ FUNCIÓN MEJORADA para toggle de favoritos
   async function toggleLike(event: Event) {
-    event.stopPropagation();
-    event.preventDefault();
+  event.stopPropagation();
+  event.preventDefault();
 
-    if (isProcessingLike || !restaurant.id) return;
+  if (isProcessingLike || !restaurant.id) return;
 
-    isProcessingLike = true;
-    const previousState = isLiked;
-    const previousCount = likesCount;
+  isProcessingLike = true;
+  const previousState = isLiked;
+  const previousCount = likesCount;
 
-    try {
-      // Optimistic update
+  console.log(`🔄 Toggling like for ${restaurant.name}. Current state: ${isLiked}`);
+
+  try {
+    let result;
+    
+    if ($isAuthenticated) {
+      // ✅ USUARIO AUTENTICADO: Usar la store sin optimistic update
+      console.log('🔐 Authenticated user - using store');
+      
+      result = await restaurantFavoritesStore.toggleFavorite(restaurant.id);
+      
+      if (result.success) {
+        // ✅ ESPERAR un poco para que la store se actualice
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // ✅ FORZAR sincronización desde la store
+        const newStatus = restaurantFavoritesStore.isRestaurantFavorited(restaurant.id);
+        isLiked = newStatus;
+        
+        // Actualizar contador desde la respuesta
+        if (result.restaurant?.favoritesCount !== undefined) {
+          likesCount = result.restaurant.favoritesCount;
+        }
+        
+        console.log(`✅ Store toggle completed. New status: ${isLiked}, count: ${likesCount}`);
+        
+        dispatch('toast', { 
+          message: isLiked ? 'Agregado a favoritos' : 'Removido de favoritos', 
+          type: 'success' 
+        });
+      } else {
+        throw new Error(result.error || 'Error al actualizar favoritos');
+      }
+      
+    } else {
+      // ✅ USUARIO ANÓNIMO: Con optimistic update
+      console.log('👤 Anonymous user - using direct API');
+      
+      // Optimistic update para anónimos
       isLiked = !isLiked;
       likesCount = isLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
-
-      let result;
-
-      if (isAuthenticated && userToken) {
-        // Usuario autenticado
-        result = await toggleRestaurantFavorite(restaurant.id, userToken);
-      } else {
-        // Usuario anónimo
-        result = await toggleAnonymousRestaurantFavorite(
-          restaurant.id, 
-          deviceId, 
-          'toggle'
-        );
-      }
-
-    let result20 = await restaurantFavoritesStore.toggleFavorite(restaurant.id!)
-     console.log(result20)
-
-
-
-      // Actualizar estado basado en la respuesta
-      isLiked = result.action === 'added';
+      
+      result = await toggleAnonymousRestaurantFavorite(
+        restaurant.id, 
+        deviceId, 
+        'toggle'
+      );
+      
+      // Actualizar con la respuesta real
       likesCount = result.favoritesCount || likesCount;
-
-      // Toast de éxito
+      isLiked = result.action === 'added';
+      
+      console.log(`✅ Anonymous toggle completed. Status: ${isLiked}, count: ${likesCount}`);
+      
       dispatch('toast', { 
-        message: result.message || (isLiked ? 'Agregado a favoritos' : 'Removido de favoritos'), 
+        message: isLiked ? 'Agregado a favoritos' : 'Removido de favoritos', 
         type: 'success' 
       });
-
-      console.log(`✅ ${result.action} favorite for ${restaurant.name}`);
-
-    } catch (error) {
-      // Revertir optimistic update
-      isLiked = previousState;
-      likesCount = previousCount;
-
-      console.error('❌ Error toggling favorite:', error);
-
-      // Toast de error más específico
-      let errorMessage = 'Error al actualizar favoritos';
-      if (error instanceof Error) {
-        if (error.message.includes('autenticación')) {
-          errorMessage = 'Inicia sesión para guardar favoritos';
-        } else if (error.message.includes('límite')) {
-          errorMessage = 'Has alcanzado el límite de favoritos';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-
-      dispatch('toast', { 
-        message: errorMessage, 
-        type: 'error' 
-      });
-    } finally {
-      isProcessingLike = false;
     }
+
+  } catch (error) {
+    // ✅ REVERTIR en caso de error
+    console.error('❌ Error toggling favorite:', error);
+    
+    isLiked = previousState;
+    likesCount = previousCount;
+
+    let errorMessage = 'Error al actualizar favoritos';
+    if (error instanceof Error) {
+      if (error.message.includes('autenticación')) {
+        errorMessage = 'Inicia sesión para guardar favoritos';
+      } else if (error.message.includes('límite')) {
+        errorMessage = 'Has alcanzado el límite de favoritos';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    dispatch('toast', { 
+      message: errorMessage, 
+      type: 'error' 
+    });
+  } finally {
+    isProcessingLike = false;
+    console.log(`🏁 Toggle process finished for ${restaurant.name}`);
   }
+}
 
   // ✅ FUNCIÓN para mostrar contador de favoritos
   function formatFavoritesCount(count: number): string {
@@ -384,10 +469,10 @@
         </div>
        
         <div class="rating-section-compact">
-          <RatingSystem 
+          <!-- <RatingSystem 
             restaurantId={restaurant.id!}
             on:toast={handleToast}
-          />
+          /> -->
         </div>
       </div>
     </div>

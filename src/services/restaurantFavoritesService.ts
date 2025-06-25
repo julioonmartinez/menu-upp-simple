@@ -297,6 +297,7 @@ class RestaurantFavoritesService {
           error: errorData.detail || 'Error obteniendo restaurantes populares'
         };
       }
+     
 
       const data: Restaurant[] = await response.json();
       return {

@@ -1,3 +1,4 @@
+
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { fly, fade, slide } from 'svelte/transition';
@@ -5,15 +6,12 @@
   
   import Modal from '../components/Modal.svelte';
   import { 
-    isLoadingComments,
-    restaurantComments,
-    commentsError,
-    isCreatingComment,
-    loadRestaurantComments,
-    createRestaurantCommentAnonymously
-  } from '../stores/ratingStore';
+    useRestaurantRatings,
+    restaurantRatingStore
+  } from '../stores/restaurantRatingStore';
   import './CommentsModal.css'
   import type { RestaurantCommentCreate } from '../interfaces/restaurantRating';
+    import { useAuth, user } from '../stores/authStore';
 
   const dispatch = createEventDispatcher();
 
@@ -24,6 +22,27 @@
     commentsCount: number | undefined;
   }>();
 
+  // Hook personalizado para este restaurante específico
+  const {
+    // Estado de comentarios
+    restaurantComments,
+    isCommentsLoading,
+    isCreatingComment,
+    commentsError,
+    commentsPagination,
+    isAuthenticated,
+    
+    // Métodos de comentarios
+    loadComments,
+    loadMoreComments,
+    createComment,
+    
+    // Stores reactivos
+    getRestaurantComments,
+    isCommentsLoadingStore,
+    isCreatingCommentStore
+  } = useRestaurantRatings(restaurantId);
+
   // Estado local del formulario
   let commentForm = $state({
     comment: '',
@@ -32,31 +51,21 @@
     isFocused: false
   });
 
-  let selectedRestaurantForComments = $state<string | null>(null);
-
-  // Valores derivados
-  let loadingComments = $derived($isLoadingComments);
-  let comments = $derived($restaurantComments);
-  let commentsErrorMsg = $derived($commentsError);
-  let isCreatingCommentState = $derived($isCreatingComment(restaurantId));
+  // Valores derivados usando stores reactivos
+  let loadingComments = $derived($isCommentsLoadingStore);
+  let comments = $derived($getRestaurantComments);
+  let commentsErrorMsg = $derived(commentsError);
+  let isCreatingCommentState = $derived($isCreatingCommentStore);
 
   // Cargar comentarios al montar
   onMount(() => {
     loadCommentsForRestaurant();
   });
 
-  // Cargar comentarios al cambiar restaurantId
-  $effect(() => {
-    if (selectedRestaurantForComments !== restaurantId) {
-      loadCommentsForRestaurant();
-    }
-  });
-
   async function loadCommentsForRestaurant() {
-    selectedRestaurantForComments = restaurantId;
-    const success = await loadRestaurantComments(restaurantId);
+    const result = await loadComments(restaurantId, 20, 1, true);
     
-    if (!success) {
+    if (!result.success) {
       showToast('Error al cargar los comentarios', 'error');
     }
   }
@@ -80,19 +89,27 @@
       commentData.rating = parseFloat(commentForm.rating);
     }
 
-    const success = await createRestaurantCommentAnonymously(restaurantId, commentData);
+    const result = await createComment(restaurantId, commentData);
     
-    if (success) {
+    if (result.success) {
       commentForm.comment = '';
       commentForm.rating = '';
       commentForm.isExpanded = false;
       commentForm.isFocused = false;
       
-      showToast('¡Comentario enviado! Gracias por compartir tu experiencia.', 'success');
-      
-      await loadCommentsForRestaurant();
+      const commentType = isAuthenticated ? 'registrado' : 'anónimo';
+      showToast(`¡Comentario ${commentType} enviado! Gracias por compartir tu experiencia.`, 'success');
     } else {
-      showToast('Error al enviar el comentario. Inténtalo de nuevo.', 'error');
+      showToast(`Error al enviar el comentario: ${result.error}`, 'error');
+    }
+  }
+
+  async function handleLoadMoreComments() {
+    if (commentsPagination?.has_next) {
+      const result = await loadMoreComments(restaurantId);
+      if (!result.success) {
+        showToast('Error al cargar más comentarios', 'error');
+      }
     }
   }
 
@@ -147,6 +164,10 @@
     commentForm.isExpanded = false;
     commentForm.isFocused = false;
   }
+
+  function getAuthenticationStatus(): string {
+    return isAuthenticated ? 'como usuario registrado' : 'anónimamente';
+  }
 </script>
 
 <Modal
@@ -155,6 +176,20 @@
   size="medium"
   on:close
 >
+  <!-- Información de autenticación -->
+  <div class="auth-info">
+    <span class="auth-status">
+      {#if isAuthenticated}
+        ✅ Comentarás como usuario registrado
+      {:else}
+        👤 Comentarás de forma anónima
+      {/if}
+    </span>
+    {#if !isAuthenticated}
+      <a href="/login" class="login-link">Iniciar sesión</a>
+    {/if}
+  </div>
+
   <!-- Formulario para nuevo comentario -->
   <div class="comment-form-section">
     <div class="comment-form" class:expanded={commentForm.isExpanded} class:focused={commentForm.isFocused}>
@@ -164,16 +199,19 @@
         <button 
           class="comment-form-trigger"
           on:click={expandCommentForm}
+          disabled={isCreatingCommentState}
         >
           <div class="trigger-avatar">✍️</div>
-          <span class="trigger-text">Comparte tu experiencia...</span>
+          <span class="trigger-text">Comparte tu experiencia {getAuthenticationStatus()}...</span>
         </button>
       {:else}
         <!-- Formulario expandido -->
         <div class="form-content" in:slide={{ duration: 300 }}>
           <div class="form-header">
             <span class="form-icon">✍️</span>
-            <span class="form-title">Tu experiencia</span>
+            <span class="form-title">
+              Tu experiencia {isAuthenticated ? '(registrado)' : '(anónimo)'}
+            </span>
             <button 
               class="form-close-btn"
               on:click={cancelComment}
@@ -219,7 +257,7 @@
             </div>
             
             <button 
-              class="submit-comment-btn  btn btn-primary"
+              class="submit-comment-btn btn btn-primary"
               on:click={submitComment}
               disabled={isCreatingCommentState || !commentForm.comment.trim()}
               class:loading={isCreatingCommentState}
@@ -230,7 +268,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
                 </svg>
-                Enviar
+                Enviar {isAuthenticated ? '(Registrado)' : '(Anónimo)'}
               {/if}
             </button>
           </div>
@@ -241,12 +279,12 @@
 
   <!-- Lista de comentarios -->
   <div class="comments-list">
-    {#if loadingComments && selectedRestaurantForComments === restaurantId}
+    {#if loadingComments}
       <div class="loading-comments" in:fade={{ duration: 300 }}>
         <div class="loading-spinner-comments"></div>
         <p>Cargando comentarios...</p>
       </div>
-    {:else if commentsErrorMsg && selectedRestaurantForComments === restaurantId}
+    {:else if commentsErrorMsg}
       <div class="comments-error" in:fade={{ duration: 300 }}>
         <span class="error-icon">⚠️</span>
         <p>Error: {commentsErrorMsg}</p>
@@ -254,68 +292,108 @@
           Reintentar
         </button>
       </div>
-    {:else if comments && selectedRestaurantForComments === restaurantId}
-      {#if comments.comments.length > 0}
-        <div class="comments-header">
-          <h3 class="comments-title">
-            💬 {getCommentCountText(comments.pagination.total)}
-          </h3>
-        </div>
+    {:else if comments && comments.length > 0}
+      <div class="comments-header">
+        <h3 class="comments-title">
+          💬 {getCommentCountText(commentsPagination?.total || comments.length)}
+        </h3>
         
-        <div class="comments-grid">
-          {#each comments.comments as comment, index (comment.id)}
-            <div 
-              class="comment-item"
-              in:fly={{ y: 20, duration: 300, delay: index * 50, easing: quintOut }}
-            >
-              <div class="comment-header">
-                <div class="author-section">
-                  <div class="author-avatar">
-                    <i class="fa-solid fa-user"></i>
-                  </div>
-                  <div class="author-info">
-                    <span class="comment-author">
-                      {comment.anonymous ? 'Anónimo' : 'Usuario'}
-                    </span>
-                    <span class="comment-time">{formatTimeAgo(comment.timestamp)}</span>
-                  </div>
-                </div>
-                
-                {#if comment.rating}
-                  <div class="comment-rating">
-                    {#each renderStars(Number(comment.rating)) as star}
-                      <span class="comment-star" class:filled={star.filled}>
-                        {star.filled ? '⭐' : '☆'}
-                      </span>
-                    {/each}
-                  </div>
-                {/if}
-              </div>
-              
-              <div class="comment-content">
-                <p class="comment-text">{comment.comment}</p>
-                {#if comment.isEdited}
-                  <span class="comment-edited">editado</span>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-        
-        {#if comments.pagination.total_pages > 1}
-          <div class="comments-pagination" in:fade={{ duration: 400, delay: 200 }}>
-            <span class="pagination-info">
-              Página {comments.pagination.page} de {comments.pagination.total_pages}
+        {#if commentsPagination}
+          <div class="comments-stats">
+            <span class="stats-detail">
+              Registrados: {commentsPagination.total || 0} • 
+              Página {commentsPagination.page || 1} de {commentsPagination.total_pages || 1}
             </span>
           </div>
         {/if}
-      {:else}
-        <div class="no-comments" in:fade={{ duration: 400 }}>
-          <div class="no-comments-icon">💭</div>
-          <h4>Aún no hay comentarios</h4>
-          <p>¡Sé el primero en compartir tu experiencia!</p>
+      </div>
+      
+      <div class="comments-grid">
+        {#each comments as comment, index (comment.id)}
+          <div 
+            class="comment-item"
+            class:anonymous={comment.anonymous}
+            class:verified={!comment.anonymous}
+            in:fly={{ y: 20, duration: 300, delay: index * 50, easing: quintOut }}
+          >
+            <div class="comment-header">
+              <div class="author-section">
+                <div class="author-avatar" class:anonymous={comment.anonymous}>
+                  {#if comment.anonymous}
+                    👤
+                  {:else}
+                    ✅
+                  {/if}
+                </div>
+                <div class="author-info">
+                  <span class="comment-author">
+                    {comment.anonymous ? 'Usuario Anónimo' : ( useAuth().user?.name || useAuth().user?.email || 'Usuario Registrado' )}
+                  </span>
+                  <span class="comment-time">{formatTimeAgo(comment.timestamp)}</span>
+                </div>
+              </div>
+              
+              {#if comment.rating}
+                <div class="comment-rating">
+                  {#each renderStars(Number(comment.rating)) as star}
+                    <span class="comment-star" class:filled={star.filled}>
+                      {star.filled ? '⭐' : '☆'}
+                    </span>
+                  {/each}
+                  <span class="rating-value">({comment.rating})</span>
+                </div>
+              {/if}
+            </div>
+            
+            <div class="comment-content">
+              <p class="comment-text">{comment.comment}</p>
+              {#if comment.isEdited}
+                <span class="comment-edited">editado</span>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+      
+      <!-- Botón para cargar más comentarios -->
+      {#if commentsPagination?.has_next}
+        <div class="load-more-section" in:fade={{ duration: 400, delay: 200 }}>
+          <button 
+            class="load-more-btn"
+            on:click={handleLoadMoreComments}
+            disabled={loadingComments}
+          >
+            {#if loadingComments}
+              <div class="btn-spinner-small"></div>
+              Cargando...
+            {:else}
+              Cargar más comentarios ({commentsPagination.total - comments.length} restantes)
+            {/if}
+          </button>
         </div>
       {/if}
+
+      <!-- Información de paginación -->
+      {#if commentsPagination && commentsPagination.total_pages > 1}
+        <div class="comments-pagination" in:fade={{ duration: 400, delay: 200 }}>
+          <span class="pagination-info">
+            Mostrando {comments.length} de {commentsPagination.total} comentarios
+          </span>
+        </div>
+      {/if}
+    {:else}
+      <div class="no-comments" in:fade={{ duration: 400 }}>
+        <div class="no-comments-icon">💭</div>
+        <h4>Aún no hay comentarios</h4>
+        <p>
+          ¡Sé el primero en compartir tu experiencia! 
+          {#if isAuthenticated}
+            Tu comentario quedará registrado con tu cuenta.
+          {:else}
+            Puedes comentar de forma anónima o <a href="/login">iniciar sesión</a> para comentar como usuario registrado.
+          {/if}
+        </p>
+      </div>
     {/if}
   </div>
 </Modal>

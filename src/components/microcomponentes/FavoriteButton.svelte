@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { favoritesStore } from '../../stores/favoritesStore';
+    import { ratingStore } from '../../stores/ratingStore';
+    import dishRatingStore from '../../stores/dishRatingStore';
+  // import  {ratingStore}
 
   export let id: string | number;
   export let title: string;
@@ -26,7 +29,8 @@
       
       // IMPORTANTE: No modificamos isSaved manualmente aquí
       // Dejamos que la suscripción al store se encargue de eso
-      await favoritesStore.toggleFavorite(id);
+      // await favoritesStore.toggleFavorite(id);
+      await dishRatingStore.toggleFavorite(id as string)
     } catch (error) {
       console.error('Error al cambiar estado de favorito:', error);
     } finally {

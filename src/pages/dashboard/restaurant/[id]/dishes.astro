@@ -1,0 +1,11 @@
+---
+import RestaurantUpdate from  '../../../../components/RestaurantUpdate.svelte';
+import MenuuppLayout from '../../../../layouts/MenuuppLayout.astro';
+import RestaurantDashboard from '../../../../components/restaurant/RestaurantDashboard.svelte';
+const id = Astro.params.id
+console.log( 'idParams', id )
+
+---
+<MenuuppLayout title='' description='' >
+    <RestaurantDashboard client:load idRestaurant={id} />
+</MenuuppLayout>

@@ -3,7 +3,9 @@
   import { onMount } from 'svelte';
   import { fly, fade, scale } from 'svelte/transition';
   import { quintOut, elasticOut } from 'svelte/easing';
-  
+  import { isAuthenticated } from '../stores/authStore'
+  import { restaurantFavoritesStore } from '../stores/restaurantFavoritesStore'
+
   // Componentes
   import RestaurantCard from './RestaurantCard.svelte';
   import CardDishSvelte from './Cards/CardDishDyanmic.svelte';
@@ -139,6 +141,8 @@ function closeDishModal() {
       errors.topRestaurants = null;
       
       const topRestaurants = await fetchTopRatedRestaurants(6, 3);
+      const topRestaurants2 = await restaurantFavoritesStore.loadPopularRestaurants(10)
+      console.log('response service', topRestaurants2)
       data.topRestaurants = topRestaurants;
       
       console.log('✅ Top restaurants loaded:', topRestaurants.length);

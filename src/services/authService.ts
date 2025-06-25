@@ -313,10 +313,15 @@ class AuthService {
       throw new Error('No hay token de autenticación');
     }
 
+    // ✅ CORRECCIÓN CRÍTICA: Solo agregar Content-Type si NO es FormData
     const defaultHeaders: HeadersInit = {
-      'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     };
+
+    // ✅ IMPORTANTE: Solo agregar Content-Type para JSON, NO para FormData
+    if (!(options.body instanceof FormData)) {
+      defaultHeaders['Content-Type'] = 'application/json';
+    }
 
     const config: RequestInit = {
       ...options,

@@ -2,13 +2,14 @@
   // Header.svelte - Navegación principal
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { isAuthenticated } from '../stores/authStore';
-    import { authStore } from '../stores/authStore';
+  import { authStore } from '../stores/authStore';
+  import { onDestroy } from 'svelte';
   // Props
   export let showShadow = false;
   export let transparent = false;
+  let isAuth: boolean = false;
 
-  console.log('auth', authStore.getIsAuthenticated)
+  let unsubscribeAuth: () => void;
 
   // Estado del componente
   let isScrolled = false;
@@ -59,11 +60,16 @@
     window.addEventListener('favoritesCountUpdate', (e) => {
       const customEvent = e as CustomEvent<{ count: number }>;
       favoritesCount = customEvent.detail?.count || 0;
+      
+    });
+    unsubscribeAuth = authStore.isAuthenticated.subscribe((val) => {
+      isAuth = val;
     });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', checkMobile);
+      if (unsubscribeAuth) unsubscribeAuth();
     };
   });
 </script>
@@ -128,7 +134,7 @@
          
         </button> -->
         <!-- Favorites -->
-        {#if isAuthenticated}
+        {#if isAuth}
          <a class="btn btn-ghost btn-sm "  href="/dashboard">Mi cuenta</a>
         {:else}
          <a class="btn btn-ghost btn-sm" href="/login">Crea una cuenta</a>
