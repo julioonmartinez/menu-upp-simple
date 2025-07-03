@@ -449,7 +449,7 @@
     .tabs {
         display: flex;
         width: 100%;
-        max-width: 320px;
+        max-width: 400px;
         padding: var(--spacing-sm);
         background-color: var(--bg-accent);
         border-radius: var(--radius-3xl);
@@ -483,6 +483,11 @@
         background-color: var(--bg-tertiary);
         color: var(--text-primary);
     }
+    /* .tab-text{
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    } */
 
     /* Filtros de contenido */
     .content-filters {

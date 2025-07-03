@@ -139,7 +139,7 @@
         {:else}
          <a class="btn btn-ghost btn-sm" href="/login">Crea una cuenta</a>
         {/if}
-        <a
+        <!-- <a
           class="action-btn favorites-btn"
           title="Favoritos"
           aria-label="Ver favoritos"
@@ -151,7 +151,7 @@
           {#if favoritesCount > 0}
             <span class="badge" in:fade={{ duration: 200 }}>{favoritesCount}</span>
           {/if}
-        </a>
+        </a> -->
 
         <!-- Mobile Menu Toggle -->
         <!-- {#if isMobile}

@@ -10,6 +10,7 @@
   import { favoritesStore } from '../../stores/favoritesStore';
   import { openModal } from '../../stores/modalStore';
   import { trackDishInteraction, recordLinkClick } from '../../services/analyticsService';
+  import { get } from 'svelte/store';
   
   // Props con valores por defecto
   const {
@@ -279,7 +280,7 @@
           <span class="favorites-text">{formatLikesCount(favoritesCount)}</span>
         </div>
       {/if}
-      <FavoriteButton id={item.id!} title={item.name} isSaved={isDishFavorite} />
+      <FavoriteButton id={item.id!} title={item.name} isSaved={typeof item.userFav === 'boolean' ? item.userFav : $isDishFavoriteStore} />
     </div>
     
     {#if storeMode && !item.inStock}
@@ -590,7 +591,7 @@
 }
 
 .favorites-text {
-  color: var(--text-primary);
+  color: #2b2b2b;
 }
 
 /* Overlay de agotado */
