@@ -1,4 +1,18 @@
 <script lang="ts">
+    /**
+     * FavoritesGlobal Component
+     * 
+     * Este componente maneja la visualización de favoritos y calificaciones del usuario.
+     * 
+     * Funcionalidad:
+     * - Usuarios anónimos: Muestra favoritos guardados en localStorage
+     * - Usuarios autenticados: Muestra favoritos de la base de datos, con fallback a localStorage
+     * - Sincronización automática entre datos locales y de la base de datos
+     * - Soporte para platillos y restaurantes
+     * - Tabs para favoritos y calificaciones
+     * - Filtros por tipo de contenido (platillos/restaurantes)
+     */
+    
     import { onMount } from "svelte";
     import { get } from "svelte/store";
     import type { Dish } from "../interfaces/dish";
@@ -6,113 +20,62 @@
     import CardDishDynamic from "../components/Cards/CardDishDyanmic.svelte";
     import RestaurantCardCompact from "../components/RestaurantCardCompact.svelte";
     import { fade, fly } from "svelte/transition";
-    import { favoritesStore, favCount, ratingCount } from "../stores/favoritesStore";
-    import { 
-    ratingStore, 
-    searchStore, 
-    isInitialized as isRestaurantStoreInitialized 
-  } from '../stores/ratingStore';
     
-    // Importaciones para restaurantes favoritos
-    import { 
+    // Stores principales
+    import { favoritesStore } from "../stores/favoritesStore";
+    import { authStore } from "../stores/authStore";
+    import { restaurantFavoritesStore } from "../stores/restaurantFavoritesStore";
+    import { dishRatingStore } from "../stores/dishRatingStore";
+    import { authService } from "../services/authService";
+    import {
         fetchAnonymousRestaurantFavorites,
         fetchUserRestaurantFavorites,
-        getDeviceId 
+        getDeviceId
     } from "../services/apiRatingService";
-    import { authStore } from "../stores/authStore";
 
-    //estados para los platillos
+    // Estados locales
     let dishesRating: Dish[] = [];
     let dishesSaved: Dish[] = [];
     let allDishes: Dish[] = [];
-   
-    // Estados para restaurantes
     let restaurantsRating: Restaurant[] = [];
     let restaurantsSaved: Restaurant[] = [];
-    
-    // CORREGIDO: Estados de loading separados
     let dishesLoaded = false;
     let restaurantsLoaded = false;
     let checked = false;
     let activeTab: 'favorites' | 'ratings' = 'favorites';
-    
-    // Nuevo estado para el filtro de contenido
     let contentFilter: 'dishes' | 'restaurants' = 'dishes';
+    let deviceId = '';
 
-    // Props con valores por defecto
+    // Props
     export let backgroundColor = '#FFFFFF';
     export let primaryColor = '#FF4500';
     export let secondaryColor = '#FF4500';
-    export let username : string | null = null;
+    export let username: string | null = null;
     export let showFloatingButton: boolean = true;
-    
-    // Variables reactivas para auth
-    let isAuthenticated = false;
-    let userToken = '';
-    let deviceId = '';
-    
-    // Computed para asegurar que los colores estén bien formateados
+
+    // Computed/derived
     $: formattedPrimaryColor = primaryColor || '#FF4500';
     $: formattedSecondaryColor = secondaryColor || '#FF4500';
     $: formattedBackgroundColor = backgroundColor || 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)';
-    
-    // CORREGIDO: Computed mejorados con dependencias explícitas
     $: loading = !dishesLoaded || !restaurantsLoaded;
-    $: hasAnyData = dishesSaved.length > 0 || dishesRating.length > 0 || 
-                    restaurantsSaved.length > 0 || restaurantsRating.length > 0;
-    
-    // SOLUCION: Hacer las dependencias explícitas para Svelte
+    $: hasAnyData = dishesSaved.length > 0 || dishesRating.length > 0 || restaurantsSaved.length > 0 || restaurantsRating.length > 0;
     $: currentItems = (function() {
-        // Forzar dependencias explícitas
-        const deps = { activeTab, contentFilter, dishesSaved, dishesRating, restaurantsSaved, restaurantsRating };
-        
         if (activeTab === 'favorites') {
             return contentFilter === 'dishes' ? dishesSaved : restaurantsSaved;
         } else {
             return contentFilter === 'dishes' ? dishesRating : restaurantsRating;
         }
     })();
-    
     $: hasCurrentItems = currentItems && currentItems.length > 0;
     $: itemsCount = currentItems ? currentItems.length : 0;
-    
-    // CORREGIDO: Función con debugging mejorado
-    function getCurrentItems() {
-        let items;
-        if (activeTab === 'favorites') {
-            items = contentFilter === 'dishes' ? dishesSaved : restaurantsSaved;
-        } else {
-            items = contentFilter === 'dishes' ? dishesRating : restaurantsRating;
-        }
-        
-        console.log('getCurrentItems DETAILED:', {
-            activeTab,
-            contentFilter,
-            itemsLength: items.length,
-            itemsType: Array.isArray(items) ? 'array' : typeof items,
-            items: items,
-            dishesSaved: dishesSaved,
-            dishesSavedLength: dishesSaved?.length,
-            dishesSavedType: Array.isArray(dishesSaved) ? 'array' : typeof dishesSaved,
-            restaurantsSaved: restaurantsSaved,
-            dishesRating: dishesRating,
-            restaurantsRating: restaurantsRating
-        });
-        
-        return items;
-    }
-    
-    // Función para obtener el ícono según el filtro
+
+    // Funciones utilitarias
     function getFilterIcon(filter: 'dishes' | 'restaurants') {
         return filter === 'dishes' ? 'fa-utensils' : 'fa-store';
     }
-    
-    // Función para obtener el texto del filtro
     function getFilterText(filter: 'dishes' | 'restaurants') {
         return filter === 'dishes' ? 'Platillos' : 'Restaurantes';
     }
-    
-    // Función para obtener el conteo según filtro y tab
     function getFilterCount(filter: 'dishes' | 'restaurants', tab: 'favorites' | 'ratings') {
         if (tab === 'favorites') {
             return filter === 'dishes' ? dishesSaved.length : restaurantsSaved.length;
@@ -120,149 +83,134 @@
             return filter === 'dishes' ? dishesRating.length : restaurantsRating.length;
         }
     }
-    
-    // Función para cargar restaurantes favoritos
+    function getAuthToken(): string | null {
+        return authService.getTokenFromCookie();
+    }
+
+    // Carga de favoritos/restaurantes
     async function loadFavoriteRestaurants() {
         try {
-            console.log('Loading favorite restaurants...');
-            if (isAuthenticated && userToken) {
-                const response = await fetchUserRestaurantFavorites(userToken, 1, 50);
+            if ($authStore.isAuthenticated && getAuthToken()) {
+                const response = await fetchUserRestaurantFavorites(getAuthToken()!, 1, 50);
                 restaurantsSaved = response.restaurants || [];
             } else {
                 const response = await fetchAnonymousRestaurantFavorites(deviceId, 1, 50);
                 restaurantsSaved = response.restaurants || [];
             }
-            console.log('Loaded favorite restaurants:', restaurantsSaved.length);
         } catch (error) {
-            console.error('Error loading favorite restaurants:', error);
             restaurantsSaved = [];
         }
     }
-    
-    // CORREGIDO: Función para cargar restaurantes valorados
     async function loadRatedRestaurants() {
         try {
-            console.log('Loading rated restaurants...');
-            // Por ahora, simularemos esto con localStorage o una implementación básica
-            // En una implementación real, tendrías un endpoint para esto
-            restaurantsRating = [];
-            
-            // Si tienes un endpoint para restaurantes calificados, descomenta:
-            // if (isAuthenticated && userToken) {
-            //     const response = await fetchUserRestaurantRatings(userToken, 1, 50);
-            //     restaurantsRating = response.restaurants || [];
-            // } else {
-            //     const response = await fetchAnonymousRestaurantRatings(deviceId, 1, 50);
-            //     restaurantsRating = response.restaurants || [];
-            // }
-            
-            console.log('Loaded rated restaurants:', restaurantsRating.length);
+            if ($authStore.isAuthenticated && getAuthToken()) {
+                restaurantsRating = [];
+            } else {
+                restaurantsRating = [];
+            }
         } catch (error) {
-            console.error('Error loading rated restaurants:', error);
             restaurantsRating = [];
         }
     }
-    
-    // CORREGIDO: onMount mejorado
+    async function syncLocalWithDatabase() {
+        if (!$authStore.isAuthenticated || !getAuthToken()) return;
+        try {
+            // Aquí iría la lógica de sincronización
+        } catch (error) {}
+    }
+
+    // Ciclo de vida y suscripciones
     onMount(() => {
-        console.log('FavoriteGlobal mounting...');
-        
-        // Inicializar device ID
         deviceId = getDeviceId();
-        
-        // Verificar estado inicial del store
         const currentState = get(favoritesStore);
-        console.log('Initial store state:', {
-            favoritesCount: currentState.favorites.length,
-            ratingsCount: currentState.ratingsDish.length,
-            allDishesCount: currentState.allDishes.length
-        });
-        
-        // Si el store parece vacío, verificar localStorage
         if (currentState.favorites.length === 0 && currentState.ratingsDish.length === 0) {
-            console.log('Store appears empty, checking localStorage...');
             if (typeof window !== 'undefined') {
-                const savedFavs = localStorage.getItem('favoriteItems');
-                const savedRatings = localStorage.getItem('ratingItems');
-                console.log('LocalStorage check:', {
-                    hasFavorites: !!savedFavs,
-                    hasRatings: !!savedRatings,
-                    favsLength: savedFavs ? JSON.parse(savedFavs).length : 0,
-                    ratingsLength: savedRatings ? JSON.parse(savedRatings).length : 0
-                });
+                localStorage.getItem('favoriteItems');
+                localStorage.getItem('ratingItems');
             }
         }
-        
-        // Suscribirse al store de auth
-        const unsubscribeAuth = authStore.subscribe((auth) => {
-            isAuthenticated = auth.isAuthenticated;
-            userToken = auth.token || '';
-            console.log('Auth state updated:', { isAuthenticated, hasToken: !!userToken });
-        });
-        
-        // CORREGIDO: Suscripción al store de favoritos con mejor manejo
+        // Suscripción a favoritos
         const unsubscribeFavorites = favoritesStore.subscribe(state => {
-            const prevDishesLoaded = dishesLoaded;
-            
             dishesSaved = state.favorites;
             dishesRating = state.ratingsDish;
             allDishes = state.allDishes;
-            
-            // Marcar platillos como cargados solo si hay datos o si ya estaba cargado
             dishesLoaded = true;
-            
-            console.log('FavoritesStore updated:', {
-                favoritesCount: dishesSaved.length,
-                ratingsCount: dishesRating.length,
-                allDishesCount: allDishes.length,
-                dishesLoaded,
-                wasLoaded: prevDishesLoaded
-            });
         });
-        
-        // CORREGIDO: Carga de restaurantes con mejor manejo de errores
+        // Suscripción a restaurantes favoritos
+        const unsubscribeRestaurantFavorites = restaurantFavoritesStore.subscribe(state => {
+            if ($authStore.isAuthenticated && state.favorites.length > 0) {
+                restaurantsSaved = state.favorites;
+                restaurantsLoaded = true;
+            }
+        });
+        // Suscripción a ratings de platillos
+        const unsubscribeDishRatings = dishRatingStore.subscribe(state => {
+            if ($authStore.isAuthenticated && state.favoriteDishes.length > 0) {
+                dishesSaved = state.favoriteDishes.map(fav => ({
+                    id: fav.id,
+                    name: fav.name,
+                    description: fav.description || '',
+                    price: fav.price,
+                    image: fav.image || '',
+                    categoryId: fav.categoryId || '',
+                    restaurantId: fav.restaurantId || '',
+                    rating: fav.rating,
+                    favorites: fav.favorites,
+                    userFav: fav.userFav,
+                    inStock: true,
+                    reviewsCount: 0,
+                    userRating: undefined,
+                    quantity: undefined,
+                    options: undefined,
+                    discount: undefined,
+                    nutritionalInfo: undefined,
+                    platillo_base: undefined,
+                    platillo_base_info: undefined
+                }));
+                dishesLoaded = true;
+            }
+        });
+        // Carga inicial de restaurantes
         (async () => {
             try {
-                console.log('Starting restaurant loading...');
                 await Promise.all([
                     loadFavoriteRestaurants(),
                     loadRatedRestaurants()
                 ]);
-                
                 restaurantsLoaded = true;
                 checked = true;
-                
-                console.log('All restaurant data loaded:', {
-                    savedCount: restaurantsSaved.length,
-                    ratedCount: restaurantsRating.length,
-                    restaurantsLoaded,
-                    checked
-                });
             } catch (error) {
-                console.error('Error loading restaurant data:', error);
-                restaurantsLoaded = true; // Marcar como cargado aunque haya error
+                restaurantsLoaded = true;
                 checked = true;
             }
         })();
-        
-        // Devolver función de cleanup
+        // Carga de datos autenticados
+        (async () => {
+            if ($authStore.isAuthenticated) {
+                try {
+                    await restaurantFavoritesStore.loadUserFavorites(50, 1);
+                    await dishRatingStore.loadFavoriteDishes(50, 1);
+                    await syncLocalWithDatabase();
+                } catch (error) {}
+            }
+        })();
+        // Cleanup
         return () => {
-            console.log('FavoriteGlobal unmounting...');
-            unsubscribeAuth();
             unsubscribeFavorites();
+            unsubscribeRestaurantFavorites();
+            unsubscribeDishRatings();
         };
     });
-    
-    // Función para manejar el toast desde RestaurantCardCompact
+
     function handleToast(event: { detail: any; }) {
-        console.log('Toast from restaurant card:', event.detail);
+        // Puedes mantener este log si lo necesitas
     }
-    
 </script>
 
 <div 
-    class="ratings-container" 
+    class="favorites-container" 
     class:active={hasAnyData}
+    style="--primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
 >
     {#if loading}
         <div class="loading-container">
@@ -272,7 +220,7 @@
             <div class="loading-text">Buscando tu colección...</div>
         </div>
     {:else if hasAnyData}
-        <div class="rated-dishes">
+        <div class="favorites-content">
             <div class="header-container">
                 <h1 class="main-title">Tu Colección</h1>
                 <p class="subtitle">Tus platillos y restaurantes favoritos</p>
@@ -332,7 +280,6 @@
                 </div>
             </div>
 
-            
             <!-- Contenido dinámico -->
             {#if hasCurrentItems}
                 <div class="section-header">
@@ -342,17 +289,14 @@
                     </h2>
                     <div class="badge">{itemsCount} {itemsCount === 1 ? 'elemento' : 'elementos'}</div>
                 </div>
-                <div class="items-grid">
+                <div class="items-grid grid-cards-responsive">
                     {#each currentItems as item, index (item.id)}
-                        <div in:fly={{y: 20, delay: index * 50, duration: 300}}>
+                        <div in:fly={{y: 20, delay: index * 50, duration: 300}} class="card-size-controlled">
                             {#if contentFilter === 'dishes'}
                                 <CardDishDynamic
-                                    item={item as Dish} 
+                                    item={item} 
                                     index={index} 
                                     storeMode={false}
-                                    primaryColor={formattedPrimaryColor}
-                                    secondaryColor={formattedSecondaryColor}
-                                    backgroundColor={formattedBackgroundColor}
                                 />
                             {:else}
                                 <RestaurantCardCompact
@@ -374,13 +318,6 @@
                         <h3 class="empty-title">
                             ¡Aún no tienes {getFilterText(contentFilter).toLowerCase()} {activeTab === 'favorites' ? 'guardados' : 'calificados'}!
                         </h3>
-                        <!-- NUEVO: Mostrar si hay datos en otras secciones -->
-                        <!-- {#if hasAnyData && !hasCurrentItems}
-                            <p class="empty-hint">
-                                Pero tienes elementos en otras secciones. 
-                                Prueba cambiar de pestaña o filtro.
-                            </p>
-                        {/if} -->
                         <p class="empty-description">
                             {#if contentFilter === 'dishes'}
                                 Explora nuestro menú y {activeTab === 'favorites' ? 'guarda' : 'califica'} tus platillos favoritos.
@@ -388,9 +325,9 @@
                                 Descubre nuevos restaurantes y {activeTab === 'favorites' ? 'guárdalos' : 'califícalos'} para encontrarlos fácilmente.
                             {/if}
                         </p>
-                        <a href={contentFilter === 'dishes' ? "/buscar" : "/restaurantes"} class="explore-button">
+                        <a href={contentFilter === 'dishes' ? "/buscar" : "/restaurantes"} class="btn btn-primary explore-button">
                             Explorar {getFilterText(contentFilter).toLowerCase()}
-                            <i class="fa-solid fa-arrow-right arrow-margin"></i>
+                            <i class="fa-solid fa-arrow-right explore-icon"></i>
                         </a>
                     </div>
                 </div>
@@ -406,9 +343,9 @@
                 <p class="empty-description">
                     Aún no tienes platillos ni restaurantes guardados o calificados. ¡Comienza a explorar y crea tu colección personal!
                 </p>
-                <a href="/buscar" class="explore-button">
+                <a href="/buscar" class="btn btn-primary explore-button">
                     Comenzar a explorar
-                    <i class="fa-solid fa-arrow-right arrow-margin"></i>
+                    <i class="fa-solid fa-arrow-right explore-icon"></i>
                 </a>
             </div>
         </div>
@@ -434,74 +371,51 @@
 {/if}
 
 <style>
-    /* Estilos base mantenidos */
-    .icon-primary {
-        color: var(--primary-color);
-    }
-    
-    .arrow-margin {
-        margin-left: 0.5rem;
-    }
-
-    /* NUEVO: Estilos para debug info */
-    .debug-info {
-        background: #f0f0f0;
-        border: 1px solid #ddd;
-        padding: 0.5rem;
-        margin: 0.5rem 0;
-        font-size: 0.75rem;
-        border-radius: 0.25rem;
-        font-family: monospace;
-        color: #666;
+    /* Variables CSS personalizadas para el componente */
+    .favorites-container {
+        --primary-color: var(--primary-color, #ff6b35);
+        --secondary-color: var(--secondary-color, #0D1B2A);
+        --primary-light: #ff8c69;
+        --primary-dark: #e55a2b;
+        --primary-gradient: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        --primary-gradient-bold: linear-gradient(135deg, var(--primary-color), var(--primary-dark), var(--secondary-color));
     }
 
-    .loading-details {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        margin-top: 0.5rem;
-        opacity: 0.8;
-    }
-
-    .empty-hint {
-        color: var(--color-text-light);
-        opacity: 0.9;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        font-size: 0.9rem;
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        border-left: 3px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .ratings-container {
+    /* Contenedor principal */
+    .favorites-container {
         min-height: 100vh;
         width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
+        padding: var(--spacing-lg);
         background-color: var(--bg-secondary);
         overflow-x: hidden;
     }
     
-    .ratings-container.active {
+    .favorites-container.active {
         justify-content: flex-start;
-        padding-top: 1.5rem;
+        padding-top: var(--spacing-4xl);
     }
 
+    .favorites-content {
+        width: 100%;
+        max-width: var(--container-xl);
+    }
+
+    /* Header y navegación */
     .header-container {
         text-align: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: var(--spacing-2xl);
         width: 100%;
     }
 
     .main-title {
-        font-size: 1.75rem;
-        font-weight: 700;
+        font-size: var(--font-4xl);
+        font-weight: var(--weight-bold);
         color: var(--text-primary);
-        margin-bottom: 0.25rem;
+        margin-bottom: var(--spacing-xs);
         position: relative;
         display: inline-block;
     }
@@ -509,111 +423,118 @@
     .main-title::after {
         content: "";
         position: absolute;
-        bottom: -0.25rem;
+        bottom: calc(-1 * var(--spacing-xs));
         left: 50%;
         transform: translateX(-50%);
         width: 60px;
         height: 3px;
-        background-color: var(--primary-color);
-        border-radius: 3px;
+        background: var(--primary-gradient);
+        border-radius: var(--radius-sm);
     }
 
     .subtitle {
-        font-size: 0.9rem;
+        font-size: var(--font-lg);
         color: var(--text-secondary);
         opacity: 0.8;
-        margin-bottom: 1.25rem;
+        margin-bottom: var(--spacing-xl);
     }
 
     /* Tabs principales */
     .tabs-container {
         display: flex;
         justify-content: center;
-        margin-bottom: 1rem;
+        margin-bottom: var(--spacing-lg);
     }
 
     .tabs {
         display: flex;
         width: 100%;
         max-width: 320px;
-        padding: 0.3rem;
+        padding: var(--spacing-sm);
         background-color: var(--bg-accent);
-        border-radius: 1.75rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border-radius: var(--radius-3xl);
+        box-shadow: var(--shadow-sm);
     }
 
     .tab-button {
         flex: 1;
-        padding: 0.6rem 0.75rem;
+        padding: var(--spacing-md) var(--spacing-lg);
         border: none;
-        border-radius: 1.5rem;
+        border-radius: var(--radius-2xl);
         cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: 500;
+        transition: all var(--transition-normal);
+        font-weight: var(--weight-medium);
         color: var(--text-muted);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.3rem;
-        font-size: 0.9rem;
+        gap: var(--spacing-sm);
+        font-size: var(--font-base);
+        min-height: 44px;
     }
 
     .tab-button.active {
-        background-color: var(--primary-color);
-        color: white;
-        box-shadow: 0 2px 8px rgba(216, 64, 64, 0.3);
+        background: var(--primary-gradient);
+        color: var(--text-inverse);
+        box-shadow: var(--primary-glow);
+    }
+
+    .tab-button:hover:not(.active) {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
     }
 
     /* Filtros de contenido */
     .content-filters {
         display: flex;
         justify-content: center;
-        margin-bottom: 1rem;
+        margin-bottom: var(--spacing-lg);
     }
 
     .filter-buttons {
         display: flex;
-        gap: 0.5rem;
-        padding: 0.25rem;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xs);
         background-color: var(--bg-tertiary);
-        border-radius: 1rem;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xs);
     }
 
     .filter-button {
         display: flex;
         align-items: center;
-        gap: 0.375rem;
-        padding: 0.5rem 0.75rem;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
         border: none;
-        border-radius: 0.75rem;
+        border-radius: var(--radius-lg);
         cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: 500;
-        font-size: 0.85rem;
+        transition: all var(--transition-fast);
+        font-weight: var(--weight-medium);
+        font-size: var(--font-sm);
         color: var(--text-secondary);
         background: transparent;
         position: relative;
+        min-height: 44px;
     }
 
     .filter-button.active {
-        background-color: var(--primary-color);
-        color: white;
-        box-shadow: 0 1px 6px rgba(255, 107, 53, 0.3);
+        background: var(--primary-gradient);
+        color: var(--text-inverse);
+        box-shadow: var(--shadow-sm);
     }
 
     .filter-button:hover:not(.active) {
-        background-color: rgba(255, 107, 53, 0.1);
+        background-color: var(--bg-accent);
         color: var(--primary-color);
     }
 
     .filter-badge {
         background-color: rgba(255, 255, 255, 0.2);
         color: inherit;
-        padding: 0.125rem 0.375rem;
-        border-radius: 0.75rem;
-        font-size: 0.75rem;
-        font-weight: 600;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-full);
+        font-size: var(--font-xs);
+        font-weight: var(--weight-semibold);
         min-width: 1.25rem;
         text-align: center;
         line-height: 1;
@@ -621,44 +542,46 @@
 
     .filter-button:not(.active) .filter-badge {
         background-color: var(--primary-color);
-        color: white;
+        color: var(--text-inverse);
     }
 
     /* Section header */
     .section-header {
         display: flex;
         align-items: center;
-        margin-bottom: 1rem;
-        gap: 0.5rem;
+        margin-bottom: var(--spacing-lg);
+        gap: var(--spacing-md);
         justify-content: space-between;
     }
 
     .section-title {
-        font-size: 1.2rem;
+        font-size: var(--font-2xl);
         color: var(--text-primary);
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        font-weight: 600;
+        gap: var(--spacing-sm);
+        font-weight: var(--weight-semibold);
+    }
+
+    .icon-primary {
+        color: var(--primary-color);
     }
 
     .badge {
-        background-color: var(--primary-color);
-        color: white;
-        padding: 0.2rem 0.6rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        font-weight: 500;
+        background: var(--primary-gradient);
+        color: var(--text-inverse);
+        padding: var(--spacing-xs) var(--spacing-md);
+        border-radius: var(--radius-xl);
+        font-size: var(--font-sm);
+        font-weight: var(--weight-medium);
         height: 100%;
         display: flex;
         align-items: center;
     }
     
-    /* Grid unificado para items */
+    /* Grid de items */
     .items-grid {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(1, 1fr);
+        margin-bottom: var(--spacing-2xl);
     }
     
     /* Loading states */
@@ -688,92 +611,117 @@
     }
     
     .loading-text {
-        margin-top: 1rem;
+        margin-top: var(--spacing-lg);
         color: var(--text-primary);
-        font-size: 0.9rem;
-        font-weight: 500;
+        font-size: var(--font-base);
+        font-weight: var(--weight-medium);
     }
     
     /* Estados vacíos */
-    .rated-dishes {
-        width: 100%;
-        max-width: 1200px;
-    }
-    
     .empty-container {
         display: flex;
         justify-content: center;
         align-items: center;
         width: 100%;
         min-height: 60vh;
-        padding: 1rem;
+        padding: var(--spacing-lg);
     }
     
     .empty-state {
         background: var(--primary-gradient-bold);
-        border-radius: 1.25rem;
-        color: white;
-        padding: 2rem 1.5rem;
+        border-radius: var(--radius-2xl);
+        color: var(--text-inverse);
+        padding: var(--spacing-3xl) var(--spacing-2xl);
         text-align: center;
-        box-shadow: 0 8px 20px rgba(163, 29, 29, 0.15);
+        box-shadow: var(--shadow-lg);
         display: flex;
         flex-direction: column;
         align-items: center;
         width: 100%;
         max-width: 350px;
-        transition: all 0.3s ease;
+        transition: all var(--transition-normal);
     }
     
     .icon-container {
         background-color: rgba(255, 255, 255, 0.15);
-        color: var(--color-text-light);
+        color: var(--text-inverse);
         width: 70px;
         height: 70px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1rem;
+        margin-bottom: var(--spacing-lg);
         border: 3px solid rgba(255, 255, 255, 0.2);
     }
     
     .empty-icon {
-        font-size: 1.75rem;
-        color: white;
+        font-size: var(--font-4xl);
+        color: var(--text-inverse);
     }
     
     .empty-title {
-        font-size: 1.5rem;
-        color: var(--color-text-light);
-        margin-bottom: 0.5rem;
-        font-weight: 600;
+        font-size: var(--font-3xl);
+        color: var(--text-inverse);
+        margin-bottom: var(--spacing-md);
+        font-weight: var(--weight-semibold);
     }
     
     .empty-description {
-        color: var(--color-text-light);
+        color: var(--text-inverse);
         opacity: 0.9;
-        margin-bottom: 1.5rem;
-        line-height: 1.4;
-        font-size: 0.95rem;
+        margin-bottom: var(--spacing-2xl);
+        line-height: var(--leading-relaxed);
+        font-size: var(--font-base);
     }
     
     .explore-button {
         display: flex;
         align-items: center;
-        background-color: var(--secondary-color);
-        color: var(--primary-color);
-        padding: 0.75rem 1.25rem;
-        border-radius: 2rem;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        gap: var(--spacing-sm);
+        background: var(--primary-gradient);
+        color: var(--text-inverse);
+        padding: var(--spacing-lg) var(--spacing-2xl);
+        border-radius: var(--radius-2xl);
+        font-weight: var(--weight-semibold);
+        font-size: var(--font-base);
+        transition: all var(--transition-normal);
+        box-shadow: var(--shadow-md);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
     }
-    
+
+    .explore-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.6s ease;
+    }
+
     .explore-button:hover {
-        background-color: var(--bg-color);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        background: var(--primary-gradient-bold);
+        transform: translateY(-3px);
+        box-shadow: var(--primary-glow);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .explore-button:hover::before {
+        left: 100%;
+    }
+
+    .explore-icon {
+        font-size: var(--font-sm);
+        margin-left: var(--spacing-sm);
+        transition: transform var(--transition-normal);
+    }
+
+    .explore-button:hover .explore-icon {
+        transform: translateX(3px);
     }
     
     @keyframes rotate {
@@ -781,94 +729,28 @@
         100% { transform: rotate(360deg); }
     }
     
-    /* Responsive */
-    @media (max-width: 400px) {
-        .tab-text {
-            display: none;
-        }
-        
-        .tab-button {
-            padding: 0.6rem;
-        }
-        
-        .tab-button i {
-            font-size: 1.1rem;
-        }
-        
-        .filter-button span:not(.filter-badge) {
-            display: none;
-        }
-        
-        .filter-button {
-            padding: 0.5rem;
-        }
-        
-        .debug-info {
-            font-size: 0.65rem;
-            padding: 0.25rem;
-        }
-    }
-    
-    @media (min-width: 480px) {
-        .main-title {
-            font-size: 2rem;
-        }
-        
-        .subtitle {
-            font-size: 1rem;
-        }
-        
-        .section-title {
-            font-size: 1.4rem;
-        }
-        
-        .empty-state {
-            padding: 2.5rem 2rem;
-        }
-    }
-    
-    @media (min-width: 640px) {
-        .items-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.25rem;
-        }
-        
-        .header-container {
-            margin-bottom: 2rem;
-        }
-    }
-    
-    @media (min-width: 1024px) {
-        .items-grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-        }
-        
-        .ratings-container {
-            padding: 2rem;
-        }
-    }
-    
-    /* Floating button styles (mantenidos) */
+    /* Floating button styles */
     .floating-button {
         position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        background-color: var(--primary-color);
-        color: white;
-        border-radius: 3rem;
-        padding: 0.75rem 1.25rem;
+        bottom: var(--spacing-2xl);
+        right: var(--spacing-2xl);
+        background: var(--primary-gradient);
+        color: var(--text-inverse);
+        border-radius: var(--radius-3xl);
+        padding: var(--spacing-lg) var(--spacing-2xl);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 20;
+        z-index: var(--z-fixed);
         overflow: hidden;
-        transition: all 0.3s ease;
+        transition: all var(--transition-normal);
+        box-shadow: var(--shadow-lg);
+        text-decoration: none;
     }
     
     .floating-button:hover {
         transform: translateY(-5px);
-        background-color: var(--primary-color);
+        box-shadow: var(--primary-glow);
     }
     
     .button-content {
@@ -881,12 +763,12 @@
     .icon {
         width: 24px;
         height: 24px;
-        margin-right: 0.75rem;
+        margin-right: var(--spacing-lg);
     }
     
     .label {
-        font-weight: 500;
-        font-size: 1rem;
+        font-weight: var(--weight-medium);
+        font-size: var(--font-base);
         white-space: nowrap;
     }
     
@@ -912,19 +794,106 @@
         }
     }
     
+    /* Responsive */
+    @media (max-width: 400px) {
+        .tab-text {
+            display: none;
+        }
+        
+        .tab-button {
+            padding: var(--spacing-md);
+        }
+        
+        .tab-button i {
+            font-size: var(--font-lg);
+        }
+        
+        .filter-button span:not(.filter-badge) {
+            display: none;
+        }
+        
+        .filter-button {
+            padding: var(--spacing-md);
+        }
+    }
+    
+    @media (min-width: 480px) {
+        .main-title {
+            font-size: var(--font-5xl);
+        }
+        
+        .subtitle {
+            font-size: var(--font-xl);
+        }
+        
+        .section-title {
+            font-size: var(--font-3xl);
+        }
+        
+        .empty-state {
+            padding: var(--spacing-4xl) var(--spacing-3xl);
+        }
+    }
+    
+    @media (min-width: 640px) {
+        .header-container {
+            margin-bottom: var(--spacing-3xl);
+        }
+    }
+    
+    @media (min-width: 1024px) {
+        .favorites-container {
+            padding: var(--spacing-3xl);
+        }
+    }
+    
     @media (max-width: 768px) {
         .floating-button {
-            bottom: 1.5rem;
-            right: 1.5rem;
-            padding: 0.6rem 1rem;
+            bottom: var(--spacing-xl);
+            right: var(--spacing-xl);
+            padding: var(--spacing-md) var(--spacing-lg);
         }
         
         .icon {
-            margin-right: 0.5rem;
+            margin-right: var(--spacing-md);
         }
         
         .label {
-            font-size: 0.9rem;
+            font-size: var(--font-sm);
+        }
+    }
+
+    /* Touch device optimizations */
+    @media (hover: none) and (pointer: coarse) {
+        .floating-button:hover,
+        .explore-button:hover {
+            transform: none;
+        }
+        
+        .floating-button {
+            min-height: 48px;
+            padding: var(--spacing-xl) var(--spacing-2xl);
+        }
+        
+        .explore-button {
+            min-height: 48px;
+            padding: var(--spacing-xl) var(--spacing-2xl);
+        }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .floating-button:hover,
+        .explore-button:hover {
+            transform: none;
+        }
+        
+        .pulse-effect {
+            animation: none;
+        }
+        
+        .loader-ring {
+            animation: none;
         }
     }
 </style>

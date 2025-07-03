@@ -3,6 +3,7 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { restaurantStore, useRestaurants } from '../stores/restaurantStore.ts';
   import { restaurantService } from '../services/restaurantService.ts';
+  import { toastStore } from '../stores/toastStore.ts';
   
   const dispatch = createEventDispatcher();
   
@@ -155,8 +156,13 @@
         restaurant: result.restaurant
       });
       
-      // Mostrar mensaje de éxito
-      alert(`¡Restaurante "${result.restaurant.name}" creado exitosamente!`);
+      // Mostrar mensaje de éxito usando toast
+      toastStore.success(`¡Restaurante "${result.restaurant.name}" creado exitosamente!`);
+    } else {
+      // Mostrar error usando toast si hay error
+      if (error) {
+        toastStore.error(`Error al crear el restaurante: ${error}`);
+      }
     }
   }
   
@@ -174,19 +180,18 @@
 </script>
 
 <!-- Formulario de creación de restaurante -->
-<div class="create-restaurant-form">
-  <div class="form-header">
-    <h2>Crear Nuevo Restaurante</h2>
-    <p class="form-description">
+<div class="w-full max-w-full">
+  <div class="text-center mb-2xl">
+    <p class="text-muted text-base leading-normal m-0">
       Completa la información básica para crear tu restaurante. 
       Podrás agregar más detalles después.
     </p>
   </div>
 
-  <form on:submit|preventDefault={handleSubmit} class="restaurant-form">
+  <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-2xl">
     <!-- Campo Nombre -->
-    <div class="form-group">
-      <label for="name" class="form-label required">
+    <div class="flex flex-col gap-md">
+      <label for="name" class="font-semibold text-secondary text-base flex items-center gap-md required">
         Nombre del Restaurante
       </label>
       <input
@@ -194,22 +199,21 @@
         id="name"
         bind:value={formData.name}
         placeholder="Ej: Taquería El Rincón"
-        class="form-input"
-        class:error={errors.name}
+        class="input {errors.name ? 'error' : ''}"
         maxlength="100"
         required
       />
       {#if errors.name}
-        <span class="error-message">{errors.name}</span>
+        <span class="text-error text-sm font-medium">{errors.name}</span>
       {/if}
-      <span class="input-hint">
+      <span class="text-light text-xs italic">
         Será el nombre público de tu restaurante
       </span>
     </div>
 
     <!-- Campo Username -->
-    <div class="form-group">
-      <label for="username" class="form-label">
+    <div class="flex flex-col gap-md">
+      <label for="username" class="font-semibold text-secondary text-base flex items-center gap-md">
         Username (opcional)
         <button
           type="button"
@@ -225,54 +229,51 @@
         id="username"
         bind:value={formData.username}
         placeholder="ej: taqueria_rincon"
-        class="form-input"
-        class:error={errors.username}
-        class:success={usernameChecked && usernameAvailable}
+        class="input {errors.username ? 'error' : ''} {usernameChecked && usernameAvailable ? 'success' : ''}"
         maxlength="50"
       />
       {#if checkingUsername}
-        <span class="checking-message">Verificando disponibilidad...</span>
+        <span class="text-warning text-sm font-medium">Verificando disponibilidad...</span>
       {:else if errors.username}
-        <span class="error-message">{errors.username}</span>
+        <span class="text-error text-sm font-medium">{errors.username}</span>
       {:else if usernameChecked && usernameAvailable}
-        <span class="success-message">✓ Username disponible</span>
+        <span class="text-success text-sm font-medium">✓ Username disponible</span>
       {/if}
-      <span class="input-hint">
+      <span class="text-light text-xs italic">
         URL personalizada: tudominio.com/restaurant/{formData.username || 'username'}
       </span>
     </div>
 
     <!-- Campo Descripción -->
-    <div class="form-group">
-      <label for="description" class="form-label">
+    <div class="flex flex-col gap-md">
+      <label for="description" class="font-semibold text-secondary text-base">
         Descripción (opcional)
       </label>
       <textarea
         id="description"
         bind:value={formData.description}
         placeholder="Describe tu restaurante, tipo de cocina, especialidades..."
-        class="form-textarea"
-        class:error={errors.description}
+        class="form-textarea {errors.description ? 'error' : ''}"
         rows="4"
         maxlength="500"
       ></textarea>
       {#if errors.description}
-        <span class="error-message">{errors.description}</span>
+        <span class="text-error text-sm font-medium">{errors.description}</span>
       {/if}
-      <span class="input-hint">
+      <span class="text-light text-xs italic">
         {500 - formData.description.length} caracteres restantes
       </span>
     </div>
 
     <!-- Error general -->
     {#if error}
-      <div class="error-alert">
+      <div class="bg-error-bg border border-error-light rounded-lg p-lg text-error text-base">
         <strong>Error:</strong> {error}
       </div>
     {/if}
 
     <!-- Botones -->
-    <div class="form-actions">
+    <div class="flex gap-lg justify-end mt-lg">
       <button
         type="button"
         class="btn btn-secondary"
@@ -287,7 +288,7 @@
         disabled={!isFormValid || creating}
       >
         {#if creating}
-          <span class="spinner"></span>
+          <span class="animate-spin w-4 h-4 border-2 border-transparent border-t-current rounded-full"></span>
           Creando...
         {:else}
           Crear Restaurante
@@ -297,89 +298,43 @@
   </form>
 
   <!-- Información adicional -->
-  <div class="form-footer">
-    <div class="info-box">
-      <h4>¿Qué puedes hacer después?</h4>
-      <ul>
-        <li>Agregar fotos y logo</li>
-        <li>Configurar horarios y contacto</li>
-        <li>Personalizar colores y diseño</li>
-        <li>Crear tu menú digital</li>
-        <li>Generar código QR</li>
+  <div class="mt-2xl pt-2xl border-t border-accent">
+    <div class="bg-gray-light border border-accent rounded-lg p-2xl">
+      <h4 class="text-primary font-semibold mb-lg text-xl">¿Qué puedes hacer después?</h4>
+      <ul class="list-none p-0 m-0">
+        <li class="py-xs text-secondary relative pl-5 before:content-['✓'] before:absolute before:left-0 before:text-success before:font-bold">Agregar fotos y logo</li>
+        <li class="py-xs text-secondary relative pl-5 before:content-['✓'] before:absolute before:left-0 before:text-success before:font-bold">Configurar horarios y contacto</li>
+        <li class="py-xs text-secondary relative pl-5 before:content-['✓'] before:absolute before:left-0 before:text-success before:font-bold">Personalizar colores y diseño</li>
+        <li class="py-xs text-secondary relative pl-5 before:content-['✓'] before:absolute before:left-0 before:text-success before:font-bold">Crear tu menú digital</li>
+        <li class="py-xs text-secondary relative pl-5 before:content-['✓'] before:absolute before:left-0 before:text-success before:font-bold">Generar código QR</li>
       </ul>
     </div>
   </div>
 </div>
 
 <style>
-  .create-restaurant-form {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .form-header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-
-  .form-header h2 {
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-    font-size: 1.75rem;
-    font-weight: 600;
-  }
-
-  .form-description {
-    color: #6b7280;
-    font-size: 0.95rem;
-    line-height: 1.5;
-  }
-
-  .restaurant-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form-label {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .form-label.required::after {
+  /* Estilos específicos que no pueden ser manejados por las clases globales */
+  
+  .required::after {
     content: '*';
-    color: #ef4444;
+    color: var(--error);
     font-weight: bold;
   }
 
   .generate-btn {
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    color: #6b7280;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-xs);
+    color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
   }
 
   .generate-btn:hover:not(:disabled) {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--bg-accent);
+    color: var(--text-secondary);
   }
 
   .generate-btn:disabled {
@@ -387,184 +342,78 @@
     cursor: not-allowed;
   }
 
-  .form-input,
   .form-textarea {
-    padding: 0.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.2s;
-    background: white;
-  }
-
-  .form-input:focus,
-  .form-textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .form-input.error,
-  .form-textarea.error {
-    border-color: #ef4444;
-  }
-
-  .form-input.success {
-    border-color: #10b981;
-  }
-
-  .form-textarea {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 2px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-base);
+    transition: all var(--transition-normal);
+    background: var(--bg-primary);
+    color: var(--text-primary);
     resize: vertical;
     min-height: 100px;
     font-family: inherit;
   }
 
-  .input-hint {
-    font-size: 0.8rem;
-    color: #6b7280;
-    font-style: italic;
+  .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
   }
 
-  .error-message {
-    color: #ef4444;
-    font-size: 0.85rem;
-    font-weight: 500;
+  .form-textarea.error {
+    border-color: var(--error);
   }
 
-  .success-message {
-    color: #10b981;
-    font-size: 0.85rem;
-    font-weight: 500;
+  .input.error {
+    border-color: var(--error);
   }
 
-  .checking-message {
-    color: #f59e0b;
-    font-size: 0.85rem;
-    font-weight: 500;
+  .input.success {
+    border-color: var(--success);
   }
 
-  .error-alert {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    padding: 1rem;
-    color: #dc2626;
-    font-size: 0.9rem;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 1rem;
-  }
-
-  .btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 120px;
-    justify-content: center;
-  }
-
-  .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-secondary {
-    background: #f9fafb;
-    color: #374151;
-    border: 2px solid #e5e7eb;
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background: #f3f4f6;
-  }
-
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .form-footer {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid #e5e7eb;
-  }
-
-  .info-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1.5rem;
-  }
-
-  .info-box h4 {
-    color: #1e293b;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-  }
-
-  .info-box ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .info-box li {
-    padding: 0.25rem 0;
-    color: #475569;
-    position: relative;
-    padding-left: 1.25rem;
-  }
-
-  .info-box li::before {
-    content: '✓';
-    position: absolute;
-    left: 0;
-    color: #10b981;
-    font-weight: bold;
-  }
-
+  /* Responsive para móvil */
   @media (max-width: 640px) {
-    .create-restaurant-form {
-      padding: 1rem;
-      margin: 1rem;
-    }
-
-    .form-actions {
+    .flex.gap-lg.justify-end {
       flex-direction: column;
     }
 
     .btn {
       width: 100%;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .generate-btn {
+      background: var(--bg-accent);
+      border-color: var(--bg-tertiary);
+      color: var(--text-light);
+    }
+
+    .generate-btn:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .form-textarea {
+      background: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+      color: var(--text-primary);
+    }
+
+    .form-textarea:focus {
+      background: var(--bg-primary);
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .generate-btn,
+    .form-textarea {
+      transition: none;
     }
   }
 </style>

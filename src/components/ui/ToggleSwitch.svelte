@@ -9,7 +9,7 @@
   export let help = '';
   export let error = '';
   export let size = 'md'; // 'sm', 'md', 'lg'
-  export let color = 'blue'; // 'blue', 'green', 'red', 'purple'
+  export let color = 'blue'; // 'blue', 'green', 'red', 'purple', 'primary'
   export let labelPosition = 'right'; // 'left', 'right'
   
   const dispatch = createEventDispatcher();
@@ -75,34 +75,16 @@
 </div>
 
 <style>
-  /* Variables */
-  :root {
-    --color-gray-200: #e5e7eb;
-    --color-gray-300: #d1d5db;
-    --color-gray-400: #9ca3af;
-    --color-gray-500: #6b7280;
-    --color-gray-700: #374151;
-    --color-blue-500: #3b82f6;
-    --color-blue-600: #2563eb;
-    --color-green-500: #10b981;
-    --color-green-600: #059669;
-    --color-red-500: #ef4444;
-    --color-red-600: #dc2626;
-    --color-purple-500: #8b5cf6;
-    --color-purple-600: #7c3aed;
-    --color-white: #ffffff;
-  }
-
   .toggle-switch {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .switch-container {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--spacing-md);
   }
 
   .switch-container.reverse {
@@ -111,11 +93,17 @@
   }
 
   .switch-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-gray-700);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
     cursor: pointer;
     user-select: none;
+    line-height: var(--leading-normal);
+    transition: color var(--transition-fast);
+  }
+
+  .switch-label:hover {
+    color: var(--text-primary);
   }
 
   /* Switch Button */
@@ -125,27 +113,34 @@
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: all 0.2s ease-in-out;
-    border-radius: 9999px;
-    focus-visible: outline-none;
+    transition: all var(--transition-normal);
+    border-radius: var(--radius-full);
+    min-height: 44px; /* Touch target mínimo */
+    min-width: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .switch:focus-visible {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
   }
 
   .switch.disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    pointer-events: none;
   }
 
   /* Switch Track */
   .switch-track {
     position: relative;
     display: block;
-    border-radius: 9999px;
-    transition: all 0.2s ease-in-out;
-    background-color: var(--color-gray-200);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-normal);
+    background-color: var(--bg-accent);
+    border: 1px solid var(--bg-accent);
   }
 
   /* Switch Thumb */
@@ -153,10 +148,11 @@
     position: absolute;
     top: 2px;
     left: 2px;
-    background-color: var(--color-white);
+    background-color: var(--bg-primary);
     border-radius: 50%;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
+    transition: all var(--transition-bounce);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--bg-accent);
   }
 
   /* Size Variants */
@@ -192,7 +188,8 @@
 
   /* Checked State */
   .switch.checked .switch-track {
-    background-color: var(--switch-color, var(--color-blue-500));
+    background-color: var(--switch-color, var(--primary-color));
+    border-color: var(--switch-color, var(--primary-color));
   }
 
   .switch-sm.checked .switch-thumb {
@@ -208,54 +205,174 @@
   }
 
   /* Color Variants */
+  .switch-primary {
+    --switch-color: var(--primary-color);
+  }
+
+  .switch-primary:hover:not(.disabled) .switch-track {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+  }
+
   .switch-blue {
-    --switch-color: var(--color-blue-500);
+    --switch-color: var(--info);
   }
 
   .switch-blue:hover:not(.disabled) .switch-track {
-    background-color: var(--color-blue-600);
+    background-color: #2563eb;
+    border-color: #2563eb;
   }
 
   .switch-green {
-    --switch-color: var(--color-green-500);
+    --switch-color: var(--success);
   }
 
   .switch-green:hover:not(.disabled) .switch-track {
-    background-color: var(--color-green-600);
+    background-color: var(--success-light);
+    border-color: var(--success-light);
   }
 
   .switch-red {
-    --switch-color: var(--color-red-500);
+    --switch-color: var(--error);
   }
 
   .switch-red:hover:not(.disabled) .switch-track {
-    background-color: var(--color-red-600);
+    background-color: var(--error-light);
+    border-color: var(--error-light);
   }
 
   .switch-purple {
-    --switch-color: var(--color-purple-500);
+    --switch-color: #8b5cf6;
   }
 
   .switch-purple:hover:not(.disabled) .switch-track {
-    background-color: var(--color-purple-600);
+    background-color: #7c3aed;
+    border-color: #7c3aed;
   }
 
   /* Hover Effects */
   .switch:hover:not(.disabled) .switch-thumb {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+    box-shadow: var(--shadow-md);
+    transform: scale(1.05);
+  }
+
+  .switch.checked:hover:not(.disabled) .switch-thumb {
+    transform: translateX(calc(100% - 1.25rem)) scale(1.05);
+  }
+
+  .switch-md.checked:hover:not(.disabled) .switch-thumb {
+    transform: translateX(calc(100% - 1.5rem)) scale(1.05);
+  }
+
+  .switch-lg.checked:hover:not(.disabled) .switch-thumb {
+    transform: translateX(calc(100% - 1.75rem)) scale(1.05);
+  }
+
+  /* Active State */
+  .switch:active:not(.disabled) .switch-thumb {
+    transform: scale(0.95);
+  }
+
+  .switch.checked:active:not(.disabled) .switch-thumb {
+    transform: translateX(calc(100% - 1.25rem)) scale(0.95);
+  }
+
+  .switch-md.checked:active:not(.disabled) .switch-thumb {
+    transform: translateX(calc(100% - 1.5rem)) scale(0.95);
+  }
+
+  .switch-lg.checked:active:not(.disabled) .switch-thumb {
+    transform: translateX(calc(100% - 1.75rem)) scale(0.95);
   }
 
   /* Messages */
   .message {
-    font-size: 0.75rem;
+    font-size: var(--font-xs);
     margin: 0;
+    line-height: var(--leading-tight);
   }
 
   .error-message {
-    color: var(--color-red-600);
+    color: var(--error);
   }
 
   .help-message {
-    color: var(--color-gray-500);
+    color: var(--text-muted);
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    .switch-container {
+      gap: var(--spacing-sm);
+    }
+    
+    .switch-label {
+      font-size: var(--font-xs);
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .switch {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    
+    .switch:hover:not(.disabled) .switch-thumb {
+      transform: none;
+    }
+    
+    .switch.checked:hover:not(.disabled) .switch-thumb {
+      transform: translateX(calc(100% - 1.25rem));
+    }
+    
+    .switch-md.checked:hover:not(.disabled) .switch-thumb {
+      transform: translateX(calc(100% - 1.5rem));
+    }
+    
+    .switch-lg.checked:hover:not(.disabled) .switch-thumb {
+      transform: translateX(calc(100% - 1.75rem));
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .switch,
+    .switch-track,
+    .switch-thumb {
+      transition: none;
+    }
+    
+    .switch:hover:not(.disabled) .switch-thumb {
+      transform: none;
+    }
+    
+    .switch.checked:hover:not(.disabled) .switch-thumb {
+      transform: translateX(calc(100% - 1.25rem));
+    }
+    
+    .switch-md.checked:hover:not(.disabled) .switch-thumb {
+      transform: translateX(calc(100% - 1.5rem));
+    }
+    
+    .switch-lg.checked:hover:not(.disabled) .switch-thumb {
+      transform: translateX(calc(100% - 1.75rem));
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .switch-track {
+      border-width: 2px;
+    }
+    
+    .switch-thumb {
+      border-width: 2px;
+      border-color: var(--text-primary);
+    }
+    
+    .switch:focus-visible {
+      outline-width: 3px;
+    }
   }
 </style>

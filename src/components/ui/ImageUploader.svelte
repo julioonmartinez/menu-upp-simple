@@ -1,15 +1,15 @@
 <!-- src/components/ui/ImageUploader.svelte -->
-<script>
+<script lang="ts">
   import { createEventDispatcher } from 'svelte';
   
   export let label = '';
   export let id = '';
-  export let currentImage = null; // URL de la imagen actual
+  export let currentImage: string | null | undefined = null; // URL de la imagen actual
   export let accept = 'image/*';
   export let maxSize = 5; // MB
-  export let width = null; // Ancho recomendado
-  export let height = null; // Alto recomendado
-  export let aspectRatio = null; // Ej: '16:9', '1:1', '4:3'
+  export let width: number | string | null | undefined = null; // Ancho recomendado
+  export let height: number | string | null | undefined = null; // Alto recomendado
+  export let aspectRatio: string | null | undefined = null; // Ej: '16:9', '1:1', '4:3'
   export let required = false;
   export let disabled = false;
   export let help = '';
@@ -18,10 +18,10 @@
   
   const dispatch = createEventDispatcher();
   
-  let fileInput;
+  let fileInput: HTMLInputElement;
   let dragActive = false;
-  let previewUrl = currentImage;
-  let selectedFile = null;
+  let previewUrl: string | null | undefined = currentImage;
+  let selectedFile: File | null = null;
   
   // Reactive: actualizar preview cuando cambie currentImage
   $: previewUrl = currentImage;
@@ -29,33 +29,34 @@
   // Formatos permitidos
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
   
-  function handleFileSelect(event) {
-    const file = event.target.files[0];
-    processFile(file);
+  function handleFileSelect(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) processFile(file);
   }
   
-  function handleDrop(event) {
+  function handleDrop(event: DragEvent) {
     event.preventDefault();
     dragActive = false;
     
-    const file = event.dataTransfer.files[0];
-    processFile(file);
+    const file = event.dataTransfer?.files[0];
+    if (file) processFile(file);
   }
   
-  function handleDragOver(event) {
+  function handleDragOver(event: DragEvent) {
     event.preventDefault();
     dragActive = true;
   }
   
-  function handleDragLeave(event) {
+  function handleDragLeave(event: DragEvent) {
     event.preventDefault();
     // Solo cambiar si realmente salimos del área
-    if (!event.currentTarget.contains(event.relatedTarget)) {
+    if (!event.currentTarget?.contains(event.relatedTarget as Node)) {
       dragActive = false;
     }
   }
   
-  function processFile(file) {
+  function processFile(file: File) {
     if (!file) return;
     
     // Validar tipo
@@ -81,20 +82,21 @@
     // Crear preview
     const reader = new FileReader();
     reader.onload = (e) => {
-      previewUrl = e.target.result;
+      const result = e.target?.result as string;
+      previewUrl = result;
       selectedFile = file;
       
       // Validar dimensiones si es necesario
       if (width || height) {
-        validateDimensions(e.target.result, file);
+        validateDimensions(result, file);
       } else {
-        dispatch('fileSelected', { file, preview: e.target.result });
+        dispatch('fileSelected', { file, preview: result });
       }
     };
     reader.readAsDataURL(file);
   }
   
-  function validateDimensions(dataUrl, file) {
+  function validateDimensions(dataUrl: string, file: File) {
     const img = new Image();
     img.onload = () => {
       const validation = {
@@ -107,10 +109,13 @@
       
       // Validar dimensiones exactas
       if (width && height) {
-        if (img.width !== width || img.height !== height) {
+        const targetWidth = typeof width === 'string' ? parseInt(width) : width;
+        const targetHeight = typeof height === 'string' ? parseInt(height) : height;
+        
+        if (img.width !== targetWidth || img.height !== targetHeight) {
           dispatch('dimensionWarning', {
             ...validation,
-            message: `Dimensiones recomendadas: ${width}x${height}px. Actual: ${img.width}x${img.height}px`
+            message: `Dimensiones recomendadas: ${targetWidth}x${targetHeight}px. Actual: ${img.width}x${img.height}px`
           });
         }
       }

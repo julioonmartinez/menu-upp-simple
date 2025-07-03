@@ -7,6 +7,7 @@
   import Modal from '../ui/Modal.svelte';
   import type { Dish, DishPaginationParams } from '../../interfaces/dish.ts';
   import type { Category } from '../../interfaces/category.ts';
+  import { toastStore } from '../../stores/toastStore.ts';
 
   import {
     useDishes,
@@ -120,7 +121,7 @@
 
   function openCreateForm() {
     if (!hasCategories) {
-      alert('Necesitas crear al menos una categoría antes de agregar platillos.');
+      toastStore.error('Necesitas crear al menos una categoría antes de agregar platillos');
       return;
     }
     
@@ -159,9 +160,11 @@
           type: 'dish_created',
           dish: result.dish
         });
+        toastStore.success(`¡Platillo "${result.dish?.name}" creado exitosamente! 🎉`);
       }
     } catch (error) {
       console.error('Error creando platillo:', error);
+      toastStore.error('Error al crear el platillo. Inténtalo de nuevo.');
     } finally {
       isFormSubmitting = false;
     }
@@ -183,9 +186,11 @@
           type: 'dish_updated',
           dish: result.dish
         });
+        toastStore.success(`¡Platillo "${result.dish?.name}" actualizado exitosamente! ✨`);
       }
     } catch (error) {
       console.error('Error actualizando platillo:', error);
+      toastStore.error('Error al actualizar el platillo. Inténtalo de nuevo.');
     } finally {
       isFormSubmitting = false;
     }
@@ -208,9 +213,11 @@
           type: 'dish_deleted',
           dishId
         });
+        toastStore.success(`¡Platillo "${dishName}" eliminado exitosamente! 🗑️`);
       }
     } catch (error) {
       console.error('Error eliminando platillo:', error);
+      toastStore.error('Error al eliminar el platillo. Inténtalo de nuevo.');
     }
   }
 

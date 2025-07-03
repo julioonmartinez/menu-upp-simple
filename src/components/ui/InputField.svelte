@@ -1,5 +1,7 @@
 <!-- src/components/ui/InputField.svelte -->
-<script>
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+  
   export let label = '';
   export let id = '';
   export let type = 'text';
@@ -11,7 +13,10 @@
   export let error = '';
   export let success = '';
   export let loading = false;
-  export let step = undefined;
+  export let step: any = undefined;
+  export let maxlength: number | undefined = undefined;
+  
+  const dispatch = createEventDispatcher();
   
   $: inputClasses = `
     input
@@ -20,8 +25,25 @@
   `;
 
   // Manejar el evento input para actualizar el valor
-  function handleInput(event) {
-    value = event.target.value;
+  function handleInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    value = target.value;
+    dispatch('change', { value: target.value });
+  }
+  
+  function handleChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    dispatch('change', { value: target.value });
+  }
+  
+  function handleBlur(event: Event) {
+    const target = event.target as HTMLInputElement;
+    dispatch('blur', { value: target.value });
+  }
+  
+  function handleFocus(event: Event) {
+    const target = event.target as HTMLInputElement;
+    dispatch('focus', { value: target.value });
   }
 </script>
 
@@ -44,11 +66,12 @@
       {required}
       {disabled}
       {step}
+      {maxlength}
       class={inputClasses}
       on:input={handleInput}
-      on:change
-      on:blur
-      on:focus
+      on:change={handleChange}
+      on:blur={handleBlur}
+      on:focus={handleFocus}
     />
     
     {#if loading}

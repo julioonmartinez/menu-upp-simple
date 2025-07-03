@@ -8,9 +8,12 @@
   import SocialLinksForm from './dashboard/edit-sections/SocialLinksForm.svelte';
   import FeaturesForm from './dashboard/edit-sections/FeaturesForm.svelte';
   import TechnicalConfigForm from './dashboard/edit-sections/TechnicalConfigForm.svelte';
+  import HeroSlidesForm from './dashboard/edit-sections/HeroSlidesForm.svelte';
   import LoadingSpinner from './ui/LoadingSpinner.svelte';
   import ErrorMessage from './ui/ErrorMessage.svelte';
   import Modal from './ui/Modal.svelte';
+  import { toastStore } from '../stores/toastStore.ts';
+    import { deleteRestaurantRating } from '../services/apiRatingService.ts';
 
   export let restaurantId;
 
@@ -31,21 +34,21 @@
     {
       id: 'basic',
       name: 'Información Básica',
-      icon: '📋',
+      icon: 'fas fa-info-circle',
       description: 'Nombre, username, contacto y ubicación',
       component: BasicInfoForm
     },
     {
       id: 'schedule',
       name: 'Horarios',
-      icon: '🕒',
+      icon: 'fas fa-clock',
       description: 'Horarios de atención y días laborales',
       component: ScheduleForm
     },
     {
       id: 'visual',
       name: 'Identidad Visual',
-      icon: '🎨',
+      icon: 'fas fa-palette',
       description: 'Logo, colores, fuentes e imágenes',
       component: VisualIdentityForm,
      
@@ -53,7 +56,7 @@
     {
       id: 'social',
       name: 'Redes Sociales',
-      icon: '📱',
+      icon: 'fas fa-share-alt',
       description: 'Enlaces a redes sociales',
       component: SocialLinksForm,
       
@@ -61,15 +64,23 @@
     {
       id: 'features',
       name: 'Características',
-      icon: '⭐',
+      icon: 'fas fa-star',
       description: 'Tipo de cocina, métodos de pago, rango de precios',
       component: FeaturesForm,
       
     },
     {
+      id: 'hero-slides',
+      name: 'Hero Slides',
+      icon: 'fas fa-images',
+      description: 'Carrusel de imágenes destacadas para el menú',
+      component: HeroSlidesForm,
+      
+    },
+    {
       id: 'technical',
       name: 'Configuraciones',
-      icon: '⚙️',
+      icon: 'fas fa-cog',
       description: 'QR, dominio personalizado, configuraciones técnicas',
       component: TechnicalConfigForm,
       
@@ -116,10 +127,129 @@
     // Recargar el restaurante después de una actualización
     loadRestaurant();
   }
+  async function Restaurant() {
+   try {
+    const result = await restaurantStore.deleteRestaurant(restaurantId);
+    if (result.success) {
+      toastStore.addToast({
+        message: 'Restaurante eliminado correctamente',
+        type: 'success'
+      });
+      window.location.href = '/dashboard';
+    } else {
+      toastStore.addToast({
+        message: 'Error al eliminar el restaurante',
+        type: 'error'
+      });
+    }
+   } catch (error) {
+    console.error(error);
+    toastStore.addToast({
+        message: 'Error al eliminar el restaurante',
+        type: 'error'
+      });
+  }
+}
 
   // Obtener la sección activa
   $: activeSection = sections.find(s => s.id === activeModal);
 </script>
+
+<style>
+  /* Icon styling for Font Awesome icons */
+  .card i {
+    color: var(--primary-color);
+    transition: all var(--transition-normal);
+  }
+
+  .card:hover i {
+    transform: scale(1.1);
+    color: var(--primary-dark);
+  }
+
+  /* Special styling for the dishes card icon */
+  .card-highlight i {
+    color: #d97706; /* amber-600 */
+  }
+
+  .card-highlight:hover i {
+    color: #b45309; /* amber-700 */
+  }
+
+  /* Special styling for the links card icon */
+  .card a[href*="/links"] i {
+    color: #2563eb; /* blue-600 */
+  }
+
+  .card a[href*="/links"]:hover i {
+    color: #1d4ed8; /* blue-700 */
+  }
+
+  /* Section card icons */
+  .section-card i {
+    opacity: 0.8;
+  }
+
+  .section-card:hover i {
+    opacity: 1;
+  }
+
+  /* Disabled section styling */
+  .section-card.opacity-50 i {
+    opacity: 0.4;
+  }
+
+  /* Responsive icon sizing */
+  @media (max-width: 768px) {
+    .card i {
+      font-size: 2rem !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .card i {
+      font-size: 1.75rem !important;
+    }
+  }
+
+  /* Animation for icon hover effects */
+  @keyframes iconPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  .card:hover i {
+    animation: iconPulse 0.3s ease-in-out;
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .card:hover i {
+      transform: none;
+      animation: none;
+    }
+    
+    .card:active i {
+      transform: scale(0.95);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .card i {
+      transition: none;
+    }
+    
+    .card:hover i {
+      transform: none;
+      animation: none;
+    }
+  }
+</style>
 
 <div class="container p-lg grid gap-lg">
   <div class="mb-2xl">
@@ -133,16 +263,16 @@
         {/if}
       </div>
       <div class="flex gap-md">
-        <button
+        <!-- <button
           type="button"
           on:click={() => window.history.back()}
           class="btn btn-secondary btn-sm"
         >
           <i class="fas fa-arrow-left mr-xs"></i> Volver
-        </button>
+        </button> -->
         {#if restaurant}
           <a
-            href="/restaurant/{restaurant.username}"
+            href="/{restaurant.username}"
             target="_blank"
             class="btn btn-primary btn-sm"
           >
@@ -171,7 +301,7 @@
         href={`/dashboard/restaurant/${restaurant.id}/dishes`}
         style="text-decoration: none;"
       >
-        <span class="text-3xl" role="img" aria-label="Platillos">🍽️</span>
+        <i class="fas fa-utensils text-3xl"></i>
         <div class="flex-1 min-w-0">
           <h3 class="text-xl font-bold mb-xs">Gestionar Platillos y Categorías</h3>
           <p class="text-base text-yellow-800 mb-0">Agrega, edita y organiza los platillos y categorías de tu menú digital.</p>
@@ -186,7 +316,7 @@
         href={`/dashboard/restaurant/${restaurant.id}/links`}
         style="text-decoration: none;"
       >
-        <span class="text-3xl" role="img" aria-label="Links">🔗</span>
+        <i class="fas fa-link text-3xl"></i>
         <div class="flex-1 min-w-0">
           <h3 class="text-lg font-bold mb-xs">Links</h3>
           <p class="text-sm text-blue-800 mb-0">Gestiona los enlaces públicos.</p>
@@ -204,7 +334,7 @@
             </div>
           {/if}
           <div class="flex items-start gap-md">
-            <span class="text-3xl" role="img" aria-label={section.name}>{section.icon}</span>
+            <i class="{section.icon} text-3xl"></i>
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-semibold text-primary mb-xs">{section.name}</h3>
               <p class="text-sm text-muted mb-md">{section.description}</p>
@@ -241,7 +371,7 @@
         </div>
       </div>
     </div>
-    <button  class='btn btn-ghost btn-lg mt-lg'>
+    <button on:click={deleteRestaurantRating}  class='btn btn-ghost btn-lg mt-lg'>
       <i class="fas fa-trash mr-xs"></i> Borrar restaurante
     </button>
   {:else}

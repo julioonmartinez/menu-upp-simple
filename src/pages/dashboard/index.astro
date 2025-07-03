@@ -1,10 +1,10 @@
 ---
 import Dashboard from '../../components/auth/Dashboard.svelte'
-import MenuuppLayout from '../../layouts/MenuuppLayout.astro'
+import PrivateLayout from '../../layouts/PrivateLayout.astro';
 
 ---
-<MenuuppLayout title='Dashboard -Menuupp' description='Revisa todas tus cosasd e mnuupp'  >
+<PrivateLayout title='Menuupp' description='Tu panel de control'  >
     
 <Dashboard client:load />
-</MenuuppLayout>
+</PrivateLayout>
 

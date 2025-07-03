@@ -1,13 +1,23 @@
 <!-- src/components/restaurant/RestaurantDashboard.svelte -->
-<!-- Ejemplo de cómo integrar el sistema de gestión de menú -->
+<!-- Dashboard integrado con gestión de categorías y platillos -->
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Modal from '../ui/Modal.svelte';
-  import MenuManagement from './MenuManagement.svelte';
-  import CategoryManager from './CategoryManager.svelte';
-  import DishManager from './DishManager.svelte';
+  import { slide } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
+  import GlobalModal from '../ui/GlobalModal.svelte';
+  import ConfirmationModal from '../ui/ConfirmationModal.svelte';
+  import CategoryForm from './CategoryForm.svelte';
+  import DishForm from './DishForm.svelte';
   import restaurantService from '../../services/restaurantService';
+  import {
+    useCategories,
+    useDishes,
+    allCategories,
+    allDishes
+  } from '../../services/index.ts';
+  import type { Category } from '../../interfaces/category.ts';
+  import type { Dish } from '../../interfaces/dish.ts';
 
   export let idRestaurant : string | null = null; 
   
@@ -18,6 +28,57 @@
   // Estado del restaurante
   export let restaurant: any = null;
 
+  // Stores para categorías y platillos
+  const {
+    isLoadingAll: isLoadingCategories,
+    isCreating: isCreatingCategory,
+    isUpdating: isUpdatingCategory,
+    isDeleting: isDeletingCategory,
+    error: categoryError,
+    createError: categoryCreateError,
+    updateError: categoryUpdateError,
+    deleteError: categoryDeleteError,
+    loadAllCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    clearAllErrors: clearCategoryErrors
+  } = useCategories();
+
+  const {
+    isLoadingAll: isLoadingDishes,
+    isCreating: isCreatingDish,
+    isUpdating: isUpdatingDish,
+    isDeleting: isDeletingDish,
+    error: dishError,
+    createError: dishCreateError,
+    updateError: dishUpdateError,
+    deleteError: dishDeleteError,
+    loadDishesByFilters,
+    createDish,
+    updateDish,
+    deleteDish,
+    clearAllErrors: clearDishErrors
+  } = useDishes();
+
+  // Estado del modal
+  let activeModal: 'category' | 'dish' | null = null;
+  let editingCategory: Category | null = null;
+  let editingDish: Dish | null = null;
+  let selectedCategoryForDish: Category | null = null;
+
+  // Estado para el modal de confirmación
+  let showConfirmModal = false;
+  let confirmAction: 'deleteCategory' | 'deleteDish' | null = null;
+  let itemToDelete: { id: string; name: string; type: 'category' | 'dish' } | null = null;
+
+  // Estado para manejar errores de imágenes
+  let imageErrors = new Set();
+  let visibleActions = new Set();
+  
+  // Estado para categorías expandibles
+  let expandedCategories: string[] = [];
+
   // Cargar restaurante cuando cambia idRestaurant
   $: if (idRestaurant) {
     loading = true;
@@ -27,6 +88,7 @@
       .then(result => {
         if (result.success) {
           restaurant = result.data;
+          loadInitialData();
         } else {
           error = result.error || 'No se pudo cargar el restaurante';
           restaurant = null;
@@ -41,237 +103,542 @@
       });
   }
 
-  // Estado del modal
-  let activeModal: string | null = null;
-  let activeSection: any = null;
+  // Computed
+  $: hasCategories = Array.isArray($allCategories) && $allCategories.length > 0;
+  $: hasDishes = Array.isArray($allDishes) && $allDishes.length > 0;
+  $: isLoading = loading || isLoadingCategories || isLoadingDishes;
 
-  // Secciones disponibles (siguiendo tu patrón)
-  type SectionKey = 'menu' | 'categories' | 'dishes';
-  const sections: Record<SectionKey, {
-    name: string;
-    component: typeof MenuManagement | typeof CategoryManager | typeof DishManager;
-    icon: string;
-  }> = {
-    menu: {
-      name: 'Gestión de Menú',
-      component: MenuManagement,
-      icon: '🍽️'
-    },
-    categories: {
-      name: 'Gestión de Categorías', 
-      component: CategoryManager,
-      icon: '🏷️'
-    },
-    dishes: {
-      name: 'Gestión de Platillos',
-      component: DishManager,
-      icon: '🍕'
-    }
-  };
-  function openModal(sectionKey: SectionKey) {
-    activeSection = sections[sectionKey];
-    activeModal = sectionKey;
-  }
   // Methods
-  // function openModal(sectionKey: string) {
-  //   activeSection = sections[sectionKey];
-  //   activeModal = sectionKey;
-  // }
+  async function loadInitialData() {
+    if (!restaurant?.id) return;
+    
+    try {
+      await loadAllCategories(restaurant.id);
+      await loadDishesByFilters(undefined, restaurant.id, { limit: 100, page: 1 });
+    } catch (error) {
+      console.error('Error cargando datos iniciales:', error);
+    }
+  }
+
+  function openCategoryForm(category: Category | null = null) {
+    editingCategory = category;
+    activeModal = 'category';
+    clearCategoryErrors();
+  }
+
+  function openDishForm(category: Category | null = null, dish: Dish | null = null) {
+    if (!hasCategories && !category) {
+      alert('Necesitas crear al menos una categoría antes de agregar platillos.');
+      return;
+    }
+    
+    editingDish = dish;
+    selectedCategoryForDish = category;
+    activeModal = 'dish';
+    clearDishErrors();
+  }
 
   function closeModal() {
     activeModal = null;
-    activeSection = null;
+    editingCategory = null;
+    editingDish = null;
+    selectedCategoryForDish = null;
   }
 
-  function onSectionUpdate(event: CustomEvent) {
-    const { type, ...data } = event.detail;
+  async function handleCategorySubmit(event: CustomEvent) {
+    const categoryData = event.detail;
     
-    console.log('Update received:', type, data);
-    
-    // Aquí puedes manejar las actualizaciones según el tipo
-    switch (type) {
-      case 'category_created':
-        console.log('Nueva categoría creada:', data.category);
-        // Actualizar datos, mostrar notificación, etc.
-        break;
-        
-      case 'category_updated':
-        console.log('Categoría actualizada:', data.category);
-        break;
-        
-      case 'category_deleted':
-        console.log('Categoría eliminada:', data.categoryId);
-        break;
-        
-      case 'dish_created':
-        console.log('Nuevo platillo creado:', data.dish);
-        break;
-        
-      case 'dish_updated':
-        console.log('Platillo actualizado:', data.dish);
-        break;
-        
-      case 'dish_deleted':
-        console.log('Platillo eliminado:', data.dishId);
-        break;
+    try {
+      const result = editingCategory 
+        ? await updateCategory(editingCategory.id!, categoryData)
+        : await createCategory({ ...categoryData, restaurantId: restaurant.id });
+
+      if (result.success) {
+        closeModal();
+        await loadInitialData();
+      }
+    } catch (error) {
+      console.error('Error con categoría:', error);
     }
   }
 
-  // Lifecycle
-  $: if (restaurant) {
-    console.log('Dashboard montado para restaurante:', idRestaurant, restaurant.name);
+  async function handleDishSubmit(event: CustomEvent) {
+    const { dishData, image } = event.detail;
+    
+    try {
+      const finalData = {
+        ...dishData,
+        restaurantId: restaurant.id,
+        categoryId: selectedCategoryForDish?.id || dishData.categoryId
+      };
+
+      const result = editingDish 
+        ? await updateDish(editingDish.id!, finalData, image)
+        : await createDish(finalData, image);
+
+      if (result.success) {
+        closeModal();
+        await loadInitialData();
+      }
+    } catch (error) {
+      console.error('Error con platillo:', error);
+    }
+  }
+
+  async function handleDeleteCategory(categoryId: string) {
+    const category = $allCategories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    itemToDelete = { id: categoryId, name: category.name, type: 'category' };
+    confirmAction = 'deleteCategory';
+    showConfirmModal = true;
+  }
+
+  async function handleDeleteDish(dishId: string) {
+    const dish = $allDishes.find(d => d.id === dishId);
+    if (!dish) return;
+    
+    itemToDelete = { id: dishId, name: dish.name, type: 'dish' };
+    confirmAction = 'deleteDish';
+    showConfirmModal = true;
+  }
+
+  async function executeDelete() {
+    if (!itemToDelete || !confirmAction) return;
+
+    try {
+      let result;
+      
+      if (confirmAction === 'deleteCategory') {
+        result = await deleteCategory(itemToDelete.id);
+      } else if (confirmAction === 'deleteDish') {
+        result = await deleteDish(itemToDelete.id);
+      }
+
+      if (result?.success) {
+        await loadInitialData();
+      }
+    } catch (error) {
+      console.error('Error eliminando elemento:', error);
+    } finally {
+      showConfirmModal = false;
+      confirmAction = null;
+      itemToDelete = null;
+    }
+  }
+
+  function cancelDelete() {
+    showConfirmModal = false;
+    confirmAction = null;
+    itemToDelete = null;
+  }
+
+  function getDishesForCategory(categoryId: string): Dish[] {
+    return $allDishes.filter(dish => dish.categoryId === categoryId);
+  }
+
+  function getCategoryName(categoryId: string): string {
+    const category = $allCategories.find(c => c.id === categoryId);
+    return category?.name || 'Sin categoría';
+  }
+
+  function formatPrice(price: number): string {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(price);
+  }
+
+  function handleImageError(dishId: string) {
+    imageErrors.add(dishId);
+    imageErrors = imageErrors; // Trigger reactivity
+  }
+
+  function shouldShowImage(dish: Dish): boolean {
+    return !!(dish.image && !imageErrors.has(dish.id!));
+  }
+
+  function showActions(dishId: string) {
+    visibleActions.add(dishId);
+    visibleActions = visibleActions;
+  }
+
+  function hideActions(dishId: string) {
+    visibleActions.delete(dishId);
+    visibleActions = visibleActions;
+  }
+
+  function areActionsVisible(dishId: string): boolean {
+    return visibleActions.has(dishId);
+  }
+
+  function toggleCategory(categoryId: string) {
+    console.log('Toggle category:', categoryId);
+    console.log('Current expanded categories:', expandedCategories);
+    
+    if (expandedCategories.includes(categoryId)) {
+      expandedCategories = expandedCategories.filter(id => id !== categoryId);
+      console.log('Removed category from expanded');
+    } else {
+      expandedCategories = [...expandedCategories, categoryId];
+      console.log('Added category to expanded');
+    }
+    
+    console.log('Updated expanded categories:', expandedCategories);
+  }
+
+  function isCategoryExpanded(categoryId: string): boolean {
+    const isExpanded = expandedCategories.includes(categoryId);
+    console.log(`isCategoryExpanded called for ${categoryId}:`, isExpanded);
+    console.log(`Current expandedCategories array:`, expandedCategories);
+    return isExpanded;
+  }
+
+  // Reactive statement to force re-render when expandedCategories changes
+  $: console.log('expandedCategories changed:', expandedCategories);
+
+  function expandAllCategories() {
+    console.log('Expanding all categories');
+    expandedCategories = $allCategories.map(category => category.id!);
+    console.log('All categories expanded:', expandedCategories);
+  }
+
+  function collapseAllCategories() {
+    console.log('Collapsing all categories');
+    expandedCategories = [];
+    console.log('All categories collapsed');
   }
 </script>
 
 <div class="restaurant-dashboard">
   {#if loading}
-    <div class="dashboard-loader">Cargando restaurante...</div>
+    <div class="loading-state">
+      <div class="spinner-large animate-spin">⏳</div>
+      <h3>Cargando restaurante...</h3>
+    </div>
   {:else if error}
-    <div class="dashboard-error">{error}</div>
+    <div class="error-state">
+      <i>⚠️</i>
+      <h3>Error</h3>
+      <p>{error}</p>
+    </div>
   {:else if restaurant}
     <!-- Dashboard Header -->
     <div class="dashboard-header">
       <div class="header-content">
         <div class="restaurant-info">
           <h1 class="restaurant-name">{restaurant?.name}</h1>
-          <p class="restaurant-subtitle">Panel de administración</p>
+          <p class="restaurant-subtitle">Panel de administración del menú</p>
         </div>
         
-        <div class="header-stats">
+        <div class="stats-overview">
           <div class="stat-card">
-            <div class="stat-value">12</div>
-            <div class="stat-label">Categorías</div>
+            <div class="stat-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 002 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{$allCategories?.length || 0}</div>
+              <div class="stat-label">Categorías</div>
+            </div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">48</div>
-            <div class="stat-label">Platillos</div>
+            <div class="stat-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{$allDishes?.length || 0}</div>
+              <div class="stat-label">Platillos</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Quick Actions Grid -->
-    <div class="quick-actions-grid">
-      <h2 class="section-title">Gestión de Menú</h2>
-      
-      <div class="actions-container">
-        <!-- Menu Management - Comprehensive -->
-        <button
-          type="button"
-          class="action-card primary"
-          on:click={() => openModal('menu')}
-        >
-          <div class="card-icon">🍽️</div>
-          <div class="card-content">
-            <h3 class="card-title">Gestión Completa del Menú</h3>
-            <p class="card-description">
-              Administra categorías y platillos desde un panel unificado
+    <!-- Error Display -->
+    {#if categoryError || dishError}
+      <div class="error-container">
+        <div class="error-content">
+          <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <div class="error-text">
+            <p class="error-title">Error en el sistema</p>
+            <p class="error-message">
+              {categoryError || dishError}
             </p>
-            <div class="card-features">
-              <span class="feature">Categorías</span>
-              <span class="feature">Platillos</span>
-              <span class="feature">Imágenes</span>
-            </div>
-          </div>
-          <div class="card-arrow">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </button>
-
-        <!-- Categories Only -->
-        <button
-          type="button"
-          class="action-card secondary"
-          on:click={() => openModal('categories')}
-        >
-          <div class="card-icon">🏷️</div>
-          <div class="card-content">
-            <h3 class="card-title">Solo Categorías</h3>
-            <p class="card-description">
-              Gestiona únicamente las categorías del menú
-            </p>
-            <div class="card-features">
-              <span class="feature">Crear categorías</span>
-              <span class="feature">Editar existentes</span>
-            </div>
-          </div>
-          <div class="card-arrow">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </button>
-
-        <!-- Dishes Only -->
-        <button
-          type="button"
-          class="action-card secondary"
-          on:click={() => openModal('dishes')}
-        >
-          <div class="card-icon">🍕</div>
-          <div class="card-content">
-            <h3 class="card-title">Solo Platillos</h3>
-            <p class="card-description">
-              Administra únicamente los platillos del menú
-            </p>
-            <div class="card-features">
-              <span class="feature">Crear platillos</span>
-              <span class="feature">Subir imágenes</span>
-              <span class="feature">Info nutricional</span>
-            </div>
-          </div>
-          <div class="card-arrow">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="recent-activity">
-      <h2 class="section-title">Actividad Reciente</h2>
-      
-      <div class="activity-list">
-        <div class="activity-item">
-          <div class="activity-icon create">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-          <div class="activity-content">
-            <p class="activity-description">Se creó la categoría <strong>"Postres"</strong></p>
-            <span class="activity-time">Hace 2 horas</span>
-          </div>
-        </div>
-
-        <div class="activity-item">
-          <div class="activity-icon update">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </div>
-          <div class="activity-content">
-            <p class="activity-description">Se actualizó el platillo <strong>"Tacos al Pastor"</strong></p>
-            <span class="activity-time">Hace 4 horas</span>
-          </div>
-        </div>
-
-        <div class="activity-item">
-          <div class="activity-icon create">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-          <div class="activity-content">
-            <p class="activity-description">Se agregó el platillo <strong>"Enchiladas Rojas"</strong></p>
-            <span class="activity-time">Ayer</span>
           </div>
         </div>
       </div>
+    {/if}
+
+    <!-- Menu Management Section -->
+    <div class="menu-management-section">
+      <div class="section-header">
+        <div class="header-text">
+          <h2 class="section-title">Gestión del Menú</h2>
+          <p class="section-subtitle">
+            Organiza tu menú creando categorías y agregando platillos
+          </p>
+        </div>
+        
+        <div class="header-actions">
+          <button
+            type="button"
+            class="btn-primary"
+            on:click={() => openCategoryForm()}
+            disabled={isLoading}
+          >
+            <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva Categoría
+          </button>
+          
+          {#if hasCategories}
+            <div class="expand-actions">
+              <button
+                type="button"
+                class="btn-secondary btn-sm"
+                on:click={() => {
+                  console.log('Expand all clicked');
+                  expandAllCategories();
+                }}
+                disabled={isLoading}
+              >
+                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                Expandir Todo
+              </button>
+              <button
+                type="button"
+                class="btn-secondary btn-sm"
+                on:click={() => {
+                  console.log('Collapse all clicked');
+                  collapseAllCategories();
+                }}
+                disabled={isLoading}
+              >
+                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                Colapsar Todo
+              </button>
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Categories and Dishes -->
+      {#if isLoading}
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <p class="loading-text">Cargando menú...</p>
+        </div>
+      
+      {:else if !hasCategories}
+        <!-- Empty State - No Categories -->
+        <div class="empty-state">
+          <svg class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 002 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <h3 class="empty-title">No hay categorías aún</h3>
+          <p class="empty-subtitle">
+            Crea tu primera categoría para comenzar a organizar tu menú
+          </p>
+          <button
+            type="button"
+            class="btn-primary"
+            on:click={() => openCategoryForm()}
+          >
+            <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Crear Primera Categoría
+          </button>
+        </div>
+      
+      {:else}
+        <!-- Categories Grid -->
+        <div class="categories-grid">
+          {#each $allCategories as category}
+            <div class="category-card">
+              <div class="category-header">
+                <div class="category-info" on:click={() => {
+                  console.log('Category info clicked:', category.id);
+                  toggleCategory(category.id!);
+                }}>
+                  <div class="category-title-row">
+                    <h3 class="category-name">
+                      {category.name}
+                      <span class="click-indicator">👆</span>
+                    </h3>
+                    <div class="category-stats">
+                      <span class="dish-count">{getDishesForCategory(category.id!).length} platillos</span>
+                    </div>
+                  </div>
+                  {#if category.description}
+                    <p class="category-description">{category.description}</p>
+                  {/if}
+                </div>
+                
+                <div class="category-controls">
+                  <button
+                    type="button"
+                    class="btn-toggle"
+                    class:expanded={expandedCategories.includes(category.id!)}
+                    on:click={() => {
+                      console.log('Toggle button clicked:', category.id);
+                      toggleCategory(category.id!);
+                    }}
+                    title={expandedCategories.includes(category.id!) ? 'Colapsar categoría' : 'Expandir categoría'}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Dishes Section - Only show when expanded -->
+              {#if expandedCategories.includes(category.id!)}
+                <div class="dishes-section" in:slide={{ duration: 300, easing: quintOut }}>
+                  <div class="dishes-header">
+                    <h4 class="dishes-title">
+                      Platillos en {category.name}
+                    </h4>
+                    <button
+                      type="button"
+                      class="btn-secondary btn-sm"
+                      on:click={() => openDishForm(category)}
+                    >
+                      <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Agregar Platillo
+                    </button>
+                  </div>
+
+                  {#if getDishesForCategory(category.id!).length === 0}
+                    <div class="empty-dishes">
+                      <p class="empty-dishes-text">No hay platillos en esta categoría</p>
+                      <button
+                        type="button"
+                        class="btn-ghost btn-sm"
+                        on:click={() => openDishForm(category)}
+                      >
+                        Agregar primer platillo
+                      </button>
+                    </div>
+                  {:else}
+                    <div class="dishes-grid">
+                      {#each getDishesForCategory(category.id!) as dish}
+                        <div class="dish-card" 
+                             on:mouseenter={() => showActions(dish.id!)}
+                             on:mouseleave={() => hideActions(dish.id!)}>
+                          {#if shouldShowImage(dish)}
+                            <div class="dish-image">
+                              <img src={dish.image} alt={dish.name} on:error={() => handleImageError(dish.id!)} />
+                            </div>
+                          {:else}
+                            <div class="dish-image-placeholder">
+                              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          {/if}
+                          
+                          <div class="dish-content">
+                            <h5 class="dish-name">{dish.name}</h5>
+                            <p class="dish-description">{dish.description}</p>
+                            
+                            <div class="dish-details">
+                              <span class="dish-price">{formatPrice(dish.price)}</span>
+                              {#if dish.discount && dish.discount > 0}
+                                <span class="dish-discount">-{dish.discount}%</span>
+                              {/if}
+                              <span class="dish-status" class:unavailable={!dish.inStock}>
+                                {dish.inStock ? 'Disponible' : 'No disponible'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div class="dish-actions" 
+                               class:visible={areActionsVisible(dish.id!)}>
+                            <button
+                              type="button"
+                              class="btn-icon-btn"
+                              on:click={() => openDishForm(category, dish)}
+                              title="Editar platillo"
+                            >
+                              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              class="btn-icon-btn btn-danger"
+                              on:click={() => handleDeleteDish(dish.id!)}
+                              title="Eliminar platillo"
+                              disabled={isDeletingDish}
+                            >
+                              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+              
+              <!-- Category Actions - Separated from header -->
+              <div class="category-actions">
+                <button
+                  type="button"
+                  class="btn-icon-btn"
+                  on:click={() => openDishForm(category)}
+                  title="Agregar platillo a esta categoría"
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                
+                <button
+                  type="button"
+                  class="btn-icon-btn"
+                  on:click={() => openCategoryForm(category)}
+                  title="Editar categoría"
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                
+                <button
+                  type="button"
+                  class="btn-icon-btn btn-danger"
+                  on:click={() => handleDeleteCategory(category.id!)}
+                  title="Eliminar categoría"
+                  disabled={isDeletingCategory}
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <!-- Tips Section -->
@@ -313,47 +680,108 @@
   {/if}
 </div>
 
-<!-- Modal Integration (siguiendo tu patrón exacto) -->
-{#if activeSection}
-  <Modal
-    isOpen={!!activeModal}
-    title={activeSection.name}
-    size="xl"
+<!-- Category Form Modal -->
+{#if activeModal === 'category'}
+  <GlobalModal
+    isOpen={true}
+    title={editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+    size="md"
     on:close={closeModal}
   >
-    <svelte:component
-      this={activeSection.component}
-      {restaurant}
+    <CategoryForm
+      category={editingCategory}
       restaurantId={restaurant.id}
-      on:update={onSectionUpdate}
-      on:close={closeModal}
+      isSubmitting={isCreatingCategory || isUpdatingCategory}
+      error={editingCategory ? categoryUpdateError : categoryCreateError}
+      on:submit={handleCategorySubmit}
+      on:cancel={closeModal}
     />
-  </Modal>
+  </GlobalModal>
+{/if}
+
+<!-- Dish Form Modal -->
+{#if activeModal === 'dish'}
+  <GlobalModal
+    isOpen={true}
+    title={editingDish ? 'Editar Platillo' : 'Nuevo Platillo'}
+    size="lg"
+    on:close={closeModal}
+  >
+    <DishForm
+      dish={editingDish}
+      categories={$allCategories}
+      restaurantId={restaurant.id}
+      isSubmitting={isCreatingDish || isUpdatingDish}
+      error={editingDish ? dishUpdateError : dishCreateError}
+      on:submit={handleDishSubmit}
+      on:cancel={closeModal}
+    />
+  </GlobalModal>
+{/if}
+
+<!-- Confirmation Modal -->
+{#if showConfirmModal && itemToDelete}
+  <ConfirmationModal
+    isOpen={true}
+    title={itemToDelete.type === 'category' ? 'Eliminar Categoría' : 'Eliminar Platillo'}
+    message={
+      itemToDelete.type === 'category' 
+        ? `¿Estás seguro de que quieres eliminar la categoría "${itemToDelete.name}"?\n\n⚠️ Esta acción también eliminará todos los platillos asociados a esta categoría.`
+        : `¿Estás seguro de que quieres eliminar el platillo "${itemToDelete.name}"?\n\nEsta acción no se puede deshacer.`
+    }
+    confirmText="Eliminar"
+    cancelText="Cancelar"
+    type="danger"
+    icon="🗑️"
+    loading={isDeletingCategory || isDeletingDish}
+    loadingText="Eliminando..."
+    on:confirm={executeDelete}
+    on:cancel={cancelDelete}
+  />
 {/if}
 
 <style>
+  /* Component-specific styles that complement global styles */
   .restaurant-dashboard {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    padding: 2rem;
-    max-width: 1200px;
+    gap: var(--spacing-2xl);
+    padding: var(--spacing-2xl);
+    max-width: var(--container-xl);
     margin: 0 auto;
   }
 
-  /* Dashboard Header */
+  /* Dashboard Header - Enhanced with global styles */
   .dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 1rem;
-    padding: 2rem;
-    color: white;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-2xl);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.03) 0%, transparent 50%, rgba(255, 107, 53, 0.02) 100%);
+    pointer-events: none;
   }
 
   .header-content {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
+    align-items: center;
+    gap: var(--spacing-xl);
+    position: relative;
+    z-index: 1;
   }
 
   .restaurant-info {
@@ -361,249 +789,756 @@
   }
 
   .restaurant-name {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-xs) 0;
+    line-height: var(--leading-tight);
+    color: var(--text-primary);
   }
 
   .restaurant-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
+    font-size: var(--font-base);
+    color: var(--text-secondary);
     margin: 0;
+    font-weight: var(--weight-medium);
   }
 
-  .header-stats {
+  .stats-overview {
     display: flex;
-    gap: 1.5rem;
+    gap: var(--spacing-lg);
   }
 
   .stat-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    padding: 1rem;
-    background-color: rgba(255, 255, 255, 0.15);
-    border-radius: 0.75rem;
-    backdrop-filter: blur(10px);
-    min-width: 80px;
+    gap: var(--spacing-md);
+    background: var(--bg-primary);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--bg-accent);
+    box-shadow: var(--shadow-xs);
+    transition: all var(--transition-normal);
+    min-width: 140px;
   }
 
-  .stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
+  .stat-card:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
   }
 
-  .stat-label {
-    font-size: 0.75rem;
-    opacity: 0.9;
-    text-align: center;
-  }
-
-  /* Sections */
-  .section-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 1rem 0;
-  }
-
-  /* Quick Actions */
-  .quick-actions-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .actions-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 1.5rem;
-  }
-
-  .action-card {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 1.5rem;
-    background-color: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    text-align: left;
-  }
-
-  .action-card:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-  }
-
-  .action-card.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-  }
-
-  .action-card.primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 35px -5px rgba(102, 126, 234, 0.4), 0 10px 15px -6px rgba(102, 126, 234, 0.2);
-  }
-
-  .action-card.secondary:hover {
-    border-color: #3b82f6;
-  }
-
-  .card-icon {
-    font-size: 2.5rem;
-    flex-shrink: 0;
-  }
-
-  .card-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .card-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .action-card.secondary .card-title {
-    color: #111827;
-  }
-
-  .card-description {
-    font-size: 0.875rem;
-    margin: 0;
-    opacity: 0.9;
-  }
-
-  .action-card.secondary .card-description {
-    color: #6b7280;
-  }
-
-  .card-features {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .feature {
-    padding: 0.125rem 0.5rem;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .action-card.secondary .feature {
-    background-color: #eff6ff;
-    color: #1d4ed8;
-  }
-
-  .card-arrow {
-    width: 1.5rem;
-    height: 1.5rem;
-    flex-shrink: 0;
-    opacity: 0.7;
-  }
-
-  /* Recent Activity */
-  .recent-activity {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .activity-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background-color: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-  }
-
-  .activity-icon {
+  .stat-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
-    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    color: var(--primary-color);
     flex-shrink: 0;
   }
 
-  .activity-icon.create {
-    background-color: #dcfce7;
-    color: #166534;
-  }
-
-  .activity-icon.update {
-    background-color: #dbeafe;
-    color: #1d4ed8;
-  }
-
-  .activity-icon svg {
+  .stat-icon svg {
     width: 1.25rem;
     height: 1.25rem;
   }
 
-  .activity-content {
+  .stat-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    text-align: left;
   }
 
-  .activity-description {
-    font-size: 0.875rem;
-    color: #374151;
+  .stat-value {
+    font-size: var(--font-xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .stat-label {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    font-weight: var(--weight-medium);
+  }
+
+  /* Error Display */
+  .error-container {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+  }
+
+  .error-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .error-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #dc2626;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .error-text {
+    flex: 1;
+  }
+
+  .error-title {
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: #991b1b;
+    margin: 0 0 var(--spacing-xs) 0;
+  }
+
+  .error-message {
+    font-size: var(--font-sm);
+    color: #dc2626;
     margin: 0;
   }
 
-  .activity-time {
-    font-size: 0.75rem;
-    color: #9ca3af;
+  /* Menu Management Section */
+  .menu-management-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+  }
+
+  .header-text {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .section-title {
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+  }
+
+  .section-subtitle {
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+  }
+
+  .expand-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+  }
+
+  /* Loading */
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    text-align: center;
+  }
+
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .loading-text {
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Empty State */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    text-align: center;
+  }
+
+  .empty-icon {
+    width: 3rem;
+    height: 3rem;
+    color: var(--text-light);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .empty-title {
+    font-size: var(--font-xl);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+  }
+
+  .empty-subtitle {
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-xl) 0;
+    max-width: 400px;
+  }
+
+  /* Categories Grid */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-xl);
+    align-items: start;
+  }
+
+  .category-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+    height: fit-content;
+    min-height: 200px;
+    /* max-height: 80vh; */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .category-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+  }
+
+  .category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--bg-accent);
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+  }
+
+  .category-info {
+    flex: 1;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    padding: var(--spacing-md ) ;
+    border-radius: var(--radius-md);
+  }
+
+  .category-info:hover {
+    background: var(--bg-accent);
+    transform: translateX(2px);
+  }
+
+  .category-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .category-name {
+    font-size: var(--font-base);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  .click-indicator {
+    font-size: var(--font-xs);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+
+  .category-info:hover .click-indicator {
+    opacity: 1;
+  }
+
+  .category-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .dish-count {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-medium);
+  }
+
+  .category-description {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: var(--leading-relaxed);
+  }
+
+  .category-controls {
+    display: flex;
+    gap: var(--spacing-xs);
+  }
+
+  .btn-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+  }
+
+  .btn-toggle:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+  }
+
+  .btn-toggle.expanded {
+    transform: rotate(180deg);
+  }
+
+  .btn-toggle.expanded:hover {
+    transform: rotate(180deg) scale(1.05);
+  }
+
+  .btn-toggle svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  /* Dishes Section */
+  .dishes-section {
+    padding: var(--spacing-lg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .dishes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    flex-shrink: 0;
+  }
+
+  .dishes-title {
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .empty-dishes {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--text-light);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .empty-dishes-text {
+    font-size: var(--font-xs);
+    margin: 0 0 var(--spacing-sm) 0;
+  }
+
+  /* Dishes Grid */
+  .dishes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    flex: 1;
+    overflow-y: auto;
+    max-height: 120vh;
+    padding-right: var(--spacing-sm);
+  }
+
+  .dishes-grid::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .dishes-grid::-webkit-scrollbar-track {
+    background: var(--bg-accent);
+    border-radius: var(--radius-full);
+  }
+
+  .dishes-grid::-webkit-scrollbar-thumb {
+    background: var(--text-light);
+    border-radius: var(--radius-full);
+  }
+
+  .dishes-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+  }
+
+  .dish-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+    position: relative;
+  }
+
+  .dish-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+  }
+
+  .dish-image {
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-accent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .dish-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--bg-accent);
+    min-width: 100%;
+    min-height: 100%;
+    max-width: none;
+    max-height: none;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .dish-image img:not([src]), 
+  .dish-image img[src=""],
+  .dish-image img[src*="undefined"],
+  .dish-image img[src*="null"] {
+    display: none;
+  }
+
+  .dish-image img[src*="data:image/svg+xml"] {
+    object-fit: contain;
+    padding: var(--spacing-md);
+  }
+
+  .dish-image-placeholder {
+    width: 100%;
+    height: 160px;
+    background: var(--bg-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    position: relative;
+  }
+
+  .dish-image-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .dish-image-placeholder svg {
+    width: 2rem;
+    height: 2rem;
+    opacity: 0.6;
+    position: relative;
+    z-index: 1;
+  }
+
+  .dish-content {
+    padding: var(--spacing-lg);
+  }
+
+  .dish-name {
+    font-size: var(--font-base);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-xs) 0;
+  }
+
+  .dish-description {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-sm) 0;
+    line-height: var(--leading-relaxed);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .dish-details {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  .dish-price {
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--primary-color);
+  }
+
+  .dish-discount {
+    font-size: var(--font-xs);
+    background: var(--success);
+    color: var(--text-inverse);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-medium);
+  }
+
+  .dish-status {
+    font-size: var(--font-xs);
+    color: var(--success);
+    font-weight: var(--weight-medium);
+  }
+
+  .dish-status.unavailable {
+    color: var(--error);
+  }
+
+  .dish-actions {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    display: flex;
+    gap: var(--spacing-xs);
+    opacity: 0;
+    transition: all var(--transition-normal);
+    z-index: 10;
+    pointer-events: auto;
+    transform: translateY(-4px);
+  }
+
+  .dish-card:hover .dish-actions,
+  .dish-actions.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--primary-gradient);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: var(--primary-glow);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: var(--bg-tertiary);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-secondary.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: none;
+    color: var(--text-secondary);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .btn-ghost:hover {
+    background: var(--bg-accent);
+    color: var(--text-primary);
+  }
+
+  .btn-ghost.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
+
+  .btn-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .btn-icon-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+  }
+
+  .btn-icon-btn.btn-danger:hover {
+    background: var(--error);
+    color: var(--text-inverse);
+    border-color: var(--error);
+  }
+
+  .btn-icon-btn svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .btn-icon {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   /* Tips Section */
   .tips-section {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--spacing-xl);
   }
 
   .tips-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
   }
 
   .tip-card {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    padding: 1.5rem;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-2xl);
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+  }
+
+  .tip-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
   }
 
   .tip-icon {
-    font-size: 2rem;
+    font-size: 2.5rem;
     flex-shrink: 0;
   }
 
@@ -612,118 +1547,401 @@
   }
 
   .tip-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 0.5rem 0;
+    font-size: var(--font-base);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
   }
 
   .tip-description {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
     margin: 0;
-    line-height: 1.4;
+    line-height: var(--leading-relaxed);
   }
 
-  /* Loader and Error */
-  .dashboard-loader {
-    text-align: center;
-    padding: 2rem;
-    font-size: 1.2rem;
-    color: #666;
-  }
-
-  .dashboard-error {
-    text-align: center;
-    padding: 2rem;
-    color: #b91c1c;
-    background: #fee2e2;
-    border-radius: 1rem;
-    margin: 2rem 0;
-  }
-
-  /* Responsive */
+  /* Responsive Design */
   @media (max-width: 1024px) {
-    .actions-container {
+    .categories-grid {
       grid-template-columns: 1fr;
+      align-items: stretch;
     }
 
-    .action-card {
-      padding: 1.25rem;
+    .dishes-grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
 
     .header-content {
       flex-direction: column;
-      gap: 1.5rem;
+      gap: var(--spacing-xl);
     }
 
-    .header-stats {
+    .stats-overview {
       align-self: stretch;
       justify-content: space-around;
     }
   }
 
+  @media (min-width: 1025px) and (max-width: 1400px) {
+    .categories-grid {
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      align-items: start;
+    }
+  }
+
+  @media (min-width: 1401px) {
+    .categories-grid {
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      align-items: start;
+    }
+  }
+
   @media (max-width: 768px) {
     .restaurant-dashboard {
-      padding: 1rem;
-      gap: 1.5rem;
+      padding: var(--spacing-lg);
+      gap: var(--spacing-xl);
     }
 
     .dashboard-header {
-      padding: 1.5rem;
+      padding: var(--spacing-xl);
     }
 
     .restaurant-name {
-      font-size: 1.5rem;
+      font-size: var(--font-xl);
     }
 
-    .card-content {
-      gap: 0.375rem;
-    }
-
-    .card-title {
-      font-size: 1rem;
-    }
-
-    .card-description {
-      font-size: 0.8rem;
-    }
-
-    .action-card {
+    .header-content {
       flex-direction: column;
-      text-align: center;
-      gap: 1rem;
+      align-items: stretch;
+      gap: var(--spacing-lg);
     }
 
-    .card-arrow {
-      transform: rotate(90deg);
+    .stats-overview {
+      justify-content: space-around;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: auto;
+      justify-content: center;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .header-actions {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .expand-actions {
+      width: 100%;
+      justify-content: center;
+      margin-top: var(--spacing-sm);
+    }
+
+    /* Category cards mobile improvements */
+    .category-header {
+      padding: var(--spacing-md);
+      gap: var(--spacing-sm);
+    }
+
+    .category-title-row {
+      /* flex-direction: column; */
+      /* align-items: flex-start; */
+      /* gap: var(--spacing-xs); */
+    }
+
+    .category-name {
+      font-size: var(--font-sm);
+    }
+
+    .dish-count {
+      font-size: var(--font-xs);
+      padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .category-controls {
+      justify-content: flex-end;
+      align-self: flex-start;
+    }
+
+    .btn-toggle {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .btn-toggle svg {
+      width: 0.875rem;
+      height: 0.875rem;
+    }
+
+    .category-actions {
+      padding: var(--spacing-sm) var(--spacing-md);
+      gap: var(--spacing-xs);
+      justify-content: center;
+    }
+
+    .category-actions .btn-icon-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+
+    .category-actions .btn-icon-btn svg {
+      width: 0.875rem;
+      height: 0.875rem;
+    }
+
+    .dishes-section {
+      padding: var(--spacing-md);
+    }
+
+    .dishes-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--spacing-sm);
+    }
+
+    .dishes-grid {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-md);
     }
 
     .tips-grid {
       grid-template-columns: 1fr;
     }
+
+    .dish-image {
+      height: 140px;
+    }
+
+    .dish-image-placeholder {
+      height: 140px;
+    }
+
+    /* Mejorar la visibilidad en dispositivos móviles */
+    .dish-actions {
+      opacity: 1;
+      /* background: rgba(255, 255, 255, 0.95); */
+      /* backdrop-filter: blur(8px); */
+      border-radius: var(--radius-md);
+      padding: var(--spacing-xs);
+      /* box-shadow: var(--shadow-sm); */
+    }
   }
 
   @media (max-width: 480px) {
-    .action-card {
-      padding: 1rem;
+    .category-card {
+      /* margin: 0 calc(-1 * var(--spacing-lg)); */
     }
 
-    .tip-card {
-      padding: 1rem;
+    .dish-card {
+      /* margin: 0 calc(-1 * var(--spacing-sm)); */
     }
 
-    .activity-item {
-      padding: 0.75rem;
+    .dashboard-header {
+      padding: var(--spacing-lg);
+      /* margin: 0 calc(-1 * var(--spacing-lg)) var(--spacing-lg) calc(-1 * var(--spacing-lg)); */
+      /* border-radius: 0; */
+    }
+
+    .stats-overview {
+      flex-direction: column;
+      gap: var(--spacing-sm);
     }
 
     .stat-card {
-      padding: 0.75rem;
-      min-width: 70px;
+      padding: var(--spacing-md);
+      min-width: auto;
+    }
+
+    .stat-icon {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .stat-icon svg {
+      width: 1rem;
+      height: 1rem;
     }
 
     .stat-value {
-      font-size: 1.25rem;
+      font-size: var(--font-lg);
     }
+
+    /* Category cards extra compact for small screens */
+    .category-header {
+      padding: var(--spacing-sm);
+      gap: var(--spacing-xs);
+    }
+
+    .category-info {
+      padding: var(--spacing-md );
+    }
+
+    .category-name {
+      font-size: var(--font-sm);
+      line-height: 1.2;
+    }
+
+    .category-description {
+      font-size: var(--font-xs);
+      line-height: 1.3;
+    }
+
+    .dish-count {
+      font-size: var(--font-xs);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-toggle {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .btn-toggle svg {
+      width: 0.75rem;
+      height: 0.75rem;
+    }
+
+    .category-actions {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      gap: var(--spacing-xs);
+    }
+
+    .category-actions .btn-icon-btn {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .category-actions .btn-icon-btn svg {
+      width: 0.75rem;
+      height: 0.75rem;
+    }
+
+    .dishes-section {
+      padding: var(--spacing-sm);
+    }
+
+    .dishes-header {
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .dishes-title {
+      font-size: var(--font-xs);
+    }
+
+    .dishes-grid {
+      gap: var(--spacing-sm);
+    }
+
+    .dish-image {
+      height: 120px;
+    }
+
+    .dish-image-placeholder {
+      height: 120px;
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .dish-actions {
+      opacity: 1;
+      /* background: rgba(255, 255, 255, 0.9); */
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-xs);
+    }
+    
+    .btn {
+      min-height: 48px;
+      padding: var(--spacing-lg) var(--spacing-xl);
+    }
+
+    .dish-image img {
+      transform: none;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .category-card,
+    .dish-card,
+    .tip-card,
+    .btn-primary,
+    .btn-secondary,
+    .btn-ghost,
+    .btn-icon-btn,
+    .btn-toggle {
+      transition: none;
+    }
+    
+    .btn-primary:hover,
+    .category-card:hover,
+    .dish-card:hover,
+    .tip-card:hover {
+      transform: none;
+    }
+
+    .dish-image img {
+      transition: none;
+    }
+
+    .dish-image-placeholder::before {
+      animation: none;
+    }
+
+    .btn-toggle.expanded {
+      transform: none;
+    }
+  }
+
+  /* Loading state for images */
+  .dish-image.loading {
+    background: var(--bg-skeleton);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Category Actions - Separated from header */
+  .category-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-primary);
+    border-top: 1px solid var(--bg-accent);
+    justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .category-actions .btn-icon-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .category-actions .btn-icon-btn svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .category-actions .btn-icon-btn:first-child {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    border-color: var(--primary-color);
+  }
+
+  .category-actions .btn-icon-btn:first-child:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    transform: translateY(-1px);
   }
 </style>

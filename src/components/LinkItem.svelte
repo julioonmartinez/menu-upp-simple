@@ -7,6 +7,7 @@
     LINK_TYPE_ICONS,
     LINK_TYPE_LABELS 
   } from '../interfaces/links.ts';
+  import { getIconClass } from '../utils/iconUtils.ts';
 
   // Props
   export let link: Link;
@@ -60,9 +61,11 @@
   }
 
   // Get icon class
-  function getIconClass(): string {
-    if (link.icon) return link.icon;
-    return LINK_TYPE_ICONS[link.type] || 'link';
+  function getLinkIconClass(): string {
+    if (link.icon) {
+      return getIconClass(link.icon);
+    }
+    return LINK_TYPE_ICONS[link.type] || 'fa-solid fa-link';
   }
 
   // Get custom styles
@@ -119,7 +122,7 @@
     <!-- Icon -->
     {#if showIcon}
       <div class="link-icon">
-        <i class="icon-{getIconClass()}"></i>
+        <i class="{getLinkIconClass()}"></i>
       </div>
     {/if}
 
@@ -148,7 +151,7 @@
     <!-- External Link Indicator -->
     {#if isExternalLink()}
       <div class="external-indicator">
-        <i class="icon-external-link"></i>
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
       </div>
     {/if}
   </a>
@@ -163,7 +166,7 @@
         on:click={handleToggle}
         title={link.active ? 'Desactivar enlace' : 'Activar enlace'}
       >
-        <i class="icon-{link.active ? 'eye' : 'eye-off'}"></i>
+        <i class="fa-solid {link.active ? 'fa-eye' : 'fa-eye-slash'}"></i>
       </button>
 
       <!-- Edit Button -->
@@ -172,7 +175,7 @@
         on:click={handleEdit}
         title="Editar enlace"
       >
-        <i class="icon-edit"></i>
+        <i class="fa-solid fa-pen"></i>
       </button>
 
       <!-- Delete Button -->
@@ -181,7 +184,7 @@
         on:click={handleDelete}
         title="Eliminar enlace"
       >
-        <i class="icon-trash"></i>
+        <i class="fa-solid fa-trash"></i>
       </button>
     </div>
   {/if}

@@ -465,10 +465,18 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
       const result = await linkTreeService.createLinkTree(linkTreeData);
 
       if (result.success && result.data) {
-        // Actualizar cache local
-        this.setCurrentLinkTree(result.data);
-        this.addToCache(result.data);
-        this.setCreating(false);
+        // Actualizar cache local inmediatamente
+        this.store.update(state => ({
+          ...state,
+          linkTrees: [result.data!, ...state.linkTrees],
+          currentLinkTree: result.data!,
+          isCreating: false,
+          createError: null,
+          lastUpdated: {
+            ...state.lastUpdated,
+            current: new Date()
+          }
+        }));
 
         return {
           success: true,
@@ -516,7 +524,7 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
       const result = await linkTreeService.updateLinkTree(linkTreeId, linkTreeData);
 
       if (result.success && result.data) {
-        // Actualizar cache local
+        // Actualizar cache local inmediatamente
         this.store.update(state => {
           const updateLinkTreeInArray = (linkTrees: LinkTree[]) =>
             linkTrees.map(lt => lt.id === linkTreeId ? result.data! : lt);
@@ -795,10 +803,19 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
       const result = await linkTreeService.createLink(linkTreeId, linkData);
 
       if (result.success && result.data) {
-        // Actualizar cache local
+        // Actualizar cache local inmediatamente
         this.store.update(state => ({
           ...state,
           currentLinks: [...state.currentLinks, result.data!],
+          // También actualizar el LinkTree en cache si existe
+          linkTrees: state.linkTrees.map(lt => 
+            lt.id === linkTreeId 
+              ? { ...lt, links: [...lt.links, result.data!] }
+              : lt
+          ),
+          currentLinkTree: state.currentLinkTree?.id === linkTreeId 
+            ? { ...state.currentLinkTree, links: [...state.currentLinkTree.links, result.data!] }
+            : state.currentLinkTree,
           isCreatingLink: false,
           linkError: null,
           lastUpdated: {
@@ -854,19 +871,31 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
       const result = await linkTreeService.updateLink(linkTreeId, linkId, linkData);
 
       if (result.success && result.data) {
-        // Actualizar cache local
-        this.store.update(state => ({
-          ...state,
-          currentLinks: state.currentLinks.map(link => 
-            link.id === linkId ? result.data! : link
-          ),
-          isUpdatingLink: false,
-          linkError: null,
-          lastUpdated: {
-            ...state.lastUpdated,
-            links: new Date()
-          }
-        }));
+        // Actualizar cache local inmediatamente
+        this.store.update(state => {
+          const updateLinkInArray = (links: Link[]) =>
+            links.map(link => link.id === linkId ? result.data! : link);
+
+          return {
+            ...state,
+            currentLinks: updateLinkInArray(state.currentLinks),
+            // También actualizar el LinkTree en cache si existe
+            linkTrees: state.linkTrees.map(lt => 
+              lt.id === linkTreeId 
+                ? { ...lt, links: updateLinkInArray(lt.links) }
+                : lt
+            ),
+            currentLinkTree: state.currentLinkTree?.id === linkTreeId 
+              ? { ...state.currentLinkTree, links: updateLinkInArray(state.currentLinkTree.links) }
+              : state.currentLinkTree,
+            isUpdatingLink: false,
+            linkError: null,
+            lastUpdated: {
+              ...state.lastUpdated,
+              links: new Date()
+            }
+          };
+        });
 
         return {
           success: true,
@@ -911,17 +940,31 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
       const result = await linkTreeService.deleteLink(linkTreeId, linkId);
 
       if (result.success) {
-        // Actualizar cache local
-        this.store.update(state => ({
-          ...state,
-          currentLinks: state.currentLinks.filter(link => link.id !== linkId),
-          isDeletingLink: false,
-          linkError: null,
-          lastUpdated: {
-            ...state.lastUpdated,
-            links: new Date()
-          }
-        }));
+        // Actualizar cache local inmediatamente
+        this.store.update(state => {
+          const filterLinks = (links: Link[]) =>
+            links.filter(link => link.id !== linkId);
+
+          return {
+            ...state,
+            currentLinks: filterLinks(state.currentLinks),
+            // También actualizar el LinkTree en cache si existe
+            linkTrees: state.linkTrees.map(lt => 
+              lt.id === linkTreeId 
+                ? { ...lt, links: filterLinks(lt.links) }
+                : lt
+            ),
+            currentLinkTree: state.currentLinkTree?.id === linkTreeId 
+              ? { ...state.currentLinkTree, links: filterLinks(state.currentLinkTree.links) }
+              : state.currentLinkTree,
+            isDeletingLink: false,
+            linkError: null,
+            lastUpdated: {
+              ...state.lastUpdated,
+              links: new Date()
+            }
+          };
+        });
 
         return {
           success: true,

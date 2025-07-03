@@ -294,7 +294,7 @@
       <h3 class="section-title">Tipografía</h3>
       
       <div class="font-field">
-        <label for="fontFamily" class="label">Fuente Principal</label>
+        <label for="fontFamily" class="font-label">Fuente Principal</label>
         <select 
           id="fontFamily" 
           bind:value={formData.fontFamily}
@@ -304,7 +304,7 @@
             <option value={font.value}>{font.label}</option>
           {/each}
         </select>
-        <p class="help-text">Fuente que se usará en tu página web</p>
+        <p class="font-help">Fuente que se usará en tu página web</p>
       </div>
 
       <!-- Preview de fuente -->
@@ -324,7 +324,7 @@
       <button
         type="button"
         on:click={() => dispatch('close')}
-        class="btn btn-secondary"
+        class="cancel-button"
         disabled={isSubmitting || isUploadingAny}
       >
         Cancelar
@@ -334,7 +334,8 @@
         type="submit"
         loading={isSubmitting || isUpdating}
         disabled={isUploadingAny}
-        class="btn btn-primary"
+        variant="primary"
+        size="md"
       >
         {isUploadingAny ? 'Subiendo imágenes...' : 'Guardar Cambios'}
       </LoadingButton>
@@ -343,54 +344,41 @@
 </div>
 
 <style>
-  /* Variables */
-  :root {
-    --color-gray-100: #f3f4f6;
-    --color-gray-200: #e5e7eb;
-    --color-gray-300: #d1d5db;
-    --color-gray-500: #6b7280;
-    --color-gray-600: #4b5563;
-    --color-gray-700: #374151;
-    --color-gray-900: #111827;
-    --color-blue-500: #3b82f6;
-    --color-blue-600: #2563eb;
-    --color-blue-700: #1d4ed8;
-    --color-white: #ffffff;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  }
-
+  /* Container principal */
   .visual-identity-form {
     width: 100%;
   }
 
+  /* Mensajes */
   .message-container {
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--spacing-2xl);
   }
 
+  /* Formulario */
   .form {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--spacing-3xl);
   }
 
-  /* Secciones */
+  /* Secciones del formulario */
   .form-section:not(:first-child) {
-    border-top: 1px solid var(--color-gray-200);
-    padding-top: 2rem;
+    border-top: 1px solid var(--bg-accent);
+    padding-top: var(--spacing-3xl);
   }
 
   .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 1.5rem 0;
+    font-size: var(--font-xl);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-2xl) 0;
   }
 
   /* Grid de imágenes */
   .images-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: var(--spacing-2xl);
   }
 
   @media (min-width: 768px) {
@@ -407,8 +395,8 @@
   .colors-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: var(--spacing-2xl);
+    margin-bottom: var(--spacing-3xl);
   }
 
   @media (min-width: 768px) {
@@ -419,177 +407,348 @@
 
   /* Preview de colores */
   .color-preview {
-    background-color: var(--color-gray-100);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-  }
-
-  .preview-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 1rem 0;
-  }
-
-  .preview-card {
-    background-color: var(--color-white);
-    border-radius: 0.5rem;
-    border: 2px solid;
-    overflow: hidden;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
     box-shadow: var(--shadow-sm);
   }
 
+  .preview-title {
+    font-size: var(--font-lg);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-lg) 0;
+  }
+
+  .preview-card {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    border: 2px solid;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+  }
+
+  .preview-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
   .preview-header {
-    padding: 1rem 1.5rem;
+    padding: var(--spacing-lg) var(--spacing-2xl);
   }
 
   .preview-restaurant-name {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-bold);
     margin: 0;
   }
 
   .preview-content {
-    padding: 1.5rem;
+    padding: var(--spacing-2xl);
   }
 
   .preview-description {
-    color: var(--color-gray-600);
-    margin: 0 0 1rem 0;
-    line-height: 1.5;
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-lg) 0;
+    line-height: var(--leading-relaxed);
   }
 
   .preview-button {
-    padding: 0.5rem 1rem;
+    padding: var(--spacing-md) var(--spacing-xl);
     border: none;
-    border-radius: 0.375rem;
-    font-weight: 500;
+    border-radius: var(--radius-md);
+    font-weight: var(--weight-medium);
+    font-size: var(--font-sm);
     cursor: pointer;
-    transition: opacity 0.15s ease-in-out;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
   }
 
   .preview-button:hover {
-    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
 
-  /* Tipografía */
+  /* Campo de fuente */
   .font-field {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-3xl);
   }
 
-  .label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-gray-700);
+  .font-label {
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
   }
 
   .font-select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 0.5rem;
-    background-color: var(--color-white);
-    font-size: 0.875rem;
-    transition: border-color 0.15s ease-in-out;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-primary);
+    font-size: var(--font-sm);
+    color: var(--text-primary);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    min-height: 44px;
   }
 
   .font-select:focus {
     outline: none;
-    border-color: var(--color-blue-500);
-    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    transform: scale(1.01);
   }
 
-  .help-text {
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
+  .font-select:hover:not(:focus) {
+    border-color: var(--text-muted);
+  }
+
+  .font-help {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
     margin: 0;
   }
 
   /* Preview de fuente */
   .font-preview {
-    background-color: var(--color-gray-100);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-sm);
   }
 
   .font-preview-h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    color: var(--color-gray-900);
+    font-size: var(--font-4xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-sm) 0;
+    color: var(--text-primary);
+    line-height: var(--leading-tight);
   }
 
   .font-preview-h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 1rem 0;
-    color: var(--color-gray-700);
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-semibold);
+    margin: 0 0 var(--spacing-lg) 0;
+    color: var(--text-secondary);
+    line-height: var(--leading-snug);
   }
 
   .font-preview-p {
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: var(--font-base);
+    line-height: var(--leading-relaxed);
     margin: 0;
-    color: var(--color-gray-600);
+    color: var(--text-secondary);
   }
 
-  /* Botones */
+  /* Acciones del formulario */
   .form-actions {
-    border-top: 1px solid var(--color-gray-200);
-    padding-top: 1.5rem;
+    border-top: 1px solid var(--bg-accent);
+    padding-top: var(--spacing-2xl);
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
+    gap: var(--spacing-md);
     flex-wrap: wrap;
   }
 
-  .btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border: 1px solid transparent;
+  .cancel-button {
+    padding: var(--spacing-md) var(--spacing-2xl);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    border: 1px solid var(--bg-accent);
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: all var(--transition-normal);
     min-width: 120px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
   }
 
-  .btn:disabled {
+  .cancel-button:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+    border-color: var(--text-muted);
+    transform: translateY(-1px);
+  }
+
+  .cancel-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 
-  .btn-secondary {
-    color: var(--color-gray-700);
-    background-color: var(--color-white);
-    border-color: var(--color-gray-300);
+  .cancel-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 
-  .btn-secondary:hover:not(:disabled) {
-    background-color: var(--color-gray-100);
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .form {
+      gap: var(--spacing-2xl);
+    }
+
+    .form-section:not(:first-child) {
+      padding-top: var(--spacing-2xl);
+    }
+
+    .section-title {
+      font-size: var(--font-lg);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .color-preview,
+    .font-preview {
+      padding: var(--spacing-xl);
+    }
+
+    .preview-header {
+      padding: var(--spacing-md) var(--spacing-xl);
+    }
+
+    .preview-content {
+      padding: var(--spacing-xl);
+    }
+
+    .font-preview-h1 {
+      font-size: var(--font-3xl);
+    }
+
+    .font-preview-h2 {
+      font-size: var(--font-xl);
+    }
   }
 
-  :global(.btn-primary) {
-    background-color: var(--color-blue-600) !important;
-    color: var(--color-white) !important;
-    border-color: var(--color-blue-600) !important;
-  }
-
-  :global(.btn-primary:hover:not(:disabled)) {
-    background-color: var(--color-blue-700) !important;
-    border-color: var(--color-blue-700) !important;
-  }
-
-  /* Responsive */
   @media (max-width: 640px) {
     .form-actions {
       flex-direction: column;
     }
 
-    .btn {
+    .cancel-button {
       width: 100%;
+    }
+
+    .preview-button {
+      width: 100%;
+      padding: var(--spacing-lg);
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .preview-card:hover,
+    .preview-button:hover,
+    .cancel-button:hover {
+      transform: none;
+    }
+
+    .font-select:focus {
+      transform: none;
+    }
+
+    .preview-button,
+    .cancel-button {
+      min-height: 48px;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .preview-card,
+    .preview-button,
+    .cancel-button,
+    .font-select {
+      transition: none;
+    }
+
+    .preview-card:hover,
+    .preview-button:hover,
+    .cancel-button:hover {
+      transform: none;
+    }
+
+    .font-select:focus {
+      transform: none;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .color-preview,
+    .font-preview {
+      background-color: var(--bg-accent);
+    }
+
+    .preview-card {
+      background-color: var(--bg-tertiary);
+    }
+
+    .font-select {
+      background-color: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+    }
+
+    .font-select:focus {
+      background-color: var(--bg-primary);
+    }
+
+    .cancel-button {
+      background-color: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+      color: var(--text-primary);
+    }
+
+    .cancel-button:hover:not(:disabled) {
+      background-color: var(--bg-accent);
+    }
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .form-section:not(:first-child) {
+      border-top-width: 2px;
+    }
+
+    .preview-card {
+      border-width: 3px;
+    }
+
+    .font-select,
+    .cancel-button {
+      border-width: 2px;
+    }
+
+    .form-actions {
+      border-top-width: 2px;
+    }
+  }
+
+  /* Focus management */
+  .font-select:focus-visible,
+  .cancel-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* Print styles */
+  @media print {
+    .form-actions {
+      display: none;
+    }
+
+    .preview-card,
+    .color-preview,
+    .font-preview {
+      border: 1px solid black;
+      box-shadow: none;
+    }
+
+    .preview-button {
+      border: 1px solid black;
+      background: white !important;
+      color: black !important;
     }
   }
 </style>

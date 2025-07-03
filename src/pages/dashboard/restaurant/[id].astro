@@ -1,10 +1,10 @@
 ---
 import RestaurantUpdate from  '../../../components/RestaurantUpdate.svelte'
-import MenuuppLayout from '../../../layouts/MenuuppLayout.astro'
+import PrivateLayout from '../../../layouts/PrivateLayout.astro';
 const id = Astro.params.id
 console.log( 'idParasms', id )
 
 ---
-<MenuuppLayout title='' description='' >
+<PrivateLayout title='Menuupp' description='Tu panel de control'  >
     <RestaurantUpdate client:load restaurantId={id}  />
-</MenuuppLayout>
+</PrivateLayout>

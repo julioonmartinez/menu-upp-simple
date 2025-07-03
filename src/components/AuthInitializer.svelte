@@ -14,29 +14,37 @@
 
   onMount(async () => {
     try {
+      console.log('🔧 AuthInitializer: Starting initialization...');
+      
       // 1. Inicializar autenticación primero
       if (serverUser && serverAuth) {
         // Pre-cargar el estado con los datos del servidor si están disponibles
-        console.log('Pre-loading auth state from server');
+        console.log('🔧 AuthInitializer: Pre-loading auth state from server');
       }
       
+      console.log('🔧 AuthInitializer: Calling authStore.init()...');
       await authStore.init();
+      
+      console.log('🔧 AuthInitializer: Auth store initialized');
+      console.log('🔧 AuthInitializer: Is authenticated?', authStore.getIsAuthenticated());
       
       // 2. Si el usuario está autenticado, cargar favoritos
       if (authStore.getIsAuthenticated()) {
-        console.log('User authenticated, loading favorites...');
+        console.log('🔧 AuthInitializer: User authenticated, loading favorites...');
         await restaurantFavoritesStore.loadUserFavorites();
         await dishRatingStore.loadFavoriteDishes()
         await restaurantStore.loadUserRestaurants() 
         
-        console.log('Favorites loaded successfully');
+        console.log('🔧 AuthInitializer: Favorites loaded successfully');
+      } else {
+        console.log('🔧 AuthInitializer: User not authenticated, skipping favorites');
       }
       
       isInitializing = false;
-      console.log('App initialization completed');
+      console.log('🔧 AuthInitializer: App initialization completed');
       
     } catch (error) {
-      console.error('Error during app initialization:', error);
+      console.error('❌ AuthInitializer: Error during app initialization:', error);
       initError = error instanceof Error ? error.message : 'Error de inicialización';
       isInitializing = false;
     }

@@ -24,12 +24,14 @@
   // Variable reactiva para la calificación del usuario
   let userRating = 0;
   let visible = false;
-  let imageLoaded = false; // Nueva variable para controlar la carga de imagen
+  let imageLoaded = $state(false); // Usar $state para asegurar reactividad
+  let imageError = $state(false); // Usar $state para asegurar reactividad
   let quantity = 1;
   let showOptions = false;
   let addingToCart = false;
   let selectedOptions: DishOption[] = [];
   const isDishFavoriteStore = dishRatingStore.isDishFavorite(item.id!);
+  console.log('isDishFavoriteStore', item, $isDishFavoriteStore );
   
   // Variable reactiva para mantener actualizado el contador de likes
   let favoritesCount = item.favorites || 0;
@@ -51,6 +53,17 @@
     // Hacer visible inmediatamente (las transiciones de Svelte manejarán la animación)
     visible = true;
     
+    // Debug: Log del estado inicial de la imagen
+    console.log('Component mounted:', item.name, 'Image:', item.image, 'ImageLoaded:', imageLoaded, 'ImageError:', imageError);
+    
+    // Timeout de seguridad para evitar que las imágenes se queden en estado de carga indefinidamente
+    const imageTimeout = setTimeout(() => {
+      if (!imageLoaded && !imageError && item.image && item.image !== '') {
+        console.log('Image timeout reached for:', item.name);
+        imageError = true;
+      }
+    }, 5000); // 5 segundos de timeout
+    
     // Suscribirse al store para mantener actualizado el contador de favoritos
     const unsubscribe = favoritesStore.subscribe(state => {
       const dish = state.allDishes.find(d => d.id === item.id);
@@ -60,7 +73,10 @@
     });
     
     // Limpiar la suscripción cuando el componente se desmonte
-    return unsubscribe;
+    return () => {
+      clearTimeout(imageTimeout);
+      unsubscribe();
+    };
   });
 
   // Función para abrir el modal de detalles del platillo
@@ -83,7 +99,20 @@
   
   // Función para manejar la carga de la imagen
   function handleImageLoad() {
+    console.log('Image loaded successfully:', item.name, item.image);
+    console.log('Before setting imageLoaded:', imageLoaded, imageError);
     imageLoaded = true;
+    imageError = false;
+    console.log('After setting imageLoaded:', imageLoaded, imageError);
+  }
+  
+  // Función para manejar errores de carga de imagen
+  function handleImageError() {
+    console.log('Image failed to load:', item.name, item.image);
+    console.log('Before setting imageError:', imageLoaded, imageError);
+    imageError = true;
+    imageLoaded = false;
+    console.log('After setting imageError:', imageLoaded, imageError);
   }
   
   // Función para formatear el contador de likes
@@ -163,23 +192,23 @@
   
   // Función para alternar una opción seleccionada
   function toggleOption(option: DishOption) {
-    const index = selectedOptions.findIndex(opt => opt.id === option.id);
+    const index = selectedOptions.findIndex(opt => opt.name === option.name);
     
     if (index >= 0) {
-      selectedOptions = selectedOptions.filter(opt => opt.id !== option.id);
+      selectedOptions = selectedOptions.filter(opt => opt.name !== option.name);
     } else {
       selectedOptions = [...selectedOptions, {...option}];
     }
     
     // Registrar interacción de analytics
-    if (item.id && option.id) {
-      recordLinkClick(`dish-option-${option.id}-${item.id}`);
+    if (item.id) {
+      recordLinkClick(`dish-option-${option.name}-${item.id}`);
     }
   }
   
   // Comprobar si una opción está seleccionada
-  function isOptionSelected(optionId: string | number) {
-    return selectedOptions.some(opt => opt.id === optionId);
+  function isOptionSelected(optionName: string) {
+    return selectedOptions.some(opt => opt.name === optionName);
   }
 
   // Función para manejar clicks en controles de cantidad
@@ -197,7 +226,6 @@
 <div 
   class="bento-card group clickable-card"
   data-item-id={item.id}
-  style="--bg-color: {formattedBackgroundColor}; --primary-color: {formattedPrimaryColor}; --secondary-color: {formattedSecondaryColor};"
   in:fly={{y: 30, delay: index * 50, duration: 500, easing: cubicOut}}
   onclick={showDishDetails}
   onkeydown={(e) => e.key === 'Enter' && showDishDetails(e)}
@@ -213,16 +241,25 @@
   {/if}
 
   <div class="image-container {!item.image || item.image === '' ? 'no-image' : ''}">
-    {#if item.image && item.image !== ''}
+    <!-- Debug: imageLoaded={imageLoaded}, imageError={imageError} -->
+    {#if !item.image || item.image === ''}
+      <div class="placeholder-icon-card" in:fade={{ duration: 300, delay: 100 }}>
+        <i class="fa-solid fa-utensils"></i>
+      </div>
+    {:else if imageError}
+      <div class="image-placeholder error">
+        <i class="fa-solid fa-image"></i>
+      </div>
+    {:else}
       <img 
         src={item.image} 
         alt={item.name} 
         class="dish-image {imageLoaded ? 'loaded' : 'loading'}"
         onload={handleImageLoad}
+        onerror={handleImageError}
         in:fade={{ duration: 400, delay: 100 }}
         out:fade={{ duration: 200 }}
       />
-      <!-- Placeholder mientras carga la imagen -->
       {#if !imageLoaded}
         <div class="image-placeholder">
           <div class="loading-spinner">
@@ -230,10 +267,6 @@
           </div>
         </div>
       {/if}
-    {:else}
-      <div class="placeholder-icon-card" in:fade={{ duration: 300, delay: 100 }}>
-        <i class="fa-solid fa-utensils"></i>
-      </div>
     {/if}
     
     <!-- Favorito con contador (solo se muestra cuando hay 5 o más likes) -->
@@ -311,7 +344,7 @@
                 <label class="option-item">
                   <input 
                     type="checkbox" 
-                    checked={isOptionSelected(option.id)} 
+                    checked={isOptionSelected(option.name)} 
                     onchange={() => toggleOption(option)}
                     class="option-checkbox"
                   />
@@ -393,30 +426,13 @@
 </div>
 
 <style>
-/* Variables CSS para colores (ajusta según tu paleta) */
-:root {
-  --red-color: #eb0000;
-  --color-secondary-md: #f3f4f6; /* gray-100 */
-  --color-text: #1f2937; /* gray-800 */
-  --color-white: #ffffff;
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-black-60: rgba(0, 0, 0, 0.6);
-  --color-white-80: rgba(255, 255, 255, 0.8);
-}
-
 /* Componente principal - Clickeable */
 .bento-card {
   height: 100%;
   background-color: var(--bg-primary);
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
   overflow: hidden;
   position: relative;
   display: flex;
@@ -429,7 +445,7 @@
 }
 
 .clickable-card:hover {
-  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-3px);
 }
 
@@ -441,7 +457,7 @@
 /* Evitar que los elementos de acción activen el modal */
 .action-button {
   position: relative;
-  z-index: 10;
+  z-index: var(--z-popover);
 }
 
 /* Badge de descuento */
@@ -449,14 +465,14 @@
   position: absolute;
   top: 0;
   left: 0;
-  background-color: var(--red-color);
-  color: var(--color-white);
-  padding: 0.25rem 0.75rem;
-  border-bottom-right-radius: 0.5rem;
-  z-index: 10;
-  font-weight: 500;
-  font-size: 0.875rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background-color: var(--error);
+  color: var(--text-inverse);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-bottom-right-radius: var(--radius-md);
+  z-index: var(--z-popover);
+  font-weight: var(--weight-medium);
+  font-size: var(--font-sm);
+  box-shadow: var(--shadow-xs);
 }
 
 /* Contenedor de imagen - Mejorado */
@@ -464,22 +480,22 @@
   position: relative;
   height: 12rem;
   overflow: hidden;
-  background-color: var(--bg-tertiary, #f1f5f9);
+  background-color: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .image-container.no-image {
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
 }
 
 .dish-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 1; /* Asegurar que la opacidad inicial sea 1 */
+  transition: opacity var(--transition-normal);
+  opacity: 0;
 }
 
 .dish-image.loading {
@@ -504,13 +520,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-tertiary, #f1f5f9);
-  z-index: 1;
+  background-color: var(--bg-tertiary);
+  z-index: 2;
+}
+
+.image-placeholder.error {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
+.image-placeholder.error i {
+  font-size: 3rem;
 }
 
 .loading-spinner {
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted);
   font-size: 2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .placeholder-icon-card {
@@ -519,30 +554,30 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-size: 4rem;
-  background-color: var(--bg-tertiary, #f1f5f9);
+  background-color: var(--bg-tertiary);
 }
 
 /* Contenedor de favoritos */
 .favorites-container {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 15;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  z-index: var(--z-popover);
   display: flex;
   align-items: center;
 }
 
 .favorites-counter {
-  background-color: var(--color-white-80);
-  backdrop-filter: blur(4px);
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  margin-right: 0.5rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  font-size: 0.75rem;
-  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: var(--backdrop-blur-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  margin-right: var(--spacing-sm);
+  box-shadow: var(--shadow-xs);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
   display: flex;
   align-items: center;
 }
@@ -550,20 +585,20 @@
 .heart-icon {
   width: 0.75rem;
   height: 0.75rem;
-  color: var(--red-color);
-  margin-right: 0.25rem;
+  color: var(--error);
+  margin-right: var(--spacing-xs);
 }
 
 .favorites-text {
-  color: var(--color-gray-700);
+  color: var(--text-primary);
 }
 
 /* Overlay de agotado */
 .out-of-stock-overlay {
   position: absolute;
   inset: 0;
-  background-color: var(--color-black-60);
-  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--backdrop-blur-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -571,14 +606,14 @@
 }
 
 .out-of-stock-text {
-  color: var(--color-white);
-  font-weight: 700;
-  font-size: 1.125rem;
+  color: var(--text-inverse);
+  font-weight: var(--weight-bold);
+  font-size: var(--font-xl);
 }
 
 /* Contenido de la tarjeta */
 .card-content {
-  padding: 1.25rem;
+  padding: var(--spacing-2xl);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -588,19 +623,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-sm);
 }
 
 .dish-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: var(--leading-tight);
   max-width: 70%;
 }
 
 .price-container {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-align: right;
   display: flex;
   align-items: center;
@@ -608,31 +643,31 @@
 }
 
 .original-price {
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
   text-decoration: line-through;
-  color: var(--color-gray-400);
-  margin-right: 0.25rem;
+  color: var(--text-muted);
+  margin-right: var(--spacing-xs);
 }
 
 .discounted-price {
   color: var(--primary-color);
-  font-size: 1.5rem;
+  font-size: var(--font-3xl);
 }
 
 .regular-price {
   color: var(--primary-color);
-  font-size: 1.25rem;
+  font-size: var(--font-2xl);
 }
 
 .description {
   color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--spacing-md);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
-  font-size: 0.9rem;
+  line-height: var(--leading-relaxed);
+  font-size: var(--font-base);
 }
 
 .spacer {
@@ -645,8 +680,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 0.5rem;
-  gap: 0.75rem;
+  margin-bottom: var(--spacing-sm);
+  gap: var(--spacing-md);
   flex-wrap: wrap;
 }
 
@@ -654,35 +689,35 @@
 .rating-indicator {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  background-color: var(--color-gray-100);
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  color: var(--color-gray-600);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: var(--spacing-xs);
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .rating-indicator:hover {
-  background-color: var(--color-gray-200);
-  color: var(--color-gray-700);
+  background-color: var(--bg-accent);
+  color: var(--text-primary);
 }
 
 .star-icon {
-  color: #fbbf24; /* yellow-400 */
-  font-size: 0.875rem;
+  color: #fbbf24;
+  font-size: var(--font-sm);
 }
 
 .rating-value {
-  font-weight: 600;
-  color: var(--color-gray-700);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
 }
 
 .reviews-count {
-  font-weight: 400;
-  color: var(--color-gray-500);
+  font-weight: var(--weight-normal);
+  color: var(--text-muted);
   font-size: 0.7rem;
 }
 
@@ -690,77 +725,77 @@
 .comments-indicator {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  background-color: var(--color-gray-100);
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  color: var(--color-gray-600);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: var(--spacing-xs);
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .comments-indicator:hover {
-  background-color: var(--color-gray-200);
-  color: var(--color-gray-700);
+  background-color: var(--bg-accent);
+  color: var(--text-primary);
 }
 
 .comment-icon {
   color: var(--primary-color);
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
 }
 
 .comments-count {
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   min-width: 1rem;
   text-align: center;
 }
 
 /* Controles de la tienda */
 .store-controls {
-  margin-top: 0.75rem;
+  margin-top: var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--spacing-md);
 }
 
 .options-panel {
-  background-color: var(--color-gray-50);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--color-gray-200);
+  background-color: var(--bg-primary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--bg-accent);
 }
 
 .options-title {
-  font-weight: 500;
-  font-size: 0.875rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-gray-700);
+  font-weight: var(--weight-medium);
+  font-size: var(--font-sm);
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
 }
 
 .options-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .option-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
 }
 
 .option-item:hover {
-  background-color: var(--color-gray-100);
+  background-color: var(--bg-secondary);
 }
 
 .option-checkbox {
-  border-radius: 0.25rem;
+  border-radius: var(--radius-sm);
   color: var(--primary-color);
 }
 
@@ -769,30 +804,30 @@
 }
 
 .option-name {
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
   flex: 1;
 }
 
 .option-price {
-  font-size: 0.75rem;
-  color: var(--color-gray-500);
-  font-weight: 500;
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  font-weight: var(--weight-medium);
 }
 
 .quantity-and-options {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .quantity-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background-color: var(--color-gray-100);
-  border-radius: 0.5rem;
-  padding: 0.25rem;
+  gap: var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs);
 }
 
 .quantity-btn {
@@ -801,18 +836,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.375rem;
-  background-color: var(--color-white);
-  color: var(--color-gray-700);
-  transition: all 0.2s;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
   border: none;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xs);
 }
 
 .quantity-btn:hover:not(:disabled) {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--text-inverse);
   transform: scale(1.05);
 }
 
@@ -829,22 +864,22 @@
 .quantity-display {
   width: 2rem;
   text-align: center;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: var(--weight-semibold);
+  font-size: var(--font-base);
 }
 
 .toggle-options-btn {
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
   color: var(--primary-color);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   display: flex;
   align-items: center;
   background: none;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+  transition: all var(--transition-fast);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
 }
 
 .toggle-options-btn:hover {
@@ -854,8 +889,8 @@
 .toggle-icon {
   width: 1rem;
   height: 1rem;
-  margin-left: 0.25rem;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: var(--spacing-xs);
+  transition: transform var(--transition-normal);
 }
 
 .toggle-icon.rotated {
@@ -865,30 +900,30 @@
 .add-to-cart-section {
   display: flex;
   align-items: center;
-  margin-top: 0.25rem;
+  margin-top: var(--spacing-xs);
 }
 
 .add-to-cart-btn {
   flex: 1;
-  background: linear-gradient(135deg, var(--primary-color) 0%, #e55a2b 100%);
-  color: var(--color-white);
+  background: var(--primary-gradient);
+  color: var(--text-inverse);
   border: none;
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  font-weight: 600;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-normal);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+  box-shadow: var(--shadow-md);
   min-height: 44px;
 }
 
 .add-to-cart-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  box-shadow: var(--primary-glow);
 }
 
 .add-to-cart-btn.loading {
@@ -898,7 +933,7 @@
 .loading-content {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .loading-spinner-btn {
@@ -917,49 +952,39 @@
 
 .out-of-stock-btn {
   flex: 1;
-  background-color: var(--color-gray-200);
-  color: var(--color-gray-500);
+  background-color: var(--bg-accent);
+  color: var(--text-muted);
   border: none;
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  font-weight: 500;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: var(--weight-medium);
   cursor: not-allowed;
   min-height: 44px;
-}
-
-/* Animaciones */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Responsive mejoras */
 @media (max-width: 480px) {
   .dish-title {
-    font-size: 1.1rem;
+    font-size: var(--font-xl);
   }
   
   .regular-price,
   .discounted-price {
-    font-size: 1.1rem;
+    font-size: var(--font-xl);
   }
   
   .description {
-    font-size: 0.85rem;
+    font-size: var(--font-sm);
   }
   
   .card-content {
-    padding: 1rem;
+    padding: var(--spacing-lg);
   }
 
   .rating-and-comments-container {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .comments-indicator {
@@ -970,28 +995,28 @@
 /* Mejoras visuales para modo oscuro */
 @media (prefers-color-scheme: dark) {
   .bento-card {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-xl);
   }
   
   .image-placeholder,
   .placeholder-icon-card {
-    background-color: #374151;
+    background-color: var(--bg-tertiary);
   }
 
   .comments-indicator {
     background-color: rgba(55, 65, 81, 0.8);
-    color: #d1d5db;
+    color: var(--text-light);
   }
 
   .comments-indicator:hover {
     background-color: rgba(75, 85, 99, 0.9);
-    color: #f3f4f6;
+    color: var(--text-primary);
   }
 }
 
 /* Transiciones generales para botones */
 button {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-fast);
 }
 
 /* Mejoras de accesibilidad */
@@ -1027,6 +1052,6 @@ button {
 .comments-indicator:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 1px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 </style>

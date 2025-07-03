@@ -1,0 +1,266 @@
+---
+import PrivateHeader from '../components/PrivateHeader.svelte';
+import '../styles/reset.css';
+import '../styles/global-styles.css';
+import ModalManager from '../components/ ModalManager.svelte';
+import AuthInitializer from '../components/AuthInitializer.svelte';
+import ToastContainer from '../components/ui/ToastContainer.svelte';
+
+export interface Props {
+  title: string;
+  description?: string;
+  showHeaderShadow?: boolean;
+  transparentHeader?: boolean;
+  showHeader?: boolean;
+  backUrl?: string;
+}
+
+const { 
+  title, 
+  description = "Panel de control - Menupp",
+  showHeaderShadow = false,
+  transparentHeader = false,
+  showHeader = true,
+  backUrl = '/dashboard',
+} = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content={description}>
+  
+  <!-- Favicon y iconos -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  
+  <!-- Meta tags para SEO -->
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  
+  <!-- Preload critical resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <title>{title}</title>
+  
+  <!-- Global styles -->
+  <style>
+    /* CSS Variables específicas para Menupp */
+    :root {
+      --primary-color: #ff6b35;
+      --primary-light: #ff8c69;
+      --primary-dark: #e55a2b;
+      --header-height: 60px;
+      --header-height-mobile: 56px;
+    }
+    
+    /* Ajuste del body para el header fijo */
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      min-height: 100vh;
+      padding-top: var(--header-height);
+    }
+    
+    @media (max-width: 767px) {
+      body {
+        padding-top: var(--header-height-mobile);
+      }
+    }
+    
+    /* Smooth scrolling para toda la página */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Mejoras de accesibilidad */
+    *:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    
+    /* Optimizaciones de performance */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Prevenir zoom en inputs de iOS */
+    input, textarea, select {
+      font-size: 16px;
+    }
+    
+    @media (max-width: 767px) {
+      input, textarea, select {
+        font-size: 16px; /* Previene zoom automático en iOS */
+      }
+    }
+    
+    /* Loading states */
+    .page-loading {
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }
+    
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+    
+    /* Scrollbar personalizado */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #f8fafc;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+    }
+    
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      
+      html {
+        scroll-behavior: auto;
+      }
+    }
+
+    /* Estilos específicos para páginas privadas */
+    .private-page {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .private-page main {
+      padding: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 767px) {
+      .private-page main {
+        padding: 0.75rem;
+      }
+    }
+
+    /* Dark mode para páginas privadas */
+    @media (prefers-color-scheme: dark) {
+      .private-page {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      }
+    }
+  </style>
+</head>
+
+<body class="page-loading private-page">
+  <!-- Inicializador de autenticación (invisible) -->
+  <AuthInitializer 
+    client:load 
+  />
+  
+  <!-- Header privado -->
+  {showHeader && <PrivateHeader 
+    client:load 
+    showShadow={showHeaderShadow} 
+    transparent={transparentHeader}
+    backUrl={backUrl}
+  />}
+  
+  <!-- Contenido principal -->
+  <main id="main-content" role="main">
+    <slot />
+  </main>
+  
+  <!-- Toast Container -->
+  <ToastContainer client:load />
+  
+  <div id="modal-root">
+    <ModalManager client:load />
+  </div>
+  
+  <!-- Scripts globales -->
+  <script>
+    // Remover loading state cuando la página esté lista
+    if (typeof document !== 'undefined') {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.remove('page-loading');
+      });
+    }
+    
+    // PWA and offline support (opcional para futuro)
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .catch(() => {
+            // Service worker registration failed
+          });
+      });
+    }
+  </script>
+  
+  <!-- Structured data para SEO -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Menupp - Panel Privado",
+      "description": "Panel de control para usuarios registrados",
+      "url": "https://menu-upp-basic.vercel.app",
+      "applicationCategory": "FoodEstablishmentReservation",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  </script>
+</body>
+</html> 

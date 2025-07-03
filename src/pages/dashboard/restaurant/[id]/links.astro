@@ -7,14 +7,14 @@ import { linkTreeService } from '../../../../services/linkTreeService.ts';
 const id = Astro.params.id;
 let linkTree = null;
 
-try {
-  const result = await linkTreeService.getLinkTreeByRestaurant(id!);
-  if (result.success) {
-    linkTree = result.data;
-  }
-} catch (e) {
-  linkTree = null;
-}
+// try {
+//   const result = await linkTreeService.getLinkTreeByRestaurant(id!);
+//   if (result.success) {
+//     linkTree = result.data;
+//   }
+// } catch (e) {
+//   linkTree = null;
+// }
 ---
 <MenuuppLayout title='' description=''>
   <LinksDashboard client:load restaurantId={id} linkTree={linkTree} />

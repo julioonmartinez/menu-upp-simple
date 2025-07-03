@@ -113,6 +113,38 @@
     top: 0 !important;
     left: 0 !important;
   }
+  /* Prevenir z-index problemáticos dentro del modal */
+  :global(.modal-overlay *) {
+    z-index: auto !important;
+  }
+  :global(.modal-overlay .modal-container *) {
+    z-index: auto !important;
+  }
+  /* Permitir hover effects en botones específicos del modal */
+  :global(.modal-overlay .btn:hover) {
+    transform: translateY(-1px) !important;
+  }
+  :global(.modal-overlay .btn-icon:hover) {
+    transform: scale(1.05) !important;
+  }
+  /* Permitir hover effects en cards dentro del modal */
+  :global(.modal-overlay .card:hover) {
+    transform: translateY(-2px) !important;
+  }
+  /* Reglas específicas para IconPicker dentro del modal */
+  :global(.modal-overlay .dropdown-panel) {
+    z-index: 10001 !important;
+  }
+  :global(.modal-overlay .icon-picker .dropdown-panel) {
+    z-index: 10001 !important;
+  }
+  /* Prevenir interferencias desde elementos fuera del modal */
+  :global(body.modal-open > *:not(.modal-overlay)) {
+    pointer-events: none;
+  }
+  :global(body.modal-open .modal-overlay) {
+    pointer-events: auto;
+  }
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -120,14 +152,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-modal, 500);
+    z-index: 9999;
     padding: var(--spacing-lg);
     animation: fadeIn 0.15s ease-out;
     overflow-y: auto;
+    isolation: isolate;
+    contain: layout style paint;
+    pointer-events: auto;
   }
   .modal-container {
     max-height: 90vh;
     margin: auto;
+    position: relative;
+    z-index: 10000;
+    isolation: isolate;
   }
   .modal-sm { max-width: 28rem; width: 100%; }
   .modal-md { max-width: 32rem; width: 100%; }
@@ -136,6 +174,14 @@
   .modal-full { max-width: 95vw; width: 100%; max-height: 95vh; }
   .modal-header { border-bottom: 1px solid var(--bg-accent); }
   .modal-close-icon { width: 1.5rem; height: 1.5rem; }
+  .modal-content { 
+    position: relative;
+    z-index: 1;
+  }
+  .modal-close-btn {
+    position: relative;
+    z-index: 2;
+  }
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

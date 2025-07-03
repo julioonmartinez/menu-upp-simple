@@ -540,7 +540,7 @@ function showDishDetails(dish:DishWithRatings) {
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    z-index: 100;
+    z-index: var(--z-dropdown);
   }
 
   .search-wrapper {
@@ -551,60 +551,60 @@ function showDishDetails(dish:DishWithRatings) {
   .search-box {
     background: var(--bg-glass);
     border: 2px solid var(--bg-accent);
-    border-radius: 16px;
-    padding: 8px;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-md);
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    gap: var(--spacing-md);
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-lg);
   }
 
   .search-box.focused {
-    border-color: var(--primary-color, #ff6b35);
-    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.15);
+    border-color: var(--primary-color);
+    box-shadow: var(--primary-glow);
     transform: translateY(-2px);
   }
 
   .search-box.has-results {
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
   }
 
   .search-input-wrapper {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--spacing-md);
     min-height: 48px;
-    padding: 0 12px;
+    padding: 0 var(--spacing-md);
   }
 
   .search-icon {
     color: var(--text-muted);
     flex-shrink: 0;
-    transition: color 0.3s ease;
+    transition: color var(--transition-normal);
   }
 
   .search-box.focused .search-icon {
-    color: var(--primary-color, #ff6b35);
+    color: var(--primary-color);
   }
 
   .search-input {
     flex: 1;
     border: none;
     background: transparent;
-    font-size: 1.1rem;
+    font-size: var(--font-xl);
     color: var(--text-secondary);
     outline: none;
     padding: 0;
-    font-weight: 500;
+    font-weight: var(--weight-medium);
     width: 0px;
   }
 
   .search-input::placeholder {
     color: var(--text-muted);
-    font-weight: 400;
+    font-weight: var(--weight-normal);
   }
 
   .search-loading {
@@ -616,8 +616,8 @@ function showDishDetails(dish:DishWithRatings) {
   .loading-spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid #e2e8f0;
-    border-top: 2px solid var(--primary-color, #ff6b35);
+    border: 2px solid var(--bg-accent);
+    border-top: 2px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -638,34 +638,34 @@ function showDishDetails(dish:DishWithRatings) {
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
   }
 
   .clear-btn:hover {
-    background: #cbd5e1;
-    color: #475569;
+    background: var(--bg-accent);
+    color: var(--text-secondary);
     transform: scale(1.1);
   }
 
   .search-submit-btn {
     background: var(--primary-gradient);
-    color: white;
+    color: var(--text-inverse);
     border: none;
-    border-radius: 12px;
-    padding: 12px 20px;
-    font-weight: 700;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-weight: var(--weight-bold);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-md);
     min-height: 48px;
     flex-shrink: 0;
   }
 
   .search-submit-btn:not(:disabled):hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.3);
+    box-shadow: var(--primary-glow);
   }
 
   .search-submit-btn:disabled {
@@ -675,7 +675,7 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .submit-arrow {
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-normal);
   }
 
   .search-submit-btn:hover .submit-arrow {
@@ -684,12 +684,12 @@ function showDishDetails(dish:DishWithRatings) {
 
   /* Quick Search Chips */
   .quick-search-section {
-    margin-top: 16px;
-    padding: 0 4px;
+    margin-top: var(--spacing-lg);
+    padding: 0 var(--spacing-sm);
   }
 
   .quick-search-section.mobile {
-    margin-top: 12px;
+    margin-top: var(--spacing-md);
     padding: 0;
   }
 
@@ -703,10 +703,9 @@ function showDishDetails(dish:DishWithRatings) {
     position: relative;
     display: flex;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: var(--spacing-md);
     overflow-x: auto;
-    /* overflow-y: hidden; */
-    padding: 8px 0;
+    padding: var(--spacing-md) 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
@@ -718,150 +717,148 @@ function showDishDetails(dish:DishWithRatings) {
 
   .chips-container.mobile {
     justify-content: flex-start;
-    gap: 6px;
-    padding: 6px 0;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
   }
 
   .fade-gradient {
-  position: absolute;
-  /* top: 0; */
-  bottom: 0;
-  right: -5px;
-  width: 40px;
-  height: 56px;
-  background: 
-    linear-gradient(to left, 
-      var(--bg-secondary) 0%, 
-      var(--bg-secondary) 15%, 
-      color-mix(in srgb, var(--bg-secondary) 70%, transparent) 50%,
-      color-mix(in srgb, var(--bg-secondary) 40%, transparent) 80%,
-      transparent 100%);
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* Fallback para navegadores que no soportan color-mix */
-@supports not (color: color-mix(in srgb, white, black)) {
-  .fade-gradient {
-    background: linear-gradient(to left, 
-      var(--bg-secondary) 0%, 
-      var(--bg-secondary) 15%, 
-      var(--bg-surface) 50%,
-      var(--bg-glass) 80%,
-      transparent 100%);
+    position: absolute;
+    bottom: 0;
+    right: -5px;
+    width: 40px;
+    height: 80px;
+    background: 
+      linear-gradient(to left, 
+        var(--bg-secondary) 0%, 
+        var(--bg-secondary) 15%, 
+        color-mix(in srgb, var(--bg-secondary) 70%, transparent) 50%,
+        color-mix(in srgb, var(--bg-secondary) 40%, transparent) 80%,
+        transparent 100%);
+    pointer-events: none;
+    z-index: 10;
   }
-}
 
+  /* Fallback para navegadores que no soportan color-mix */
+  @supports not (color: color-mix(in srgb, white, black)) {
+    .fade-gradient {
+      background: linear-gradient(to left, 
+        var(--bg-secondary) 0%, 
+        var(--bg-secondary) 15%, 
+        var(--bg-surface) 50%,
+        var(--bg-glass) 80%,
+        transparent 100%);
+    }
+  }
 
- .quick-search-section.mobile .fade-gradient {
-  width: 32px;
-}
-
-@media (max-width: 480px) {
-  .fade-gradient {
+  .quick-search-section.mobile .fade-gradient {
     width: 32px;
   }
-}
+
+  @media (max-width: 480px) {
+    .fade-gradient {
+      width: 32px;
+    }
+  }
 
   .search-chip {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--spacing-sm);
     background: var(--bg-primary);
     border: 1.5px solid var(--bg-glass);
-    border-radius: 24px;
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    font-weight: 500;
+    border-radius: var(--radius-full);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     white-space: nowrap;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-xs);
   }
 
   .search-chip:hover {
-    border-color: var(--primary-color, #ff6b35);
-    background: #fff7f5;
+    border-color: var(--primary-color);
+    background: var(--bg-tertiary);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+    box-shadow: var(--shadow-md);
   }
 
   .search-chip.active {
-    background: linear-gradient(135deg, var(--primary-color, #ff6b35) 0%, #ff8c69 100%);
-    border-color: var(--primary-color, #ff6b35);
-    color: white;
+    background: var(--primary-gradient);
+    border-color: var(--primary-color);
+    color: var(--text-inverse);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+    box-shadow: var(--shadow-lg);
   }
 
   .chip-icon {
-    font-size: 1rem;
+    font-size: var(--font-lg);
     display: flex;
     align-items: center;
   }
 
   .chip-label {
-    font-weight: 600;
+    font-weight: var(--weight-semibold);
   }
 
   .show-more-chip {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--spacing-sm);
     background: var(--bg-secondary);
     border: 1.5px dashed var(--bg-accent);
-    border-radius: 24px;
-    padding: 8px 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    border-radius: var(--radius-full);
+    padding: var(--spacing-md) var(--spacing-md);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
     color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     white-space: nowrap;
     flex-shrink: 0;
-    margin-right: 1rem;
+    margin-right: var(--spacing-lg);
   }
 
   .show-more-chip:hover {
-    border-color: var(--primary-color, #ff6b35);
+    border-color: var(--primary-color);
     background: var(--bg-tertiary);
-    color: var(--primary-color, #ff6b35);
+    color: var(--primary-color);
   }
 
   .show-less-btn {
     display: block;
-    margin: 8px auto 0;
+    margin: var(--spacing-md) auto 0;
     background: none;
     border: none;
-    color: #64748b;
-    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 12px;
-    transition: all 0.2s ease;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
   }
 
   .show-less-btn:hover {
-    background: #f1f5f9;
-    color: var(--primary-color, #ff6b35);
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
   }
 
   /* Dropdown */
   .search-dropdown {
     position: absolute;
-    top: calc(100% - 8px);
+    top: calc(100% - var(--spacing-md));
     left: 0;
     right: 0;
     background: var(--bg-primary);
-    border: 2px solid var(--primary-color, #ff6b35);
+    border: 2px solid var(--primary-color);
     border-top: none;
-    border-radius: 0 0 16px 16px;
-    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.15);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    box-shadow: var(--shadow-xl);
     max-height: 400px;
     overflow-y: auto;
-    z-index: 9999;
+    z-index: var(--z-popover);
   }
 
   .search-dropdown.no-results {
@@ -869,7 +866,7 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .results-section {
-    padding: 12px 0;
+    padding: var(--spacing-md) 0;
   }
 
   .results-section:not(:last-child) {
@@ -879,25 +876,25 @@ function showDishDetails(dish:DishWithRatings) {
   .section-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
     color: var(--text-muted);
     background: var(--bg-secondary);
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-sm);
   }
 
   .result-item {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     border: none;
     background: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
     text-align: left;
   }
 
@@ -909,7 +906,7 @@ function showDishDetails(dish:DishWithRatings) {
   .item-image {
     width: 48px;
     height: 48px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     overflow: hidden;
     flex-shrink: 0;
     background: var(--bg-tertiary);
@@ -925,7 +922,7 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .placeholder-icon {
-    font-size: 1.5rem;
+    font-size: var(--font-3xl);
     color: var(--text-light);
   }
 
@@ -935,9 +932,9 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .item-title {
-    font-weight: 600;
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -945,32 +942,32 @@ function showDishDetails(dish:DishWithRatings) {
 
   .item-title :global(mark) {
     background: rgba(255, 107, 53, 0.2);
-    color: var(--primary-color, #ff6b35);
+    color: var(--primary-color);
     padding: 0;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
 
   .item-meta {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 0.8rem;
+    gap: var(--spacing-md);
+    font-size: var(--font-xs);
     color: var(--text-muted);
-    margin-bottom: 2px;
+    margin-bottom: var(--spacing-xs);
   }
 
   .cuisine, .price {
-    font-weight: 500;
+    font-weight: var(--weight-medium);
   }
 
   .rating {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--spacing-xs);
   }
 
   .item-description {
-    font-size: 0.8rem;
+    font-size: var(--font-xs);
     color: var(--text-light);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -978,7 +975,7 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .view-all-section {
-    padding: 8px;
+    padding: var(--spacing-md);
     border-top: 1px solid var(--bg-tertiary);
   }
 
@@ -987,14 +984,14 @@ function showDishDetails(dish:DishWithRatings) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: var(--spacing-md) var(--spacing-lg);
     border: none;
     background: var(--bg-tertiary);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 600;
-    color: var(--primary-color, #ff6b35);
+    transition: all var(--transition-fast);
+    font-weight: var(--weight-semibold);
+    color: var(--primary-color);
   }
 
   .view-all-btn:hover,
@@ -1005,23 +1002,23 @@ function showDishDetails(dish:DishWithRatings) {
 
   /* Empty state */
   .empty-state {
-    padding: 32px 16px;
+    padding: var(--spacing-3xl) var(--spacing-lg);
     text-align: center;
   }
 
   .empty-icon {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
+    font-size: var(--font-6xl);
+    margin-bottom: var(--spacing-md);
   }
 
   .empty-title {
-    font-weight: 600;
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-sm);
   }
 
   .empty-subtitle {
-    font-size: 0.9rem;
+    font-size: var(--font-sm);
     color: var(--text-muted);
   }
 
@@ -1031,7 +1028,7 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .hero-search-container.mobile .search-submit-btn {
-    padding: 12px 16px;
+    padding: var(--spacing-md) var(--spacing-lg);
   }
 
   .hero-search-container.mobile .submit-text {
@@ -1039,19 +1036,19 @@ function showDishDetails(dish:DishWithRatings) {
   }
 
   .hero-search-container.mobile .search-dropdown {
-    z-index: 10000;
-    border-radius: 0 0 16px 16px;
+    z-index: var(--z-toast);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
     max-height: 60vh;
   }
 
   @media (max-width: 480px) {
     .search-box {
-      padding: 6px;
-      border-radius: 12px;
+      padding: var(--spacing-sm);
+      border-radius: var(--radius-lg);
     }
 
     .search-input-wrapper {
-      padding: 0 8px;
+      padding: 0 var(--spacing-md);
       min-height: 44px;
     }
 
@@ -1061,7 +1058,7 @@ function showDishDetails(dish:DishWithRatings) {
 
     .search-submit-btn {
       min-height: 44px;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
     }
 
     .item-image {
@@ -1070,21 +1067,21 @@ function showDishDetails(dish:DishWithRatings) {
     }
 
     .result-item {
-      padding: 10px 12px;
+      padding: var(--spacing-md) var(--spacing-md);
     }
 
     .search-chip {
-      padding: 6px 12px;
-      font-size: 0.8rem;
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: var(--font-xs);
     }
 
     .quick-search-section {
-      margin-top: 10px;
+      margin-top: var(--spacing-md);
     }
 
     .chips-container.mobile {
-      padding: 4px 0;
-      gap: 4px;
+      padding: var(--spacing-sm) 0;
+      gap: var(--spacing-sm);
     }
 
     .fade-gradient {
@@ -1108,5 +1105,31 @@ function showDishDetails(dish:DishWithRatings) {
 
   .search-dropdown::-webkit-scrollbar-thumb:hover {
     background: var(--text-light);
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .search-chip:hover,
+    .search-submit-btn:hover,
+    .view-all-btn:hover {
+      transform: none;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .search-box,
+    .search-chip,
+    .search-submit-btn,
+    .view-all-btn,
+    .submit-arrow {
+      transition: none;
+    }
+    .search-box.focused,
+    .search-chip:hover,
+    .search-submit-btn:hover,
+    .view-all-btn:hover {
+      transform: none;
+    }
   }
 </style>

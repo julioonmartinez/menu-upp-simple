@@ -4,6 +4,7 @@ import '../styles/reset.css'
 import '../styles/global.css'
 import type { Restaurant } from '../interfaces'
 import ModalManager from '../components/ ModalManager.svelte'
+import ToastContainer from '../components/ui/ToastContainer.svelte'
 
 interface Props {
   restaurant: Restaurant
@@ -188,6 +189,9 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     
     <!-- Modal Manager -->
     <ModalManager client:load  />
+    
+    <!-- Toast Container -->
+    <ToastContainer client:load />
     
     <!-- Error Boundary for JavaScript errors -->
     <div id="error-boundary" class="error-boundary" style="display: none;" role="alert">

@@ -1,0 +1,57 @@
+---
+import PrivateLayout from '../layouts/PrivateLayout.astro';
+import SettingsManager from '../components/SettingsManager.svelte';
+
+export const prerender = false;
+---
+
+<PrivateLayout 
+  title="Configuración - MenuUpp"
+  description="Gestiona la configuración de tu cuenta y preferencias"
+  showHeaderShadow={true}
+>
+  <div class="settings-container">
+    <div class="settings-header">
+      <h1 class="settings-title">Configuración</h1>
+      <p class="settings-subtitle">Gestiona tus preferencias y configuración del sistema</p>
+    </div>
+    
+    <SettingsManager client:load />
+  </div>
+</PrivateLayout>
+
+<style>
+  .settings-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl);
+  }
+
+  .settings-header {
+    text-align: center;
+    margin-bottom: var(--spacing-3xl);
+  }
+
+  .settings-title {
+    font-size: var(--font-4xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .settings-subtitle {
+    font-size: var(--font-lg);
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .settings-container {
+      padding: var(--spacing-lg);
+    }
+
+    .settings-title {
+      font-size: var(--font-3xl);
+    }
+  }
+</style> 

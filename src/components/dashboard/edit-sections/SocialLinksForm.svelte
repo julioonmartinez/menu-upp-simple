@@ -375,7 +375,7 @@
       <button
         type="button"
         on:click={() => dispatch('close')}
-        class="btn btn-secondary"
+        class="cancel-button"
         disabled={isSubmitting}
       >
         Cancelar
@@ -384,7 +384,8 @@
       <LoadingButton
         type="submit"
         loading={isSubmitting || isUpdating}
-        class="btn btn-primary"
+        variant="primary"
+        size="md"
       >
         Guardar Enlaces
       </LoadingButton>
@@ -393,79 +394,67 @@
 </div>
 
 <style>
-  /* Variables */
-  :root {
-    --color-gray-100: #f3f4f6;
-    --color-gray-200: #e5e7eb;
-    --color-gray-300: #d1d5db;
-    --color-gray-500: #6b7280;
-    --color-gray-600: #4b5563;
-    --color-gray-700: #374151;
-    --color-gray-900: #111827;
-    --color-blue-500: #3b82f6;
-    --color-blue-600: #2563eb;
-    --color-blue-700: #1d4ed8;
-    --color-green-500: #10b981;
-    --color-white: #ffffff;
-  }
-
+  /* Container principal */
   .social-links-form {
     width: 100%;
   }
 
+  /* Mensajes */
   .message-container {
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--spacing-2xl);
   }
 
   /* Contador de enlaces */
   .links-counter {
-    background-color: var(--color-blue-50);
-    border: 1px solid var(--color-blue-200);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    background-color: var(--info-bg);
+    border: 1px solid var(--info);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+    box-shadow: var(--shadow-sm);
   }
 
   .counter-content {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .counter-icon {
-    font-size: 1.25rem;
+    font-size: var(--font-xl);
   }
 
   .counter-text {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-blue-800);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--info);
   }
 
+  /* Formulario */
   .form {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--spacing-3xl);
   }
 
-  /* Secciones */
+  /* Secciones del formulario */
   .form-section:not(:first-child) {
-    border-top: 1px solid var(--color-gray-200);
-    padding-top: 2rem;
+    border-top: 1px solid var(--bg-accent);
+    padding-top: var(--spacing-3xl);
   }
 
   .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 1.5rem 0;
+    font-size: var(--font-xl);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-2xl) 0;
   }
 
   /* Grid de redes sociales */
   .social-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: var(--spacing-2xl);
   }
 
   @media (min-width: 768px) {
@@ -478,137 +467,314 @@
   .social-field {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--spacing-md);
   }
 
   .social-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .social-icon {
-    font-size: 1.25rem;
+    font-size: var(--font-xl);
   }
 
   .social-name {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-gray-700);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
   }
 
   /* Preview de enlaces */
   .link-preview {
-    margin-top: 0.5rem;
+    margin-top: var(--spacing-sm);
   }
 
   .preview-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    color: var(--color-blue-600);
+    gap: var(--spacing-xs);
+    font-size: var(--font-xs);
+    color: var(--primary-color);
     text-decoration: none;
-    padding: 0.25rem 0.5rem;
-    background-color: var(--color-blue-50);
-    border-radius: 0.375rem;
-    transition: all 0.15s ease-in-out;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--bg-accent);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    border: 1px solid transparent;
   }
 
   .preview-link:hover {
-    background-color: var(--color-blue-100);
-    color: var(--color-blue-700);
+    background-color: var(--bg-tertiary);
+    color: var(--primary-dark);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .preview-link:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 
   /* Sección de tips */
   .tips-section {
-    background-color: var(--color-gray-100);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--bg-accent);
   }
 
   .tips-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-gray-900);
-    margin: 0 0 1rem 0;
+    font-size: var(--font-lg);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-lg) 0;
   }
 
   .tips-list {
     margin: 0;
-    padding-left: 1.25rem;
-    color: var(--color-gray-600);
+    padding-left: var(--spacing-2xl);
+    color: var(--text-secondary);
   }
 
   .tips-list li {
-    font-size: 0.875rem;
-    line-height: 1.5;
-    margin-bottom: 0.5rem;
+    font-size: var(--font-sm);
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--spacing-sm);
   }
 
   .tips-list li:last-child {
     margin-bottom: 0;
   }
 
-  /* Botones */
+  /* Acciones del formulario */
   .form-actions {
-    border-top: 1px solid var(--color-gray-200);
-    padding-top: 1.5rem;
+    border-top: 1px solid var(--bg-accent);
+    padding-top: var(--spacing-2xl);
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
+    gap: var(--spacing-md);
     flex-wrap: wrap;
   }
 
-  .btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border: 1px solid transparent;
+  .cancel-button {
+    padding: var(--spacing-md) var(--spacing-2xl);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    border: 1px solid var(--bg-accent);
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: all var(--transition-normal);
     min-width: 120px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
   }
 
-  .btn:disabled {
+  .cancel-button:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+    border-color: var(--text-muted);
+    transform: translateY(-1px);
+  }
+
+  .cancel-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 
-  .btn-secondary {
-    color: var(--color-gray-700);
-    background-color: var(--color-white);
-    border-color: var(--color-gray-300);
+  .cancel-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 
-  .btn-secondary:hover:not(:disabled) {
-    background-color: var(--color-gray-100);
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .form {
+      gap: var(--spacing-2xl);
+    }
+
+    .form-section:not(:first-child) {
+      padding-top: var(--spacing-2xl);
+    }
+
+    .section-title {
+      font-size: var(--font-lg);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .tips-section {
+      padding: var(--spacing-xl);
+    }
+
+    .links-counter {
+      padding: var(--spacing-md);
+    }
   }
 
-  :global(.btn-primary) {
-    background-color: var(--color-blue-600) !important;
-    color: var(--color-white) !important;
-    border-color: var(--color-blue-600) !important;
-  }
-
-  :global(.btn-primary:hover:not(:disabled)) {
-    background-color: var(--color-blue-700) !important;
-    border-color: var(--color-blue-700) !important;
-  }
-
-  /* Responsive */
   @media (max-width: 640px) {
     .form-actions {
       flex-direction: column;
     }
 
-    .btn {
+    .cancel-button {
       width: 100%;
     }
 
     .social-grid {
       grid-template-columns: 1fr;
+    }
+
+    .tips-list {
+      padding-left: var(--spacing-xl);
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .preview-link:hover,
+    .cancel-button:hover {
+      transform: none;
+    }
+
+    .preview-link,
+    .cancel-button {
+      min-height: 44px;
+    }
+
+    .preview-link {
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .preview-link,
+    .cancel-button {
+      transition: none;
+    }
+
+    .preview-link:hover,
+    .cancel-button:hover {
+      transform: none;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .links-counter {
+      background-color: var(--bg-accent);
+      border-color: var(--info);
+    }
+
+    .tips-section {
+      background-color: var(--bg-accent);
+      border-color: var(--bg-tertiary);
+    }
+
+    .preview-link {
+      background-color: var(--bg-accent);
+      color: var(--primary-light);
+    }
+
+    .preview-link:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--primary-color);
+    }
+
+    .cancel-button {
+      background-color: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+      color: var(--text-primary);
+    }
+
+    .cancel-button:hover:not(:disabled) {
+      background-color: var(--bg-accent);
+    }
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .form-section:not(:first-child) {
+      border-top-width: 2px;
+    }
+
+    .links-counter,
+    .tips-section {
+      border-width: 2px;
+    }
+
+    .preview-link,
+    .cancel-button {
+      border-width: 2px;
+    }
+
+    .form-actions {
+      border-top-width: 2px;
+    }
+  }
+
+  /* Focus management */
+  .preview-link:focus-visible,
+  .cancel-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* Print styles */
+  @media print {
+    .form-actions {
+      display: none;
+    }
+
+    .links-counter,
+    .tips-section {
+      border: 1px solid black;
+      box-shadow: none;
+    }
+
+    .preview-link {
+      border: 1px solid black;
+      background: white !important;
+      color: black !important;
+    }
+  }
+
+  /* Animation for counter */
+  .links-counter {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Hover effects for social fields */
+  .social-field {
+    transition: all var(--transition-fast);
+  }
+
+  .social-field:hover {
+    transform: translateX(4px);
+  }
+
+  /* Reduced motion for social fields */
+  @media (prefers-reduced-motion: reduce) {
+    .social-field:hover {
+      transform: none;
+    }
+
+    .links-counter {
+      animation: none;
     }
   }
 </style>

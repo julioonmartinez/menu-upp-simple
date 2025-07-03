@@ -4,6 +4,7 @@
   import { dishUtils } from '../../services/index.ts';
   import type { Dish, DishCreate, DishUpdate, DishOption, NutritionalInfo } from '../../interfaces/dish.ts';
   import type { Category } from '../../interfaces/category.ts';
+  import { toastStore } from '../../stores/toastStore.ts';
 
   // Props
   export let dish: Dish | null = null;
@@ -16,7 +17,7 @@
   const dispatch = createEventDispatcher();
 
   // Form data
-  let formData : any = {
+  let formData: any = {
     name: dish?.name || '',
     description: dish?.description || '',
     price: dish?.price || 0,
@@ -44,6 +45,7 @@
   // Validation state
   let errors: { [key: string]: string } = {};
   let touched: { [key: string]: boolean } = {};
+  let submitted = false; // Track if form has been submitted
 
   // Computed
   $: isEditing = !!dish;
@@ -69,13 +71,13 @@
   $: discountedPrice = dishUtils.calculateDiscountedPrice(formData.price, formData.discount);
   $: hasDiscount = formData.discount > 0;
 
-  // Reactive validation
+  // Reactive validation - only run when fields are touched or form is submitted
   $: {
-    validateField('name', formData.name);
-    validateField('description', formData.description);
-    validateField('price', formData.price.toString());
-    validateField('categoryId', formData.categoryId);
-    validateField('discount', formData.discount.toString());
+    if (submitted || touched.name) validateField('name', formData.name);
+    if (submitted || touched.description) validateField('description', formData.description);
+    if (submitted || touched.price) validateField('price', formData.price.toString());
+    if (submitted || touched.categoryId) validateField('categoryId', formData.categoryId);
+    if (submitted || touched.discount) validateField('discount', formData.discount.toString());
   }
 
   // Methods
@@ -223,9 +225,12 @@
   function handleSubmit(event: Event) {
     event.preventDefault();
     
-    if (!isValid || isSubmitting) return;
+    if (isSubmitting) return;
 
-    // Mark all fields as touched
+    // Mark form as submitted to trigger validation
+    submitted = true;
+    
+    // Mark all fields as touched to show errors
     touched = {
       name: true,
       description: true,
@@ -233,6 +238,36 @@
       categoryId: true,
       discount: true
     };
+
+    // Force validation of all fields
+    validateField('name', formData.name);
+    validateField('description', formData.description);
+    validateField('price', formData.price.toString());
+    validateField('categoryId', formData.categoryId);
+    validateField('discount', formData.discount.toString());
+
+    // If there are validation errors, don't submit
+    if (Object.keys(errors).length > 0) {
+      // Mostrar notificación de error de validación con detalles
+      const errorFields = Object.keys(errors);
+      const errorCount = errorFields.length;
+      const fieldNames = {
+        name: 'nombre',
+        description: 'descripción', 
+        price: 'precio',
+        categoryId: 'categoría',
+        discount: 'descuento'
+      };
+      
+      const fieldList = errorFields.map(field => fieldNames[field as keyof typeof fieldNames] || field).join(', ');
+      
+      toastStore.error(
+        errorCount === 1 
+          ? `Error en el campo: ${fieldList}`
+          : `Errores en los campos: ${fieldList}`
+      );
+      return;
+    }
 
     // Prepare final data
     const finalData: DishCreate | DishUpdate = {
@@ -269,16 +304,24 @@
   }
 
   function handleCancel() {
+    // Si hay cambios sin guardar, mostrar notificación
+    if (isDirty) {
+      toastStore.info('Cambios descartados');
+    }
+    
+    submitted = false;
+    errors = {};
+    touched = {};
     dispatch('cancel');
   }
 
   function getFieldError(field: string): string | null {
-    return touched[field] && errors[field] ? errors[field] : null;
+    return (touched[field] || submitted) && errors[field] ? errors[field] : null;
   }
 
   function getFieldClasses(field: string): string {
-    const baseClasses = 'form-input';
-    const errorClasses = getFieldError(field) ? ' form-input-error' : '';
+    const baseClasses = 'input';
+    const errorClasses = getFieldError(field) ? ' input-error' : '';
     return baseClasses + errorClasses;
   }
 
@@ -308,16 +351,23 @@
 <form class="dish-form" on:submit={handleSubmit}>
   <!-- Error Display -->
   {#if error}
-    <div class="form-error-container">
-      <div class="form-error-content">
-        <svg class="form-error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-        </svg>
-        <div class="form-error-text">
-          <p class="form-error-title">Error al {isEditing ? 'actualizar' : 'crear'} platillo</p>
-          <p class="form-error-message">{error}</p>
-        </div>
-      </div>
+    <div class="error-state">
+      <i>⚠️</i>
+      <h3>Error al {isEditing ? 'actualizar' : 'crear'} platillo</h3>
+      <p>{error}</p>
+    </div>
+  {/if}
+
+  <!-- Validation Error Display -->
+  {#if submitted && Object.keys(errors).length > 0}
+    <div class="validation-error-state">
+      <i>⚠️</i>
+      <h3>Por favor corrige los siguientes errores:</h3>
+      <ul class="validation-error-list">
+        {#each Object.keys(errors) as field}
+          <li>{errors[field]}</li>
+        {/each}
+      </ul>
     </div>
   {/if}
 
@@ -572,7 +622,7 @@
               <input
                 id="calories"
                 type="number"
-                class="form-input"
+                class="input"
                 placeholder="0"
                 value={formData.nutritionalInfo.calories || ''}
                 on:input={(e) => handleNutritionalInput('calories', e)}
@@ -586,7 +636,7 @@
               <input
                 id="protein"
                 type="number"
-                class="form-input"
+                class="input"
                 placeholder="0"
                 value={formData.nutritionalInfo.protein || ''}
                 on:input={(e) => handleNutritionalInput('protein', e)}
@@ -603,7 +653,7 @@
               <input
                 id="carbs"
                 type="number"
-                class="form-input"
+                class="input"
                 placeholder="0"
                 value={formData.nutritionalInfo.carbs || ''}
                 on:input={(e) => handleNutritionalInput('carbs', e)}
@@ -618,7 +668,7 @@
               <input
                 id="fat"
                 type="number"
-                class="form-input"
+                class="input"
                 placeholder="0"
                 value={formData.nutritionalInfo.fat || ''}
                 on:input={(e) => handleNutritionalInput('fat', e)}
@@ -634,7 +684,7 @@
             <input
               id="allergens"
               type="text"
-              class="form-input"
+              class="input"
               placeholder="Ej: Gluten, Nueces, Lácteos (separados por comas)"
               value={formData.nutritionalInfo.allergens.join(', ')}
               on:input={(e) => handleNutritionalInput('allergens', e)}
@@ -653,7 +703,7 @@
   <div class="form-actions">
     <button
       type="button"
-      class="btn-secondary"
+      class="btn btn-secondary"
       on:click={handleCancel}
       disabled={isSubmitting}
     >
@@ -662,11 +712,11 @@
     
     <button
       type="submit"
-      class="btn-primary"
-      disabled={!isValid || isSubmitting}
+      class="btn btn-primary"
+      disabled={isSubmitting}
     >
       {#if isSubmitting}
-        <svg class="btn-icon btn-spinner" fill="none" viewBox="0 0 24 24">
+        <svg class="btn-icon animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -693,10 +743,10 @@
     
     {#if formData.categoryId}
       <div class="form-info-item">
-        <svg class="form-info-icon text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="form-info-icon text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
         </svg>
-        <p class="form-info-text text-blue-700">
+        <p class="form-info-text text-info">
           Categoría seleccionada: <strong>{getCategoryName(formData.categoryId)}</strong>
         </p>
       </div>
@@ -704,10 +754,10 @@
     
     {#if isDirty}
       <div class="form-info-item">
-        <svg class="form-info-icon text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="form-info-icon text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
         </svg>
-        <p class="form-info-text text-amber-700">
+        <p class="form-info-text text-warning">
           Tienes cambios sin guardar
         </p>
       </div>
@@ -716,73 +766,35 @@
 </form>
 
 <style>
+  /* Component-specific styles that complement global styles */
   .dish-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--spacing-xl);
     max-width: 100%;
-  }
-
-  /* Error Display */
-  .form-error-container {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 0.5rem;
-    padding: 1rem;
-  }
-
-  .form-error-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .form-error-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #dc2626;
-    flex-shrink: 0;
-    margin-top: 0.125rem;
-  }
-
-  .form-error-text {
-    flex: 1;
-  }
-
-  .form-error-title {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #991b1b;
-    margin: 0 0 0.25rem 0;
-  }
-
-  .form-error-message {
-    font-size: 0.875rem;
-    color: #dc2626;
-    margin: 0;
   }
 
   /* Form Sections */
   .form-sections {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--spacing-2xl);
   }
 
   .form-section {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 1.5rem;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-2xl);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-xl);
   }
 
   .section-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #374151;
+    font-size: var(--font-lg);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -795,22 +807,22 @@
   .section-toggle {
     background: none;
     border: none;
-    color: #6b7280;
+    color: var(--text-muted);
     cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 0.25rem;
-    transition: all 0.15s ease-in-out;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal);
   }
 
   .section-toggle:hover {
-    background-color: #e5e7eb;
-    color: #374151;
+    background: var(--bg-accent);
+    color: var(--text-secondary);
   }
 
   .toggle-icon {
     width: 1.25rem;
     height: 1.25rem;
-    transition: transform 0.15s ease-in-out;
+    transition: transform var(--transition-normal);
   }
 
   .toggle-icon.rotated {
@@ -821,71 +833,75 @@
   .form-fields {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: var(--spacing-lg);
   }
 
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: var(--spacing-lg);
   }
 
   .form-field {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .form-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--spacing-xs);
   }
 
   .form-required {
-    color: #dc2626;
-    font-weight: 600;
+    color: var(--error);
+    font-weight: var(--weight-semibold);
   }
 
-  .form-input {
+  /* Input overrides for form-specific styling */
+  .input {
     width: 100%;
-    padding: 0.625rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    background-color: #ffffff;
-    transition: all 0.15s ease-in-out;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-base);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all var(--transition-normal);
+    min-height: 44px;
   }
 
-  .form-input:focus {
+  .input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
   }
 
-  .form-input:disabled {
-    background-color: #f9fafb;
-    color: #6b7280;
+  .input:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
     cursor: not-allowed;
   }
 
-  .form-input-error {
-    border-color: #dc2626;
+  .input-error {
+    border-color: var(--error);
   }
 
-  .form-input-error:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  .input-error:focus {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
   }
 
-  textarea.form-input {
+  textarea.input {
     resize: none;
     min-height: 100px;
     max-height: 200px;
     font-family: inherit;
+    line-height: var(--leading-relaxed);
   }
 
   /* Price Input */
@@ -897,15 +913,15 @@
 
   .price-currency {
     position: absolute;
-    left: 0.75rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
+    left: var(--spacing-lg);
+    font-size: var(--font-base);
+    color: var(--text-muted);
+    font-weight: var(--weight-medium);
     pointer-events: none;
   }
 
-  .price-input-wrapper .form-input {
-    padding-left: 1.75rem;
+  .price-input-wrapper .input {
+    padding-left: var(--spacing-2xl);
   }
 
   /* Discount Input */
@@ -917,56 +933,57 @@
 
   .discount-symbol {
     position: absolute;
-    right: 0.75rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
+    right: var(--spacing-lg);
+    font-size: var(--font-base);
+    color: var(--text-muted);
+    font-weight: var(--weight-medium);
     pointer-events: none;
   }
 
-  .discount-input-wrapper .form-input {
-    padding-right: 1.75rem;
+  .discount-input-wrapper .input {
+    padding-right: var(--spacing-2xl);
   }
 
   .discount-preview {
-    color: #059669 !important;
-    font-weight: 500;
+    color: var(--success) !important;
+    font-weight: var(--weight-medium);
   }
 
   /* Checkbox */
   .form-checkbox-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
     cursor: pointer;
   }
 
   .form-checkbox {
     width: 1.125rem;
     height: 1.125rem;
-    accent-color: #3b82f6;
+    accent-color: var(--primary-color);
   }
 
   .checkbox-text {
-    font-size: 0.875rem;
-    color: #374151;
-    font-weight: 500;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    font-weight: var(--weight-medium);
   }
 
   /* Field Helpers */
   .form-field-error {
-    font-size: 0.75rem;
-    color: #dc2626;
+    font-size: var(--font-xs);
+    color: var(--error);
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--spacing-xs);
   }
 
   .form-field-hint {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
     margin: 0;
+    line-height: var(--leading-relaxed);
   }
 
   /* Image Upload */
@@ -976,10 +993,10 @@
 
   .image-preview {
     position: relative;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    background-color: #f3f4f6;
-    border: 2px dashed #d1d5db;
+    background: var(--bg-tertiary);
+    border: 2px dashed var(--bg-accent);
   }
 
   .preview-image {
@@ -992,13 +1009,13 @@
   .image-overlay {
     position: absolute;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: var(--spacing-md);
     opacity: 0;
-    transition: opacity 0.15s ease-in-out;
+    transition: opacity var(--transition-normal);
   }
 
   .image-preview:hover .image-overlay {
@@ -1008,14 +1025,14 @@
   .image-action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
     border: none;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-    font-weight: 500;
+    border-radius: var(--radius-md);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: all var(--transition-normal);
     text-decoration: none;
   }
 
@@ -1025,21 +1042,21 @@
   }
 
   .image-remove {
-    background-color: #dc2626;
-    color: white;
+    background: var(--error);
+    color: var(--text-inverse);
   }
 
   .image-remove:hover {
-    background-color: #b91c1c;
+    background: var(--error-light);
   }
 
   .image-change {
-    background-color: #3b82f6;
-    color: white;
+    background: var(--primary-color);
+    color: var(--text-inverse);
   }
 
   .image-change:hover {
-    background-color: #2563eb;
+    background: var(--primary-dark);
   }
 
   .image-dropzone {
@@ -1047,44 +1064,44 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3rem 1rem;
-    border: 2px dashed #d1d5db;
-    border-radius: 0.75rem;
-    background-color: #f9fafb;
-    transition: all 0.15s ease-in-out;
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    border: 2px dashed var(--bg-accent);
+    border-radius: var(--radius-xl);
+    background: var(--bg-tertiary);
+    transition: all var(--transition-normal);
     cursor: pointer;
   }
 
   .image-dropzone:hover,
   .image-dropzone.drag-active {
-    border-color: #3b82f6;
-    background-color: #eff6ff;
+    border-color: var(--primary-color);
+    background: var(--info-bg);
   }
 
   .dropzone-icon {
     width: 3rem;
     height: 3rem;
-    color: #9ca3af;
-    margin-bottom: 1rem;
+    color: var(--text-light);
+    margin-bottom: var(--spacing-lg);
   }
 
   .dropzone-text {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin: 0 0 0.5rem 0;
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-sm) 0;
     text-align: center;
   }
 
   .dropzone-link {
-    color: #3b82f6;
-    font-weight: 500;
+    color: var(--primary-color);
+    font-weight: var(--weight-medium);
     text-decoration: underline;
     cursor: pointer;
   }
 
   .dropzone-hint {
-    font-size: 0.75rem;
-    color: #9ca3af;
+    font-size: var(--font-xs);
+    color: var(--text-light);
     margin: 0;
   }
 
@@ -1096,67 +1113,72 @@
   .nutritional-fields {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding-top: 0.5rem;
+    gap: var(--spacing-lg);
+    padding-top: var(--spacing-sm);
   }
 
   /* Form Actions */
   .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e5e7eb;
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-xl);
+    border-top: 1px solid var(--bg-accent);
+  }
+
+  /* Button overrides for form-specific styling */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    font-weight: var(--weight-semibold);
+    font-size: var(--font-base);
+    line-height: 1;
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    border: none;
+    min-height: 44px;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    background: var(--primary-gradient);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-sm);
     min-width: 160px;
-    justify-content: center;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background-color: #2563eb;
+    box-shadow: var(--primary-glow);
+    transform: translateY(-2px);
   }
 
   .btn-primary:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
   }
 
   .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background-color: #ffffff;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--bg-accent);
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background-color: #f9fafb;
-    border-color: #9ca3af;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: var(--bg-tertiary);
   }
 
   .btn-secondary:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
   }
 
@@ -1166,65 +1188,55 @@
     flex-shrink: 0;
   }
 
-  .btn-spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* Form Info */
   .form-info {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-    background-color: #f9fafb;
-    border-radius: 0.5rem;
-    border: 1px solid #e5e7eb;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--bg-accent);
   }
 
   .form-info-item {
     display: flex;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .form-info-icon {
     width: 1rem;
     height: 1rem;
-    color: #6b7280;
+    color: var(--text-muted);
     flex-shrink: 0;
     margin-top: 0.125rem;
   }
 
-  .form-info-icon.text-blue-500 {
-    color: #3b82f6;
+  .form-info-icon.text-info {
+    color: var(--info);
   }
 
-  .form-info-icon.text-amber-500 {
-    color: #f59e0b;
+  .form-info-icon.text-warning {
+    color: var(--warning);
   }
 
   .form-info-text {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
     margin: 0;
-    line-height: 1.4;
+    line-height: var(--leading-relaxed);
   }
 
-  .form-info-text.text-blue-700 {
-    color: #1d4ed8;
+  .form-info-text.text-info {
+    color: var(--info);
   }
 
-  .form-info-text.text-amber-700 {
-    color: #b45309;
+  .form-info-text.text-warning {
+    color: var(--warning);
   }
 
-  /* Responsive */
+  /* Responsive Design */
   @media (max-width: 768px) {
     .form-row {
       grid-template-columns: 1fr;
@@ -1234,22 +1246,115 @@
       flex-direction: column-reverse;
     }
 
-    .btn-primary,
-    .btn-secondary {
+    .btn {
       justify-content: center;
       width: 100%;
     }
 
     .form-section {
-      padding: 1rem;
+      padding: var(--spacing-lg);
     }
 
     .image-dropzone {
-      padding: 2rem 1rem;
+      padding: var(--spacing-2xl) var(--spacing-lg);
     }
 
     .preview-image {
       height: 150px;
     }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .btn {
+      min-height: 48px;
+      padding: var(--spacing-lg) var(--spacing-xl);
+    }
+    
+    .input {
+      min-height: 48px;
+      padding: var(--spacing-lg);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .btn,
+    .input,
+    .section-toggle,
+    .toggle-icon,
+    .image-overlay,
+    .image-dropzone {
+      transition: none;
+    }
+    
+    .btn:hover {
+      transform: none;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .form-section {
+      background: var(--bg-accent);
+      border-color: var(--bg-tertiary);
+    }
+    
+    .form-info {
+      background: var(--bg-accent);
+      border-color: var(--bg-tertiary);
+    }
+    
+    .input {
+      background: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+    }
+    
+    .input:focus {
+      background: var(--bg-primary);
+    }
+    
+    .image-dropzone {
+      background: var(--bg-accent);
+    }
+  }
+
+  /* Validation Error State */
+  .validation-error-state {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--error-bg);
+    border: 1px solid var(--error);
+    border-radius: var(--radius-lg);
+    color: var(--error);
+  }
+
+  .validation-error-state i {
+    font-size: var(--font-lg);
+  }
+
+  .validation-error-state h3 {
+    font-size: var(--font-base);
+    font-weight: var(--weight-semibold);
+    margin: 0;
+    color: var(--error);
+  }
+
+  .validation-error-list {
+    margin: 0;
+    padding-left: var(--spacing-lg);
+    list-style-type: disc;
+  }
+
+  .validation-error-list li {
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-xs);
+    line-height: var(--leading-relaxed);
+  }
+
+  .validation-error-list li:last-child {
+    margin-bottom: 0;
   }
 </style>

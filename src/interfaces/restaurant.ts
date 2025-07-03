@@ -99,14 +99,14 @@ export interface Restaurant {
   };
 }
 
-  export interface HeroSlide {
+export interface HeroSlide {
   imageUrl: string;
   title: string;
   subtitle: string;
   alt?: string;
+  position: number; // Agregado: posición del slide en el carousel (0-4)
   image_data?: ImageData;
 }
-
 
 interface DishWithUserState extends Dish {
     userFav?: boolean;

@@ -167,35 +167,36 @@
   $: remainingTags = maxTags ? maxTags - value.length : null;
 </script>
 
-<div class="tag-input flex flex-col gap-xs">
+<div class="tag-input">
   {#if label}
-    <label for={id} class="text-sm font-medium text-primary flex items-center gap-xs">
+    <label for={id} class="tag-label">
       {label}
       {#if required}
-        <span class="text-error">*</span>
+        <span class="required-indicator">*</span>
       {/if}
       {#if maxTags}
-        <span class="text-xs text-muted ml-auto">({value.length}/{maxTags})</span>
+        <span class="tag-counter">({value.length}/{maxTags})</span>
       {/if}
     </label>
   {/if}
-  <div class="relative">
+  
+  <div class="tag-input-wrapper">
     <div 
-      class="tags-container flex flex-wrap gap-xs items-center min-h-[2.5rem] p-xs border rounded bg-white cursor-text transition-all w-full {error ? 'border-error' : 'border'} {disabled ? 'bg-gray opacity-50 cursor-not-allowed' : ''}"
+      class="tags-container {error ? 'error' : ''} {disabled ? 'disabled' : ''}"
       on:click={focusInput}
     >
       <!-- Tags existentes -->
       {#each value as tag, index}
-        <div class="tag inline-flex items-center gap-2xs px-sm py-xs bg-accent text-primary rounded text-xs font-medium max-w-[200px]">
-          <span class="tag-text truncate">{tag}</span>
+        <div class="tag">
+          <span class="tag-text">{tag}</span>
           {#if !disabled}
             <button
               type="button"
-              class="tag-remove btn btn-ghost btn-sm btn-rounded p-0"
+              class="tag-remove"
               on:click|stopPropagation={() => removeTag(index)}
               aria-label="Eliminar {tag}"
             >
-              <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="remove-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -211,7 +212,7 @@
           {id}
           type="text"
           {placeholder}
-          class="tag-input-field input border-0 bg-transparent text-sm flex-1 min-w-[120px] p-0"
+          class="tag-input-field"
           on:keydown={handleInputKeydown}
           on:blur={handleInputBlur}
           on:input={() => {}}
@@ -220,7 +221,7 @@
       
       <!-- Placeholder cuando no hay tags -->
       {#if value.length === 0 && (!canAddMore || disabled)}
-        <span class="empty-placeholder text-sm text-muted italic">
+        <span class="empty-placeholder">
           {disabled ? 'Sin etiquetas' : 'Máximo de etiquetas alcanzado'}
         </span>
       {/if}
@@ -228,11 +229,11 @@
     
     <!-- Sugerencias -->
     {#if showSuggestions && filteredSuggestions.length > 0}
-      <div class="suggestions-container absolute left-0 right-0 bg-white border rounded shadow-lg max-h-[200px] overflow-y-auto z-[50] mt-xs">
+      <div class="suggestions-container">
         {#each filteredSuggestions as suggestion, index}
           <button
             type="button"
-            class="suggestion-item w-full text-left px-md py-sm bg-transparent border-0 text-sm transition-all border-b last:border-b-0 {index === selectedSuggestionIndex ? 'bg-accent text-primary' : ''}"
+            class="suggestion-item {index === selectedSuggestionIndex ? 'selected' : ''}"
             on:click={() => handleSuggestionClick(suggestion)}
           >
             {suggestion}
@@ -243,15 +244,15 @@
   </div>
   
   <!-- Mensajes de ayuda/error -->
-  <div class="messages flex flex-col gap-2xs">
+  <div class="messages">
     {#if error}
-      <p class="text-xs text-error m-0">{error}</p>
+      <p class="error-message">{error}</p>
     {:else if help}
-      <p class="text-xs text-muted m-0">{help}</p>
+      <p class="help-message">{help}</p>
     {/if}
     
     {#if remainingTags !== null && remainingTags <= 3 && remainingTags > 0}
-      <p class="text-xs text-info m-0">
+      <p class="remaining-message">
         {remainingTags} etiqueta{remainingTags === 1 ? '' : 's'} restante{remainingTags === 1 ? '' : 's'}
       </p>
     {/if}
@@ -266,23 +267,339 @@
 </div>
 
 <style>
-  .tag-input { position: relative; }
+  /* Container principal */
+  .tag-input {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  /* Label styles */
+  .tag-label {
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  .required-indicator {
+    color: var(--error);
+  }
+
+  .tag-counter {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  /* Input wrapper */
+  .tag-input-wrapper {
+    position: relative;
+  }
+
+  /* Tags container */
+  .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    align-items: center;
+    min-height: 2.5rem;
+    padding: var(--spacing-xs);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    background: var(--bg-primary);
+    cursor: text;
+    transition: all var(--transition-normal);
+    width: 100%;
+  }
+
   .tags-container:focus-within {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
   }
-  .tag-remove .remove-icon {
+
+  .tags-container.error {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+
+  .tags-container.disabled {
+    background: var(--bg-tertiary);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Individual tag styles */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-accent);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
+    max-width: 200px;
+    transition: all var(--transition-fast);
+  }
+
+  .tag:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .tag-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Tag remove button */
+  .tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: all var(--transition-fast);
+    padding: 0;
+    min-width: auto;
+    min-height: auto;
+  }
+
+  .tag-remove:hover {
+    background: var(--bg-tertiary);
+    color: var(--error);
+    transform: scale(1.1);
+  }
+
+  .tag-remove:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  .remove-icon {
     width: 0.75rem;
     height: 0.75rem;
   }
-  .suggestion-item.selected,
-  .suggestion-item:hover {
+
+  /* Input field */
+  .tag-input-field {
+    border: none;
+    background: transparent;
+    font-size: var(--font-sm);
+    flex: 1;
+    min-width: 120px;
+    padding: 0;
+    outline: none;
+    color: var(--text-primary);
+    min-height: auto;
+  }
+
+  .tag-input-field::placeholder {
+    color: var(--text-light);
+  }
+
+  /* Empty placeholder */
+  .empty-placeholder {
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Suggestions container */
+  .suggestions-container {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: var(--z-dropdown);
+    margin-top: var(--spacing-xs);
+  }
+
+  /* Suggestion items */
+  .suggestion-item {
+    width: 100%;
+    text-align: left;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: transparent;
+    border: none;
+    font-size: var(--font-sm);
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid var(--bg-accent);
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+
+  .suggestion-item:last-child {
+    border-bottom: none;
+  }
+
+  .suggestion-item:hover,
+  .suggestion-item.selected {
     background: var(--bg-accent);
     color: var(--primary-color);
   }
+
+  .suggestion-item:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+
+  /* Messages container */
+  .messages {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .error-message {
+    font-size: var(--font-xs);
+    color: var(--error);
+    margin: 0;
+  }
+
+  .help-message {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .remaining-message {
+    font-size: var(--font-xs);
+    color: var(--info);
+    margin: 0;
+  }
+
+  /* Responsive adjustments */
   @media (max-width: 640px) {
-    .tag { max-width: 150px; }
-    .tag-input-field { min-width: 100px; }
-    .suggestions-container { left: -0.5rem; right: -0.5rem; }
+    .tag {
+      max-width: 150px;
+    }
+    
+    .tag-input-field {
+      min-width: 100px;
+    }
+    
+    .suggestions-container {
+      left: calc(-1 * var(--spacing-sm));
+      right: calc(-1 * var(--spacing-sm));
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    .tag-remove {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .remove-icon {
+      width: 1rem;
+      height: 1rem;
+    }
+    
+    .suggestion-item {
+      padding: var(--spacing-lg);
+      min-height: 44px;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .tags-container,
+    .tag,
+    .tag-remove,
+    .suggestion-item {
+      transition: none;
+    }
+    
+    .tag-remove:hover {
+      transform: none;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .tags-container {
+      background: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+    }
+    
+    .tag {
+      background: var(--bg-accent);
+      color: var(--text-primary);
+    }
+    
+    .tag:hover {
+      background: var(--bg-primary);
+    }
+    
+    .suggestions-container {
+      background: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+    }
+    
+    .suggestion-item {
+      border-bottom-color: var(--bg-accent);
+    }
+    
+    .suggestion-item:hover,
+    .suggestion-item.selected {
+      background: var(--bg-accent);
+    }
+  }
+
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .tags-container {
+      border-width: 2px;
+    }
+    
+    .tag {
+      border: 1px solid var(--text-primary);
+    }
+    
+    .suggestion-item {
+      border-bottom-width: 2px;
+    }
+  }
+
+  /* Focus management */
+  .tag-input-field:focus {
+    outline: none;
+  }
+
+  /* Scrollbar styling for suggestions */
+  .suggestions-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .suggestions-container::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+  }
+
+  .suggestions-container::-webkit-scrollbar-thumb {
+    background: var(--bg-accent);
+    border-radius: var(--radius-sm);
+  }
+
+  .suggestions-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
 </style>

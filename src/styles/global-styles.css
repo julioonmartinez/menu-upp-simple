@@ -52,6 +52,8 @@
   --spacing-3xl: 32px;
   --spacing-4xl: 40px;
   --spacing-5xl: 48px;
+
+  
   
   /* Border radius sistema coherente */
   --radius-xs: 4px;
@@ -346,6 +348,13 @@ button:focus-visible {
 .m-2xl { margin: var(--spacing-2xl); }
 .m-3xl { margin: var(--spacing-3xl); }
 .m-auto { margin: auto; }
+.mt-2xl { margin-top: var(--spacing-2xl); }
+.mt-3xl { margin-top: var(--spacing-3xl); }
+.mt-4xl { margin-top: var(--spacing-4xl); }
+.mt-5xl { margin-top: var(--spacing-5xl); }
+.mt-6xl { margin-top: var(--spacing-6xl); }
+.mt-7xl { margin-top: var(--spacing-7xl); }
+.mt-8xl { margin-top: var(--spacing-8xl); }
 
 /* Typography utilities mejoradas */
 .text-xs { font-size: var(--font-xs); }
@@ -1448,7 +1457,7 @@ select.input {
 .error-state i,
 .empty-state i {
   font-size: 4rem;
-  margin-bottom: var(--spacing-md);
+  /* margin-bottom: var(--spacing-md); */
 }
 
 .error-state i {

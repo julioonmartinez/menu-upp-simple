@@ -5,12 +5,74 @@ import type { ImageData } from "./restaurant";
 // ===== ENUMS =====
 
 export enum LinkType {
+  // Enlaces Sociales
   SOCIAL = "social",
-  MENU = "menu",
-  CONTACT = "contact",
+  INSTAGRAM = "instagram",
+  FACEBOOK = "facebook",
+  TWITTER = "twitter",
+  YOUTUBE = "youtube",
+  LINKEDIN = "linkedin",
+  TIKTOK = "tiktok",
+  WHATSAPP = "whatsapp",
+  TELEGRAM = "telegram",
+  DISCORD = "discord",
+  TWITCH = "twitch",
+  SPOTIFY = "spotify",
+  PINTEREST = "pinterest",
+  REDDIT = "reddit",
+  SNAPCHAT = "snapchat",
+  GITHUB = "github",
+  
+  // Enlaces de Negocio
   WEBSITE = "website",
   STORE = "store",
-  CUSTOM = "custom"
+  MENU = "menu",
+  PORTFOLIO = "portfolio",
+  BLOG = "blog",
+  NEWS = "news",
+  PRESS = "press",
+  CAREERS = "careers",
+  ABOUT = "about",
+  
+  // Enlaces de Contacto
+  CONTACT = "contact",
+  EMAIL = "email",
+  PHONE = "phone",
+  LOCATION = "location",
+  CALENDAR = "calendar",
+  BOOKING = "booking",
+  RESERVATION = "reservation",
+  
+  // Enlaces de Comercio
+  SHOP = "shop",
+  PRODUCTS = "products",
+  SERVICES = "services",
+  PRICING = "pricing",
+  DONATION = "donation",
+  PAYMENT = "payment",
+  SUBSCRIPTION = "subscription",
+  
+  // Enlaces de Contenido
+  GALLERY = "gallery",
+  VIDEO = "video",
+  PODCAST = "podcast",
+  EBOOK = "ebook",
+  DOWNLOAD = "download",
+  RESOURCE = "resource",
+  DOCUMENTATION = "documentation",
+  
+  // Enlaces de Utilidad
+  FAQ = "faq",
+  SUPPORT = "support",
+  HELP = "help",
+  FEEDBACK = "feedback",
+  SURVEY = "survey",
+  EVENT = "event",
+  WEBINAR = "webinar",
+  
+  // Enlaces Personalizados
+  CUSTOM = "custom",
+  OTHER = "other"
 }
 
 // ===== INTERFACES PARA ANALYTICS =====
@@ -222,21 +284,145 @@ export interface LinkFormProps {
 // ===== CONSTANTES =====
 
 export const LINK_TYPE_LABELS: Record<LinkType, string> = {
+  // Enlaces Sociales
   [LinkType.SOCIAL]: "Redes Sociales",
-  [LinkType.MENU]: "Menú",
-  [LinkType.CONTACT]: "Contacto",
+  [LinkType.INSTAGRAM]: "Instagram",
+  [LinkType.FACEBOOK]: "Facebook",
+  [LinkType.TWITTER]: "Twitter",
+  [LinkType.YOUTUBE]: "YouTube",
+  [LinkType.LINKEDIN]: "LinkedIn",
+  [LinkType.TIKTOK]: "TikTok",
+  [LinkType.WHATSAPP]: "WhatsApp",
+  [LinkType.TELEGRAM]: "Telegram",
+  [LinkType.DISCORD]: "Discord",
+  [LinkType.TWITCH]: "Twitch",
+  [LinkType.SPOTIFY]: "Spotify",
+  [LinkType.PINTEREST]: "Pinterest",
+  [LinkType.REDDIT]: "Reddit",
+  [LinkType.SNAPCHAT]: "Snapchat",
+  [LinkType.GITHUB]: "GitHub",
+  
+  // Enlaces de Negocio
   [LinkType.WEBSITE]: "Sitio Web",
   [LinkType.STORE]: "Tienda",
-  [LinkType.CUSTOM]: "Personalizado"
+  [LinkType.MENU]: "Menú",
+  [LinkType.PORTFOLIO]: "Portafolio",
+  [LinkType.BLOG]: "Blog",
+  [LinkType.NEWS]: "Noticias",
+  [LinkType.PRESS]: "Prensa",
+  [LinkType.CAREERS]: "Carreras",
+  [LinkType.ABOUT]: "Acerca de",
+  
+  // Enlaces de Contacto
+  [LinkType.CONTACT]: "Contacto",
+  [LinkType.EMAIL]: "Email",
+  [LinkType.PHONE]: "Teléfono",
+  [LinkType.LOCATION]: "Ubicación",
+  [LinkType.CALENDAR]: "Calendario",
+  [LinkType.BOOKING]: "Reserva",
+  [LinkType.RESERVATION]: "Reservación",
+  
+  // Enlaces de Comercio
+  [LinkType.SHOP]: "Tienda",
+  [LinkType.PRODUCTS]: "Productos",
+  [LinkType.SERVICES]: "Servicios",
+  [LinkType.PRICING]: "Precios",
+  [LinkType.DONATION]: "Donación",
+  [LinkType.PAYMENT]: "Pago",
+  [LinkType.SUBSCRIPTION]: "Suscripción",
+  
+  // Enlaces de Contenido
+  [LinkType.GALLERY]: "Galería",
+  [LinkType.VIDEO]: "Video",
+  [LinkType.PODCAST]: "Podcast",
+  [LinkType.EBOOK]: "E-Book",
+  [LinkType.DOWNLOAD]: "Descarga",
+  [LinkType.RESOURCE]: "Recurso",
+  [LinkType.DOCUMENTATION]: "Documentación",
+  
+  // Enlaces de Utilidad
+  [LinkType.FAQ]: "Preguntas Frecuentes",
+  [LinkType.SUPPORT]: "Soporte",
+  [LinkType.HELP]: "Ayuda",
+  [LinkType.FEEDBACK]: "Comentarios",
+  [LinkType.SURVEY]: "Encuesta",
+  [LinkType.EVENT]: "Evento",
+  [LinkType.WEBINAR]: "Webinar",
+  
+  // Enlaces Personalizados
+  [LinkType.CUSTOM]: "Personalizado",
+  [LinkType.OTHER]: "Otro"
 };
 
 export const LINK_TYPE_ICONS: Record<LinkType, string> = {
-  [LinkType.SOCIAL]: "users",
-  [LinkType.MENU]: "menu",
-  [LinkType.CONTACT]: "phone",
-  [LinkType.WEBSITE]: "globe",
-  [LinkType.STORE]: "shopping-bag",
-  [LinkType.CUSTOM]: "link"
+  // Enlaces Sociales
+  [LinkType.SOCIAL]: "fa-solid fa-users",
+  [LinkType.INSTAGRAM]: "fa-brands fa-instagram",
+  [LinkType.FACEBOOK]: "fa-brands fa-facebook",
+  [LinkType.TWITTER]: "fa-brands fa-twitter",
+  [LinkType.YOUTUBE]: "fa-brands fa-youtube",
+  [LinkType.LINKEDIN]: "fa-brands fa-linkedin",
+  [LinkType.TIKTOK]: "fa-brands fa-tiktok",
+  [LinkType.WHATSAPP]: "fa-brands fa-whatsapp",
+  [LinkType.TELEGRAM]: "fa-brands fa-telegram",
+  [LinkType.DISCORD]: "fa-brands fa-discord",
+  [LinkType.TWITCH]: "fa-brands fa-twitch",
+  [LinkType.SPOTIFY]: "fa-brands fa-spotify",
+  [LinkType.PINTEREST]: "fa-brands fa-pinterest",
+  [LinkType.REDDIT]: "fa-brands fa-reddit",
+  [LinkType.SNAPCHAT]: "fa-brands fa-snapchat",
+  [LinkType.GITHUB]: "fa-brands fa-github",
+  
+  // Enlaces de Negocio
+  [LinkType.WEBSITE]: "fa-solid fa-globe",
+  [LinkType.STORE]: "fa-solid fa-store",
+  [LinkType.MENU]: "fa-solid fa-utensils",
+  [LinkType.PORTFOLIO]: "fa-solid fa-briefcase",
+  [LinkType.BLOG]: "fa-solid fa-blog",
+  [LinkType.NEWS]: "fa-solid fa-newspaper",
+  [LinkType.PRESS]: "fa-solid fa-microphone",
+  [LinkType.CAREERS]: "fa-solid fa-briefcase",
+  [LinkType.ABOUT]: "fa-solid fa-circle-info",
+  
+  // Enlaces de Contacto
+  [LinkType.CONTACT]: "fa-solid fa-address-book",
+  [LinkType.EMAIL]: "fa-solid fa-envelope",
+  [LinkType.PHONE]: "fa-solid fa-phone",
+  [LinkType.LOCATION]: "fa-solid fa-location-dot",
+  [LinkType.CALENDAR]: "fa-solid fa-calendar",
+  [LinkType.BOOKING]: "fa-solid fa-calendar-check",
+  [LinkType.RESERVATION]: "fa-solid fa-calendar-plus",
+  
+  // Enlaces de Comercio
+  [LinkType.SHOP]: "fa-solid fa-cart-shopping",
+  [LinkType.PRODUCTS]: "fa-solid fa-box",
+  [LinkType.SERVICES]: "fa-solid fa-gears",
+  [LinkType.PRICING]: "fa-solid fa-tags",
+  [LinkType.DONATION]: "fa-solid fa-heart",
+  [LinkType.PAYMENT]: "fa-solid fa-credit-card",
+  [LinkType.SUBSCRIPTION]: "fa-solid fa-arrows-rotate",
+  
+  // Enlaces de Contenido
+  [LinkType.GALLERY]: "fa-solid fa-images",
+  [LinkType.VIDEO]: "fa-solid fa-video",
+  [LinkType.PODCAST]: "fa-solid fa-podcast",
+  [LinkType.EBOOK]: "fa-solid fa-book",
+  [LinkType.DOWNLOAD]: "fa-solid fa-download",
+  [LinkType.RESOURCE]: "fa-solid fa-file-lines",
+  [LinkType.DOCUMENTATION]: "fa-solid fa-file-code",
+  
+  // Enlaces de Utilidad
+  [LinkType.FAQ]: "fa-solid fa-circle-question",
+  [LinkType.SUPPORT]: "fa-solid fa-headset",
+  [LinkType.HELP]: "fa-solid fa-circle-question",
+  [LinkType.FEEDBACK]: "fa-solid fa-comment",
+  [LinkType.SURVEY]: "fa-solid fa-clipboard-list",
+  [LinkType.EVENT]: "fa-solid fa-calendar-day",
+  [LinkType.WEBINAR]: "fa-solid fa-video",
+  
+  // Enlaces Personalizados
+  [LinkType.CUSTOM]: "fa-solid fa-link",
+  [LinkType.OTHER]: "fa-solid fa-ellipsis"
 };
 
 export const BUTTON_STYLE_LABELS: Record<ButtonStyle, string> = {

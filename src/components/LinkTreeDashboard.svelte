@@ -13,13 +13,18 @@
   } from '../interfaces/links.ts';
   import { useLinkTrees } from '../stores/linkTreeStore.ts';
   import { useRestaurants } from '../stores/restaurantStore.ts';
+  import { toastStore } from '../stores/toastStore.ts';
   import LinkManager from './LinkManager.svelte';
+  import Modal from './ui/Modal.svelte';
+  import ConfirmationModal from './ui/ConfirmationModal.svelte';
+  import LinkTreeForm from './LinkTreeForm.svelte';
+  import GlobalModal from './ui/GlobalModal.svelte';
   import type { ApiResult } from '../services/linkTreeService.ts';
 
   // Props
-  const { restaurantId, linkTree = null } = $props<{
+  const { restaurantId= null } = $props<{
     restaurantId: string;
-    linkTree?: LinkTree | null;
+    // linkTree?: LinkTree | null;
   }>();
 
   // Event dispatcher
@@ -28,10 +33,12 @@
   // Svelte 5 state
   let showDeleteConfirm = $state(false);
   let showShareModal = $state(false);
+  let showEditModal = $state(false);
   let activeTab = $state('overview');
   let loadResult = $state<ApiResult<LinkTree | null> | null>(null);
   let isInitialLoading = $state(true);
-
+  let linkTree: LinkTree | null = $state(null);
+  
   // Stores - Usando directamente los stores reactivos
   const {
     currentLinkTree: currentLinkTreeStore,
@@ -39,11 +46,14 @@
     isLoadingCurrent: isLoadingCurrentStore,
     isLoadingAnalytics: isLoadingAnalyticsStore,
     isDeleting: isDeletingStore,
+    isUpdating: isUpdatingStore,
     error: errorStore,
+    updateError: updateErrorStore,
     loadLinkTreeByRestaurant,
     loadAnalytics,
     deleteLinkTree,
-    createLinkTree
+    createLinkTree,
+    updateLinkTree
   } = useLinkTrees();
 
   const {
@@ -173,8 +183,12 @@
         success: result.success,
         hasData: !!result.data,
         hasRestaurant: !!result.restaurant,
-        errorType: result.errorType
+        errorType: result.errorType,
+        result: result.data
       });
+     if(result.data){
+       linkTree = result.data
+     }
     } catch (err) {
       console.error('❌ Error loading LinkTree:', err);
       loadResult = {
@@ -195,21 +209,54 @@
     }
   }
 
+  async function handleLinkChanged() {
+    await loadLinkTreeData();
+    await loadAnalyticsData();
+  }
+
   // Actions
   function handleEditLinkTree() {
     if (currentLinkTree) {
-      dispatch('editLinkTree', currentLinkTree);
+      showEditModal = true;
     }
+  }
+
+  // Manejar éxito del formulario de LinkTree
+  async function handleLinkTreeSuccess(updatedLinkTree: LinkTree) {
+    console.log('✅ LinkTree updated successfully:', updatedLinkTree);
+    
+    // Actualizar el estado local
+    linkTree = updatedLinkTree;
+    
+    // Recargar datos para asegurar sincronización
+    await loadLinkTreeData();
+    await loadAnalyticsData();
+    
+    // Toast de éxito
+    toastStore.success('LinkTree actualizado correctamente');
+    
+    // Cerrar modal
+    showEditModal = false;
+  }
+
+  // Manejar la cancelación del formulario
+  function handleFormCancel() {
+    showEditModal = false;
+  }
+
+  // Manejar subida de imágenes
+  function handleImageUpload(event: CustomEvent ) {
+    console.log('Image upload:', event.detail);
   }
 
   async function handleCreateLinkTree() {
     try {
       if (!currentRestaurant) {
-        alert('Error: No se pudieron cargar los datos del restaurante');
+        toastStore.error('Error: No se pudieron cargar los datos del restaurante');
         return;
       }
       
-      const linkTreeData = {
+      const linkTreeData  = {
         restaurantId,
         customSlug: currentRestaurant.username,
         title: `${currentRestaurant.name} - Enlaces`,
@@ -222,14 +269,18 @@
       
       if (result.success && result.linkTree) {
         console.log('✅ LinkTree created successfully');
-        // Recargar datos después de crear
+        // Actualizar el estado local
+        linkTree = result.linkTree;
         await loadLinkTreeData();
+        
+        // Toast de éxito
+        toastStore.success('LinkTree creado correctamente');
       } else {
-        alert(result.error || 'No se pudo crear el LinkTree');
+        toastStore.error(result.error || 'No se pudo crear el LinkTree');
       }
     } catch (err) {
       console.error('❌ Error creating LinkTree:', err);
-      alert('Error creando LinkTree');
+      toastStore.error('Error creando LinkTree');
     }
   }
 
@@ -239,10 +290,24 @@
     try {
       const result = await deleteLinkTree(currentLinkTree.id!);
       if (result.success) {
+        // Limpiar estado local
+        linkTree = null;
+        loadResult = {
+          success: true,
+          data: null,
+          message: 'LinkTree eliminado correctamente'
+        };
         dispatch('deleteLinkTree', currentLinkTree);
+        
+        // Toast de éxito
+        toastStore.success('LinkTree eliminado correctamente');
+      } else {
+        // Toast de error si la operación falló
+        toastStore.error(result.error || 'No se pudo eliminar el LinkTree');
       }
     } catch (err) {
       console.error('Error deleting LinkTree:', err);
+      toastStore.error('Error al eliminar el LinkTree');
     }
   }
 
@@ -253,7 +318,7 @@
   async function copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      alert('¡Enlace copiado al portapapeles!');
+      toastStore.success('¡Enlace copiado al portapapeles!');
     } catch (err) {
       const textArea = document.createElement('textarea');
       textArea.value = text;
@@ -261,7 +326,7 @@
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      alert('¡Enlace copiado al portapapeles!');
+      toastStore.success('¡Enlace copiado al portapapeles!');
     }
   }
 
@@ -299,24 +364,34 @@
       } : null
     });
   });
+
+  // Effect para debug de links
+  $effect(() => {
+    console.log('🔗 Links updated:', {
+      totalLinks,
+      activeLinkCount,
+      links: safeLinks.length,
+      currentLinkTreeId: currentLinkTree?.id
+    });
+  });
 </script>
 
-<div class="linktree-dashboard">
+<div class="container mx-auto p-lg md:p-xl">
   <!-- Loading State -->
   {#if appState === 'loading'}
     <div class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>Cargando información...</p>
-      <small>Estado: {appState}</small>
+      <div class="animate-spin" style="width: 32px; height: 32px; border: 3px solid var(--bg-accent); border-top: 3px solid var(--primary-color); border-radius: 50%; margin-bottom: var(--spacing-md);"></div>
+      <p class="text-muted">Cargando información...</p>
+      <small class="text-light">Estado: {appState}</small>
     </div>
   
   <!-- Restaurant Not Found -->
   {:else if appState === 'restaurant_not_found'}
     <div class="error-state">
-      <div class="error-icon">🏪</div>
-      <h3>Restaurante No Encontrado</h3>
-      <p>No se encontró el restaurante con el ID especificado.</p>
-      <p><small>ID: {restaurantId}</small></p>
+      <div class="text-6xl mb-md">🏪</div>
+      <h3 class="text-xl font-semibold mb-xs text-primary">Restaurante No Encontrado</h3>
+      <p class="text-muted mb-xs">No se encontró el restaurante con el ID especificado.</p>
+      <p class="text-light text-sm mb-md">ID: {restaurantId}</p>
       <button class="btn btn-primary" on:click={loadAllData}>
         Reintentar
       </button>
@@ -325,9 +400,9 @@
   <!-- Permission Denied -->
   {:else if appState === 'permission_denied'}
     <div class="error-state">
-      <div class="error-icon">🔒</div>
-      <h3>Sin Permisos</h3>
-      <p>No tienes permisos para ver este LinkTree.</p>
+      <div class="text-6xl mb-md">🔒</div>
+      <h3 class="text-xl font-semibold mb-xs" style="color: var(--error);">Sin Permisos</h3>
+      <p class="text-muted mb-md">No tienes permisos para ver este LinkTree.</p>
       <button class="btn btn-primary" on:click={() => window.history.back()}>
         Volver
       </button>
@@ -336,9 +411,9 @@
   <!-- Network Error -->
   {:else if appState === 'network_error'}
     <div class="error-state">
-      <div class="error-icon">🌐</div>
-      <h3>Error de Conexión</h3>
-      <p>No se pudo conectar con el servidor. Verifica tu conexión a internet.</p>
+      <div class="text-6xl mb-md">🌐</div>
+      <h3 class="text-xl font-semibold mb-xs" style="color: var(--error);">Error de Conexión</h3>
+      <p class="text-muted mb-md">No se pudo conectar con el servidor. Verifica tu conexión a internet.</p>
       <button class="btn btn-primary" on:click={loadAllData}>
         Reintentar
       </button>
@@ -347,9 +422,9 @@
   <!-- Unknown Error -->
   {:else if appState === 'unknown_error'}
     <div class="error-state">
-      <div class="error-icon">⚠️</div>
-      <h3>Error</h3>
-      <p>{loadResult?.error || 'Ha ocurrido un error desconocido'}</p>
+      <div class="text-6xl mb-md">⚠️</div>
+      <h3 class="text-xl font-semibold mb-xs" style="color: var(--error);">Error</h3>
+      <p class="text-muted mb-md">{loadResult?.error || 'Ha ocurrido un error desconocido'}</p>
       <button class="btn btn-primary" on:click={loadAllData}>
         Reintentar
       </button>
@@ -358,11 +433,11 @@
   <!-- No LinkTree State -->
   {:else if appState === 'no_linktree'}
     <div class="empty-state">
-      <div class="empty-icon">🔗</div>
-      <h3>No tienes un LinkTree</h3>
-      <p>Crea tu primera página de enlaces para <strong>{currentRestaurant?.name}</strong> y comparte todos tus links importantes en un solo lugar.</p>
-      <div class="empty-info">
-        <p><strong>Tu LinkTree será creado con la URL:</strong></p>
+      <div class="text-6xl mb-md">🔗</div>
+      <h3 class="text-xl font-semibold mb-xs text-primary">No tienes un LinkTree</h3>
+      <p class="text-muted mb-md">Crea tu primera página de enlaces para <strong>{currentRestaurant?.name}</strong> y comparte todos tus links importantes en un solo lugar.</p>
+      <div class="bg-tertiary border rounded-lg p-md mb-lg">
+        <p class="text-sm font-medium mb-xs"><strong>Tu LinkTree será creado con la URL:</strong></p>
         <code class="url-preview">/{currentRestaurant?.username}</code>
       </div>
       <button class="btn btn-primary" on:click={handleCreateLinkTree}>
@@ -371,9 +446,9 @@
       </button>
       
       <!-- Debug info -->
-      <details style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
+      <details class="mt-lg text-xs text-muted">
         <summary>Debug Info</summary>
-        <pre>{JSON.stringify({
+        <pre class="text-left mt-xs">{JSON.stringify({
           appState,
           hasCurrentRestaurant: !!currentRestaurant,
           restaurantName: currentRestaurant?.name,
@@ -391,20 +466,20 @@
   {:else if appState === 'dashboard'}
     <!-- Header -->
     <div class="dashboard-header">
-      <div class="header-content">
-        <div class="linktree-info">
-          <div class="linktree-title">
-            <h1>{currentLinkTree?.title || `${currentRestaurant?.name} - Enlaces`}</h1>
-            <span class="status" class:public={currentLinkTree?.isPublic} class:private={!currentLinkTree?.isPublic}>
+      <div class="flex justify-between items-start gap-xl flex-col md:flex-row">
+        <div class="flex-1">
+          <div class="flex items-center gap-md mb-xs">
+            <h1 class="text-2xl md:text-3xl font-bold text-primary m-0">{currentLinkTree?.title || `${currentRestaurant?.name} - Enlaces`}</h1>
+            <span class="status-badge" class:public={currentLinkTree?.isPublic} class:private={!currentLinkTree?.isPublic}>
               {currentLinkTree?.isPublic ? 'Público' : 'Privado'}
             </span>
           </div>
           
           {#if currentLinkTree?.description}
-            <p class="linktree-description">{currentLinkTree.description}</p>
+            <p class="text-muted mb-md leading-relaxed">{currentLinkTree.description}</p>
           {/if}
           
-          <div class="linktree-meta">
+          <div class="meta-info">
             <span class="meta-item">
               <i class="icon-link"></i>
               {activeLinkCount} de {totalLinks} enlaces activos
@@ -416,13 +491,13 @@
             {#if publicUrl}
               <span class="meta-item">
                 <i class="icon-globe"></i>
-                <a href={publicUrl} target="_blank" rel="noopener">{publicUrl}</a>
+                <a href={publicUrl} target="_blank" rel="noopener" class="text-accent">{publicUrl}</a>
               </span>
             {/if}
           </div>
         </div>
         
-        <div class="header-actions">
+        <div class="flex gap-xs flex-shrink-0">
           <button class="btn btn-secondary" on:click={handleShare}>
             <i class="icon-share"></i>
             Compartir
@@ -475,11 +550,11 @@
     <div class="tab-content">
       {#if activeTab === 'overview'}
         <!-- Overview Tab -->
-        <div class="overview-tab">
+        <div class="p-2xl">
           <!-- Quick Stats -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon visits">
+          <div class="stats-overview">
+            <div class="stat-card visits">
+              <div class="stat-icon">
                 <i class="icon-eye"></i>
               </div>
               <div class="stat-content">
@@ -493,8 +568,8 @@
               </div>
             </div>
             
-            <div class="stat-card">
-              <div class="stat-icon clicks">
+            <div class="stat-card clicks">
+              <div class="stat-icon">
                 <i class="icon-mouse-pointer"></i>
               </div>
               <div class="stat-content">
@@ -508,8 +583,8 @@
               </div>
             </div>
             
-            <div class="stat-card">
-              <div class="stat-icon visitors">
+            <div class="stat-card visitors">
+              <div class="stat-icon">
                 <i class="icon-users"></i>
               </div>
               <div class="stat-content">
@@ -518,8 +593,8 @@
               </div>
             </div>
             
-            <div class="stat-card">
-              <div class="stat-icon links">
+            <div class="stat-card links">
+              <div class="stat-icon">
                 <i class="icon-link"></i>
               </div>
               <div class="stat-content">
@@ -530,8 +605,8 @@
           </div>
 
           <!-- Recent Activity -->
-          <div class="recent-activity">
-            <h3>Enlaces Populares</h3>
+          <div class="popular-links-section">
+            <h3 class="text-lg font-semibold mb-lg text-primary">Enlaces Populares</h3>
             {#if (currentAnalytics?.clicks.byLink.length || 0) > 0}
               <div class="popular-links">
                 {#each (currentAnalytics?.clicks.byLink || []).slice(0, 5) as linkStat}
@@ -551,7 +626,7 @@
               </div>
             {:else}
               <div class="no-data">
-                <p>No hay datos de clics disponibles aún.</p>
+                <p class="text-muted">No hay datos de clics disponibles aún.</p>
               </div>
             {/if}
           </div>
@@ -559,28 +634,30 @@
       
       {:else if activeTab === 'links'}
         <!-- Links Tab -->
-        <LinkManager 
-          linkTreeId={currentLinkTree?.id!}
-          links={safeLinks}
-          editable={true}
-          showAnalytics={true}
-          on:linkCreated={loadAnalyticsData}
-          on:linkUpdated={loadAnalyticsData}
-          on:linkDeleted={loadAnalyticsData}
-        />
+        <div class="">
+          <LinkManager 
+            linkTreeId={currentLinkTree?.id!}
+            links={safeLinks.slice() }
+            editable={true}
+            showAnalytics={true}
+            on:linkCreated={handleLinkChanged}
+            on:linkUpdated={handleLinkChanged}
+            on:linkDeleted={handleLinkChanged}
+          />
+        </div>
       
       {:else if activeTab === 'analytics'}
         <!-- Analytics Tab -->
-        <div class="analytics-tab">
+        <div class="p-2xl">
           {#if isLoadingAnalytics}
             <div class="loading-state">
-              <div class="loading-spinner"></div>
-              <p>Cargando analíticas...</p>
+              <div class="animate-spin" style="width: 32px; height: 32px; border: 3px solid var(--bg-accent); border-top: 3px solid var(--primary-color); border-radius: 50%; margin-bottom: var(--spacing-md);"></div>
+              <p class="text-muted">Cargando analíticas...</p>
             </div>
           {:else if currentAnalytics}
             <div class="analytics-content">
               <div class="chart-section">
-                <h3>Visitas por Día</h3>
+                <h3 class="text-lg font-semibold mb-md text-primary">Visitas por Día</h3>
                 <div class="chart-container">
                   {#if currentAnalytics?.views.daily && currentAnalytics.views.daily.length > 0}
                     <div class="simple-chart">
@@ -597,7 +674,7 @@
                     </div>
                   {:else}
                     <div class="no-data">
-                      <p>No hay datos de visitas disponibles.</p>
+                      <p class="text-muted">No hay datos de visitas disponibles.</p>
                     </div>
                   {/if}
                 </div>
@@ -605,7 +682,7 @@
 
               <!-- Clicks Chart -->
               <div class="chart-section">
-                <h3>Clics por Día</h3>
+                <h3 class="text-lg font-semibold mb-md text-primary">Clics por Día</h3>
                 <div class="chart-container">
                   {#if currentAnalytics?.clicks.daily && currentAnalytics.clicks.daily.length > 0}
                     <div class="simple-chart">
@@ -622,7 +699,7 @@
                     </div>
                   {:else}
                     <div class="no-data">
-                      <p>No hay datos de clics disponibles.</p>
+                      <p class="text-muted">No hay datos de clics disponibles.</p>
                     </div>
                   {/if}
                 </div>
@@ -630,7 +707,7 @@
             </div>
           {:else}
             <div class="no-data">
-              <p>No se pudieron cargar las analíticas.</p>
+              <p class="text-muted mb-md">No se pudieron cargar las analíticas.</p>
               <button class="btn btn-primary" on:click={loadAnalyticsData}>
                 Reintentar
               </button>
@@ -643,15 +720,15 @@
   <!-- Estado inesperado -->
   {:else}
     <div class="error-state">
-      <div class="error-icon">❓</div>
-      <h3>Estado Inesperado</h3>
-      <p>El componente está en un estado inesperado: <code>{appState}</code></p>
+      <div class="text-6xl mb-md">❓</div>
+      <h3 class="text-xl font-semibold mb-xs" style="color: var(--error);">Estado Inesperado</h3>
+      <p class="text-muted mb-md">El componente está en un estado inesperado: <code>{appState}</code></p>
       <button class="btn btn-primary" on:click={loadAllData}>
         Recargar
       </button>
-      <details style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
+      <details class="mt-lg text-xs text-muted">
         <summary>Debug Info</summary>
-        <pre>{JSON.stringify({
+        <pre class="text-left mt-xs">{JSON.stringify({
           appState,
           currentLinkTree: !!currentLinkTree,
           currentRestaurant: !!currentRestaurant,
@@ -664,52 +741,44 @@
   {/if}
 </div>
 
+<!-- Modal de Edición del LinkTree -->
+<GlobalModal 
+  isOpen={showEditModal} 
+  title="Editar LinkTree" 
+  size="lg"
+  on:close={handleFormCancel}
+>
+  <LinkTreeForm 
+    linkTreeId={linkTree?.id}
+    restaurantId={restaurantId}
+    onSuccess={handleLinkTreeSuccess}
+    onCancel={handleFormCancel}
+  />
+</GlobalModal>
+
 <!-- Delete Confirmation Modal -->
-{#if showDeleteConfirm}
-  <div class="modal-overlay" on:click={() => showDeleteConfirm = false}>
-    <div class="modal" on:click|stopPropagation>
-      <div class="modal-header">
-        <h3>Confirmar Eliminación</h3>
-        <button class="modal-close" on:click={() => showDeleteConfirm = false}>
-          <i class="icon-x"></i>
-        </button>
-      </div>
-      
-      <div class="modal-content">
-        <p>¿Estás seguro de que quieres eliminar este LinkTree?</p>
-        <p><strong>Esta acción no se puede deshacer.</strong></p>
-        {#if currentRestaurant}
-          <p class="warning-text">Se eliminará el LinkTree de <strong>{currentRestaurant.name}</strong> con URL: <code>/{currentRestaurant.username}</code></p>
-        {/if}
-      </div>
-      
-      <div class="modal-actions">
-        <button class="btn btn-secondary" on:click={() => showDeleteConfirm = false}>
-          Cancelar
-        </button>
-        <button 
-          class="btn btn-danger" 
-          on:click={handleDeleteLinkTree}
-          disabled={$isDeletingStore}
-        >
-          {#if $isDeletingStore}
-            <i class="icon-loader spinning"></i>
-            Eliminando...
-          {:else}
-            Eliminar LinkTree
-          {/if}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ConfirmationModal 
+  isOpen={showDeleteConfirm}
+  title="Confirmar Eliminación"
+  message={currentRestaurant 
+    ? `¿Estás seguro de que quieres eliminar este LinkTree?\n\nEsta acción no se puede deshacer.\n\nSe eliminará el LinkTree de ${currentRestaurant.name} con URL: /${currentRestaurant.username}`
+    : "¿Estás seguro de que quieres eliminar este LinkTree?\n\nEsta acción no se puede deshacer."
+  }
+  confirmText="Eliminar LinkTree"
+  cancelText="Cancelar"
+  type="danger"
+  loading={$isDeletingStore}
+  loadingText="Eliminando..."
+  on:confirm={handleDeleteLinkTree}
+  on:cancel={() => showDeleteConfirm = false}
+/>
 
 <!-- Share Modal -->
 {#if showShareModal}
   <div class="modal-overlay" on:click={() => showShareModal = false}>
     <div class="modal" on:click|stopPropagation>
       <div class="modal-header">
-        <h3>Compartir LinkTree</h3>
+        <h3 class="text-lg font-semibold m-0 text-primary">Compartir LinkTree</h3>
         <button class="modal-close" on:click={() => showShareModal = false}>
           <i class="icon-x"></i>
         </button>
@@ -717,9 +786,9 @@
       
       <div class="modal-content">
         <div class="share-section">
-          <label>URL Pública</label>
+          <label class="block font-medium text-primary mb-xs">URL Pública</label>
           <div class="url-input">
-            <input type="text" value={publicUrl} readonly />
+            <input type="text" value={publicUrl} readonly class="input" />
             <button class="btn btn-primary" on:click={() => copyToClipboard(publicUrl)}>
               <i class="icon-copy"></i>
               Copiar
@@ -767,279 +836,213 @@
 {/if}
 
 <style>
-  .linktree-dashboard {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
+  /* ========================================
+     ESTILOS ESPECÍFICOS DEL COMPONENTE
+     Usando variables globales donde sea posible
+     ======================================== */
 
-  .loading-state,
-  .error-state,
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-  }
-
-  .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid #e5e7eb;
-    border-top: 3px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  .error-icon,
-  .empty-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-  }
-
-  .empty-info {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 1rem;
-    margin: 1rem 0;
-  }
-
+  /* URL Preview - estilo específico */
   .url-preview {
-    background: #f1f3f4;
-    color: #1a73e8;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-family: monospace;
-    font-weight: 600;
+    background: var(--bg-tertiary);
+    color: var(--primary-color);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono, monospace);
+    font-weight: var(--weight-semibold);
+    font-size: var(--font-sm);
   }
 
-  .url-info {
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .warning-text {
-    color: #dc2626;
-    font-size: 0.875rem;
-    background: #fef2f2;
-    padding: 0.75rem;
-    border-radius: 6px;
-    border: 1px solid #fecaca;
-  }
-
-  .dashboard-header {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    margin-bottom: 2rem;
-  }
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
-  }
-
-  .linktree-info {
-    flex: 1;
-  }
-
-  .linktree-title {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .linktree-title h1 {
-    margin: 0;
-    color: #111827;
-    font-size: 1.75rem;
-  }
-
-  .status {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
+  /* Status Badge - componente específico */
+  .status-badge {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-  .status.public {
-    background: #dcfce7;
-    color: #16a34a;
+  .status-badge.public {
+    background: var(--success-bg);
+    color: var(--success);
   }
 
-  .status.private {
-    background: #fef3c7;
-    color: #d97706;
+  .status-badge.private {
+    background: var(--warning-bg);
+    color: var(--warning);
   }
 
-  .linktree-description {
-    color: #6b7280;
-    margin: 0 0 1rem 0;
-    line-height: 1.5;
+  /* Dashboard Header */
+  .dashboard-header {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-2xl);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--bg-accent);
   }
 
-  .linktree-meta {
+  /* Meta Info */
+  .meta-info {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: #6b7280;
+    gap: var(--spacing-lg);
+    font-size: var(--font-sm);
+    color: var(--text-muted);
   }
 
   .meta-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--spacing-xs);
   }
 
-  .meta-item a {
-    color: #3b82f6;
-    text-decoration: none;
-  }
-
-  .meta-item a:hover {
-    text-decoration: underline;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-shrink: 0;
-  }
-
+  /* Dashboard Tabs */
   .dashboard-tabs {
     display: flex;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 0.5rem;
-    margin-bottom: 2rem;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--bg-accent);
   }
 
   .tab {
     flex: 1;
-    padding: 0.75rem 1rem;
+    padding: var(--spacing-md) var(--spacing-lg);
     border: none;
     background: transparent;
-    color: #6b7280;
-    border-radius: 8px;
+    color: var(--text-muted);
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    font-weight: 500;
+    gap: var(--spacing-xs);
+    font-weight: var(--weight-medium);
+    font-size: var(--font-base);
   }
 
   .tab:hover {
-    color: #374151;
-    background: #f3f4f6;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
   }
 
   .tab.active {
-    background: #3b82f6;
-    color: white;
+    background: var(--primary-color);
+    color: var(--text-inverse);
   }
 
+  /* Tab Content */
   .tab-content {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
+    border: 1px solid var(--bg-accent);
   }
 
-  .overview-tab {
-    padding: 2rem;
-  }
-
-  .stats-grid {
+  /* Stats Overview - usando el sistema del CSS global */
+  .stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  @media (min-width: 768px) {
+    .stats-overview {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   .stat-card {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--spacing-md);
+    transition: var(--transition-normal);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-color: rgba(255, 107, 53, 0.2);
   }
 
   .stat-icon {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: var(--radius-xl);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 1.25rem;
+    color: var(--text-inverse);
+    font-size: var(--font-lg);
   }
 
-  .stat-icon.visits { background: #3b82f6; }
-  .stat-icon.clicks { background: #10b981; }
-  .stat-icon.visitors { background: #f59e0b; }
-  .stat-icon.links { background: #8b5cf6; }
+  .stat-card.visits .stat-icon { background: var(--primary-color); }
+  .stat-card.clicks .stat-icon { background: var(--success); }
+  .stat-card.visitors .stat-icon { background: var(--warning); }
+  .stat-card.links .stat-icon { background: var(--info); }
 
   .stat-content {
     flex: 1;
   }
 
   .stat-value {
-    font-size: 1.75rem;
-    font-weight: bold;
-    color: #111827;
-    margin-bottom: 0.25rem;
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    line-height: var(--leading-tight);
   }
 
   .stat-label {
-    color: #6b7280;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
+    color: var(--text-muted);
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-xs);
+    font-weight: var(--weight-medium);
   }
 
   .stat-change {
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
   }
 
-  .stat-change.positive { color: #16a34a; }
-  .stat-change.negative { color: #dc2626; }
+  .stat-change.positive { color: var(--success); }
+  .stat-change.negative { color: var(--error); }
 
-  .recent-activity h3 {
-    margin: 0 0 1rem 0;
-    color: #111827;
+  /* Popular Links Section */
+  .popular-links-section {
+    margin-top: var(--spacing-2xl);
   }
 
   .popular-links {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--spacing-md);
   }
 
   .popular-link {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: #f9fafb;
-    border-radius: 8px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--bg-accent);
+    transition: var(--transition-fast);
+  }
+
+  .popular-link:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(4px);
   }
 
   .link-info {
@@ -1047,49 +1050,49 @@
   }
 
   .link-name {
-    font-weight: 500;
-    color: #111827;
-    margin-bottom: 0.25rem;
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-base);
   }
 
   .click-count {
-    font-size: 0.875rem;
-    color: #6b7280;
+    font-size: var(--font-sm);
+    color: var(--text-muted);
   }
 
   .click-bar {
     width: 100px;
     height: 8px;
-    background: #e5e7eb;
-    border-radius: 4px;
+    background: var(--bg-accent);
+    border-radius: var(--radius-sm);
     overflow: hidden;
   }
 
   .click-fill {
     height: 100%;
-    background: #3b82f6;
-    transition: width 0.3s ease;
+    background: var(--primary-color);
+    transition: width var(--transition-normal);
   }
 
-  .analytics-tab {
-    padding: 2rem;
-  }
-
+  /* Analytics Content */
   .analytics-content {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--spacing-2xl);
   }
 
-  .chart-section h3 {
-    margin: 0 0 1rem 0;
-    color: #111827;
+  .chart-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--bg-accent);
   }
 
   .chart-container {
-    background: #f9fafb;
-    border-radius: 8px;
-    padding: 1.5rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
   }
 
   .simple-chart {
@@ -1097,7 +1100,7 @@
     justify-content: space-between;
     align-items: end;
     height: 200px;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .chart-bar {
@@ -1110,80 +1113,29 @@
 
   .bar-fill {
     width: 100%;
-    background: #3b82f6;
-    border-radius: 4px 4px 0 0;
+    background: var(--primary-color);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     min-height: 4px;
     margin-bottom: auto;
+    transition: height var(--transition-normal);
   }
 
   .bar-label {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-top: 0.5rem;
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    margin-top: var(--spacing-sm);
     text-transform: uppercase;
+    font-weight: var(--weight-medium);
   }
 
   .bar-value {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #111827;
-    margin-top: 0.25rem;
+    font-size: var(--font-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    margin-top: var(--spacing-xs);
   }
 
-  .no-data {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-  }
-
-  .btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  .btn-secondary {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background: #e5e7eb;
-  }
-
-  .btn-danger {
-    background: #dc2626;
-    color: white;
-  }
-
-  .btn-danger:hover:not(:disabled) {
-    background: #b91c1c;
-  }
-
-  /* Modal Styles */
+  /* Modal Styles - usando variables globales */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -1194,141 +1146,132 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
+    z-index: var(--z-modal);
+    padding: var(--spacing-lg);
   }
 
   .modal {
-    background: white;
-    border-radius: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
     max-width: 500px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: var(--shadow-2xl);
+    border: 1px solid var(--bg-accent);
   }
 
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .modal-header h3 {
-    margin: 0;
-    color: #111827;
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--bg-accent);
   }
 
   .modal-close {
     background: none;
     border: none;
-    color: #6b7280;
+    color: var(--text-muted);
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 4px;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
   }
 
   .modal-close:hover {
-    color: #374151;
-    background: #f3f4f6;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
   }
 
   .modal-content {
-    padding: 1.5rem;
+    padding: var(--spacing-xl);
   }
 
   .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1.5rem;
-    border-top: 1px solid #e5e7eb;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+    border-top: 1px solid var(--bg-accent);
   }
 
+  /* Share Modal específico */
   .share-section {
-    margin-bottom: 1.5rem;
-  }
-
-  .share-section label {
-    display: block;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--spacing-xl);
   }
 
   .url-input {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-sm);
   }
 
   .url-input input {
     flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #f9fafb;
-    color: #6b7280;
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+  }
+
+  .url-info {
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-sm);
+    color: var(--text-muted);
   }
 
   .share-buttons {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem;
+    gap: var(--spacing-md);
   }
 
   .share-btn {
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
     text-decoration: none;
-    color: white;
-    font-weight: 500;
+    color: var(--text-inverse);
+    font-weight: var(--weight-medium);
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    transition: opacity 0.2s;
+    gap: var(--spacing-xs);
+    transition: var(--transition-fast);
   }
 
   .share-btn:hover {
     opacity: 0.9;
+    transform: translateY(-2px);
   }
 
-  .share-btn.twitter { background: #1da1f2; }
-  .share-btn.facebook { background: #4267b2; }
-  .share-btn.whatsapp { background: #25d366; }
-
-  .spinning {
-    animation: spin 1s linear infinite;
+  .share-btn.twitter { 
+    background: #1da1f2; 
+    color: var(--text-inverse);
+  }
+  .share-btn.facebook { 
+    background: #4267b2; 
+    color: var(--text-inverse);
+  }
+  .share-btn.whatsapp { 
+    background: #25d366; 
+    color: var(--text-inverse);
   }
 
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  /* Responsive */
+  /* Responsive Overrides */
   @media (max-width: 768px) {
-    .linktree-dashboard {
-      padding: 1rem;
+    .dashboard-header {
+      padding: var(--spacing-lg);
     }
 
-    .header-content {
+    .meta-info {
       flex-direction: column;
-      gap: 1rem;
-    }
-
-    .header-actions {
-      width: 100%;
-      justify-content: center;
+      gap: var(--spacing-sm);
     }
 
     .dashboard-tabs {
       flex-direction: column;
     }
 
-    .stats-grid {
+    .stats-overview {
       grid-template-columns: 1fr;
     }
 
@@ -1339,11 +1282,57 @@
     }
 
     .modal {
-      margin: 1rem;
+      margin: var(--spacing-lg);
     }
 
     .share-buttons {
       grid-template-columns: 1fr;
+    }
+
+    .url-input {
+      flex-direction: column;
+    }
+  }
+
+  /* Estados usando el sistema global */
+  .no-data {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-muted);
+  }
+
+  /* Botones danger - mejora específica */
+  .btn-danger {
+    background: var(--error);
+    color: var(--text-inverse);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--error-light);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+
+  /* Accesibilidad */
+  @media (prefers-reduced-motion: reduce) {
+    .stat-card:hover,
+    .popular-link:hover,
+    .tab {
+      transform: none;
+    }
+
+    .bar-fill {
+      transition: none;
+    }
+  }
+
+  /* Dark mode - aprovechando el sistema global */
+  @media (prefers-color-scheme: dark) {
+    .chart-container {
+      background: var(--bg-tertiary);
+    }
+
+    .url-input input {
+      background: var(--bg-tertiary);
     }
   }
 </style>

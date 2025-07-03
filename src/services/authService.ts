@@ -265,27 +265,44 @@ class AuthService {
    * Verifica si el usuario está autenticado
    */
   isAuthenticated(): boolean {
-    if (!this.isBrowser()) return false;
+    console.log('🔧 AuthService: isAuthenticated called');
+    if (!this.isBrowser()) {
+      console.log('🔧 AuthService: Not in browser, returning false');
+      return false;
+    }
     
     const token = this.getTokenFromCookie();
-    return !!token;
+    const isAuth = !!token;
+    console.log('🔧 AuthService: Token found?', !!token, 'Is authenticated?', isAuth);
+    return isAuth;
   }
 
   /**
    * Obtiene el token de las cookies
    */
   getTokenFromCookie(): string | null {
-    if (!this.isBrowser()) return null;
+    console.log('🔧 AuthService: getTokenFromCookie called');
+    if (!this.isBrowser()) {
+      console.log('🔧 AuthService: Not in browser, returning null');
+      return null;
+    }
     
     const cookies = document.cookie.split(';');
+    console.log('🔧 AuthService: All cookies:', cookies);
+    
     const authCookie = cookies.find(cookie => 
       cookie.trim().startsWith(`${this.TOKEN_COOKIE_NAME}=`)
     );
     
+    console.log('🔧 AuthService: Auth cookie found?', !!authCookie);
+    
     if (authCookie) {
-      return authCookie.split('=')[1];
+      const token = authCookie.split('=')[1];
+      console.log('🔧 AuthService: Token extracted:', token ? '***' + token.slice(-4) : 'null');
+      return token;
     }
     
+    console.log('🔧 AuthService: No auth cookie found, returning null');
     return null;
   }
 

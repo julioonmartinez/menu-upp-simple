@@ -3,54 +3,65 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import { restaurantStore } from '../stores/restaurantStore.ts';
   import { restaurantUtils } from '../utils/restaurantUtils.ts';
+  import { toastStore } from '../stores/toastStore.ts';
   import CreateRestaurant from './CreateRestaurant.svelte';
   import RestaurantCard from './RestaurantCard20.svelte';
   import RestaurantListItem from './RestaurantListItem.svelte';
+  import GlobalModal from './ui/GlobalModal.svelte';
+  import ConfirmationModal from './ui/ConfirmationModal.svelte';
   
   // Props
-  let {
-    currentUser = null,
-    
-    showCreateButton = true,
-    maxRestaurants = null
-  } = $props();
+  export let currentUser = null;
+  export let showCreateButton = true;
+  export let maxRestaurants = null;
   
   const dispatch = createEventDispatcher();
   
-  // Estados del componente usando runes de Svelte 5
-  let showCreateModal = $state(false);
-  let selectedRestaurant = $state(null);
-  let searchQuery = $state('');
-  let sortBy = $state('updatedAt');
-  let sortOrder = $state('desc');
-  let filterBy = $state('all');
+  // Estados del componente usando Svelte 4
+  let showCreateModal = false;
+  let selectedRestaurant = null;
+  let searchQuery = '';
+  let sortBy = 'updatedAt';
+  let sortOrder = 'desc';
+  let filterBy = 'all';
+  
+  // Estados para confirmación de eliminación
+  let showDeleteConfirm = false;
+  let restaurantToDelete = null;
+  let isDeleting = false;
   
   // Estados derivados del store
-  let loading = $derived($restaurantStore.isLoadingUser);
-  let restaurants = $derived($restaurantStore.userRestaurants);
-  let apiError = $derived($restaurantStore.error);
+  $: loading = $restaurantStore.isLoadingUser;
+  $: restaurants = $restaurantStore.userRestaurants;
+  $: apiError = $restaurantStore.error;
   
   // Restaurantes filtrados y ordenados
-  let filteredRestaurants = $derived(getFilteredAndSortedRestaurants(
+  $: filteredRestaurants = getFilteredAndSortedRestaurants(
     restaurants || [],
     searchQuery, 
     filterBy, 
     sortBy, 
     sortOrder
-  ));
+  );
   
   // Estadísticas generales
-  let stats = $derived(calculateOverallStats(restaurants || []));
+  $: stats = calculateOverallStats(restaurants || []);
   
   // Verificar límite de restaurantes
-  let canCreateMore = $derived(maxRestaurants ? (restaurants?.length || 0) < maxRestaurants : true);
+  $: canCreateMore = maxRestaurants ? (restaurants?.length || 0) < maxRestaurants : true;
+  
+  // Estado para controlar si ya se ha intentado cargar al menos una vez
+  let hasAttemptedLoad = false;
   
   onMount(async () => {
     restaurantStore.clearAllErrors();
     try {
       await restaurantStore.loadUserRestaurants();
+      hasAttemptedLoad = true;
     } catch (error) {
       console.error('Error loading user restaurants:', error);
+      toastStore.error('Error al cargar los restaurantes');
+      hasAttemptedLoad = true;
     }
   });
   
@@ -176,7 +187,7 @@
   // Event handlers
   function handleCreateClick() {
     if (!canCreateMore) {
-      alert(`Has alcanzado el límite máximo de ${maxRestaurants} restaurantes`);
+      toastStore.error(`Has alcanzado el límite máximo de ${maxRestaurants} restaurantes`);
       return;
     }
     showCreateModal = true;
@@ -186,8 +197,10 @@
     showCreateModal = false;
     try {
       await restaurantStore.loadUserRestaurants(true);
+      toastStore.success(`¡Restaurante "${event.detail.restaurant.name}" creado exitosamente!`);
     } catch (error) {
       console.error('Error reloading restaurants:', error);
+      toastStore.error('Error al recargar los restaurantes');
     }
     dispatch('restaurantCreated', { restaurant: event.detail.restaurant });
   }
@@ -197,22 +210,38 @@
     dispatch('editRestaurant', { restaurant: event.detail.restaurant });
   }
   
-  async function handleDeleteRestaurant(event) {
+  function handleDeleteRestaurant(event) {
     const restaurant = event.detail.restaurant;
-    const confirmed = confirm(
-      `¿Estás seguro de que quieres eliminar "${restaurant.name}"?\n\nEsta acción no se puede deshacer.`
-    );
+    restaurantToDelete = restaurant;
+    showDeleteConfirm = true;
+  }
+  
+  async function confirmDelete() {
+    if (!restaurantToDelete) return;
     
-    if (confirmed) {
-      try {
-        const result = await restaurantStore.deleteRestaurant(restaurant.id);
-        if (result.success) {
-          dispatch('restaurantDeleted', { restaurant });
-        }
-      } catch (error) {
-        console.error('Error deleting restaurant:', error);
+    isDeleting = true;
+    try {
+      const result = await restaurantStore.deleteRestaurant(restaurantToDelete.id);
+      if (result.success) {
+        toastStore.success(`Restaurante "${restaurantToDelete.name}" eliminado exitosamente`);
+        dispatch('restaurantDeleted', { restaurant: restaurantToDelete });
+      } else {
+        toastStore.error('Error al eliminar el restaurante');
       }
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      toastStore.error('Error al eliminar el restaurante');
+    } finally {
+      isDeleting = false;
+      showDeleteConfirm = false;
+      restaurantToDelete = null;
     }
+  }
+  
+  function cancelDelete() {
+    showDeleteConfirm = false;
+    restaurantToDelete = null;
+    isDeleting = false;
   }
   
   function handleViewRestaurant(event) {
@@ -222,8 +251,12 @@
   async function handleRefresh() {
     try {
       await restaurantStore.loadUserRestaurants(true);
+      hasAttemptedLoad = true;
+      toastStore.success('Restaurantes actualizados');
     } catch (error) {
       console.error('Error refreshing restaurants:', error);
+      toastStore.error('Error al actualizar los restaurantes');
+      hasAttemptedLoad = true;
     }
   }
   
@@ -249,13 +282,17 @@
     if (score >= 40) return 'Regular';
     return 'Básico';
   }
+  
+  function handleModalClose() {
+    showCreateModal = false;
+  }
 </script>
 
-<div class="restaurant-management container">
+<div class="restaurant-management container ">
   <!-- Header con estadísticas y controles -->
   <div class="management-header card mb-2xl">
     <!-- Estadísticas resumidas -->
-    <div class="stats-overview grid gap-lg grid-cols-2 md:grid-cols-4 mb-xl">
+    <!-- <div class="stats-overview grid gap-lg grid-cols-2 md:grid-cols-4 mb-xl">
       <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
         <div class="stat-value text-2xl font-bold text-primary">{stats.total}</div>
         <div class="stat-label text-sm text-muted mt-xs">Restaurantes</div>
@@ -272,7 +309,7 @@
         <div class="stat-value text-2xl font-bold text-primary">{stats.averageRating.toFixed(1)}</div>
         <div class="stat-label text-sm text-muted mt-xs">Rating Promedio</div>
       </div>
-    </div>
+    </div> -->
     
     <!-- Controles de vista -->
     <div class="view-controls flex flex-wrap gap-md items-center">
@@ -310,13 +347,17 @@
         >
           <i class={sortOrder === 'asc' ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'}></i>
         </button>
+        <button class="btn-icon" onclick={handleRefresh} title="Actualizar">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
       </div>
 
       <!-- Acciones -->
       <div class="action-controls flex gap-xs items-center">
-        <button class="btn-icon" onclick={handleRefresh} title="Actualizar">
+        <!-- <button class="btn-icon" onclick={handleRefresh} title="Actualizar">
           <i class="fa-solid fa-arrows-rotate"></i>
-        </button>
+        </button> -->
+        
         {#if showCreateButton}
           <button
             class="btn btn-primary"
@@ -324,7 +365,7 @@
             disabled={!canCreateMore || loading}
           >
             <i class="fa-solid fa-plus"></i>
-            <span class="desktop-only">Crear Restaurante</span>
+            <span class="">Crear Restaurante</span>
           </button>
         {/if}
       </div>
@@ -347,7 +388,7 @@
           Intentar de nuevo
         </button>
       </div>
-    {:else if filteredRestaurants.length === 0}
+    {:else if hasAttemptedLoad && filteredRestaurants.length === 0}
       <div class="empty-state flex flex-col items-center justify-center p-4xl text-center bg-white rounded-xl shadow">
         {#if searchQuery || filterBy !== 'all'}
           <i class="fa-solid fa-magnifying-glass text-4xl text-accent mb-md"></i>
@@ -367,7 +408,7 @@
           {/if}
         {/if}
       </div>
-    {:else}
+    {:else if hasAttemptedLoad}
       <div class="restaurants-container-wrapper">
         <div class="restaurants-container bg-white rounded-xl p-xl shadow">
             <!-- Vista de Lista Compacta -->
@@ -395,26 +436,39 @@
     {/if}
   </div>
 
-  <!-- Modal de creación -->
-  {#if showCreateModal}
-    <div class="modal-overlay flex items-center justify-center p-md">
-      <div class="modal-content relative max-w-xl w-full max-h-[90vh] overflow-y-auto rounded-xl shadow bg-white" onclick={(e) => e.stopPropagation()}>
-        <CreateRestaurant
-          on:created={handleRestaurantCreated}
-        />
-        <button
-          class="modal-close absolute top-md right-md w-8 h-8 bg-white border border-accent rounded-lg text-muted flex items-center justify-center transition-all z-10"
-          onclick={() => showCreateModal = false}
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-    </div>
-  {/if}
+  <!-- Modal global para creación -->
+  <GlobalModal
+    isOpen={showCreateModal}
+    title="Crear Nuevo Restaurante"
+    size="lg"
+    showCloseButton={true}
+    closeOnEscape={true}
+    closeOnBackdrop={true}
+    on:close={handleModalClose}
+  >
+    <CreateRestaurant on:created={handleRestaurantCreated} />
+  </GlobalModal>
+
+  <!-- Modal de confirmación para eliminar -->
+  <ConfirmationModal
+    isOpen={showDeleteConfirm}
+    title="Eliminar Restaurante"
+    message={restaurantToDelete ? `¿Estás seguro de que quieres eliminar "${restaurantToDelete.name}"?\n\nEsta acción no se puede deshacer.` : ''}
+    confirmText="Eliminar"
+    cancelText="Cancelar"
+    type="danger"
+    loading={isDeleting}
+    loadingText="Eliminando..."
+    on:confirm={confirmDelete}
+    on:cancel={cancelDelete}
+  />
 </div>
 
 <style>
   /* SELECTOR DE VISTA */
+  .restaurant-management{
+    padding-top: var(--spacing-md);
+  }
   .view-selector {
     display: flex;
     background: var(--bg-tertiary);
@@ -590,52 +644,5 @@
       grid-template-columns: 1fr;
       gap: 1rem;
     }
-  }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: var(--z-modal);
-  }
-
-  .modal-content {
-    position: relative;
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-2xl);
-    max-width: 600px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .modal-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 32px;
-    height: 32px;
-    background: var(--bg-primary);
-    border: 1px solid var(--bg-accent);
-    border-radius: var(--radius-md);
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-fast);
-    z-index: 10;
-  }
-
-  .modal-close:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    transform: scale(1.05);
   }
 </style>

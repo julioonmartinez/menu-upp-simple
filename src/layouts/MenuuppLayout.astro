@@ -1,10 +1,12 @@
 ---
 // src/layouts/MenuuppLayout.astro
-import Header from '../components/Header.svelte'; // 👈 AGREGAR ESTA LÍNEA
+import Header from '../components/Header.svelte';
 import '../styles/reset.css';
 import '../styles/global-styles.css';
 import ModalManager from '../components/ ModalManager.svelte';
 import AuthInitializer from '../components/AuthInitializer.svelte';
+import ToastContainer from '../components/ui/ToastContainer.svelte';
+
 export interface Props {
   title: string;
   description?: string;
@@ -54,14 +56,6 @@ const {
   
   <!-- Global styles -->
   <style>
-    /* CSS Variables específicas para Menupp */
-    :root {
-      --primary-color: #ff6b35;
-      --primary-light: #ff8c69;
-      --primary-dark: #e55a2b;
-      --header-height: 60px;
-      --header-height-mobile: 56px;
-    }
     
     /* Ajuste del body para el header fijo */
     body {
@@ -190,6 +184,8 @@ const {
   <main id="main-content" role="main">
     <slot />
   </main>
+   <!-- Toast Container -->
+   <ToastContainer client:load />
   <div id="modal-root">
       <ModalManager client:load  />
     </div>
