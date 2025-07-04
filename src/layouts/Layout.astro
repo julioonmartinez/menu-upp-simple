@@ -146,16 +146,18 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     <!-- Accessibility Enhancement -->
     <meta name="referrer" content="origin-when-cross-origin" />
     
-    <!-- Performance Hints -->
-    <link rel="preload" href="/styles/critical.css" as="style" />
-    
     <!-- Service Worker Registration -->
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then(registration => console.log('SW registered: ', registration))
-            .catch(registrationError => console.log('SW registration failed: ', registrationError));
+            .then(registration => {
+              console.log('✅ Service Worker registered successfully:', registration);
+            })
+            .catch(registrationError => {
+              console.warn('⚠️ Service Worker registration failed:', registrationError);
+              // No mostrar error crítico, solo warning
+            });
         });
       }
     </script>

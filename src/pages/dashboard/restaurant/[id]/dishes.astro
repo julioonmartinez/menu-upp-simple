@@ -2,10 +2,11 @@
 import RestaurantUpdate from  '../../../../components/RestaurantUpdate.svelte';
 import MenuuppLayout from '../../../../layouts/MenuuppLayout.astro';
 import RestaurantDashboard from '../../../../components/restaurant/RestaurantDashboard.svelte';
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
 const id = Astro.params.id
 console.log( 'idParams', id )
 
 ---
-<MenuuppLayout title='' description='' >
+<PrivateLayout title='Menús Digitales' description='Menús Digitales' >
     <RestaurantDashboard client:load idRestaurant={id} />
-</MenuuppLayout>
+</PrivateLayout>

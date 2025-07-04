@@ -16,7 +16,7 @@ import type { LinkTree } from '../../interfaces';
 
 // Obtener el username de los parámetros de la URL
 const { username } = Astro.params;
-
+console.log('🔍 Username:', username);
 if (!username) {
   return Astro.redirect('/404');
 }
@@ -191,7 +191,7 @@ const menuStructuredData = hasValidData ? {
       id="menu-main-container"
       aria-label="Menú del restaurante"
     >
-      <!-- Skeleton loader mejorado con mejor accesibilidad -->
+     
       <div 
         class="menu-skeleton" 
         id="menu-skeleton"
@@ -820,48 +820,72 @@ const menuStructuredData = hasValidData ? {
     // Verificación periódica optimizada
     const checkInterval = setInterval(() => {
       const dynamicMenuContent = document.querySelector('#menu-section');
-      if (dynamicMenuContent && dynamicMenuContent.children.length > 0) {
+      const hasMenuContent = dynamicMenuContent && dynamicMenuContent.children.length > 0;
+      const hasDishes = dynamicMenuContent && dynamicMenuContent.querySelector('.dishes-grid, .empty-state, .error-state');
+      
+      if (hasMenuContent || hasDishes) {
         svelteComponentReady = true;
         handleMenuTransition();
         clearInterval(checkInterval);
         clearTimeout(fallbackTimer);
       }
-    }, 50); // Más frecuente para mejor responsividad
+    }, 100); // Verificar cada 100ms
     
     // Cleanup interval después de 5 segundos
     setTimeout(() => {
       clearInterval(checkInterval);
     }, 5000);
     
+    // Manejo especial para restaurantes sin platillos
+    const hasCategories = document.querySelector('.category-nav-wrapper') !== null;
+    const hasDishes = document.querySelector('#menu-section') !== null;
+    
+    if (!hasCategories || !hasDishes) {
+      console.log('⚠️ Restaurant has no categories or dishes, showing empty state');
+      // Trigger transition immediately for empty restaurants
+      setTimeout(() => {
+        handleMenuTransition();
+      }, 1000);
+    } else {
+      // Si hay categorías y platillos, esperar a que el componente Svelte esté listo
+      console.log('✅ Restaurant has categories and dishes, waiting for Svelte component');
+    }
+    
     console.log('🍽️ Menu page loaded successfully with optimizations');
   });
 
-  // Sticky navigation mejorado con Intersection Observer
-  document.addEventListener('DOMContentLoaded', () => {
-    const categoryNav = document.querySelector('.category-nav-wrapper');
-    if (!categoryNav) return;
-    
-    const heroSection = document.querySelector('.hero-section');
-    if (!heroSection) return;
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            categoryNav.classList.remove('is-sticky');
-          } else {
-            categoryNav.classList.add('is-sticky');
-          }
-        });
-      },
-      { 
-        rootMargin: '-1px 0px 0px 0px',
-        threshold: 0 
+      // Sticky navigation mejorado con Intersection Observer
+    document.addEventListener('DOMContentLoaded', () => {
+      const categoryNav = document.querySelector('.category-nav-wrapper');
+      if (!categoryNav) {
+        console.log('⚠️ Category nav not found, skipping sticky behavior');
+        return;
       }
-    );
-    
-    observer.observe(heroSection);
-  });
+      
+      const heroSection = document.querySelector('.hero-section');
+      if (!heroSection) {
+        console.log('⚠️ Hero section not found, skipping sticky behavior');
+        return;
+      }
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              categoryNav.classList.remove('is-sticky');
+            } else {
+              categoryNav.classList.add('is-sticky');
+            }
+          });
+        },
+        { 
+          rootMargin: '-1px 0px 0px 0px',
+          threshold: 0 
+        }
+      );
+      
+      observer.observe(heroSection);
+    });
 
   // Error tracking mejorado
   window.addEventListener('error', (event) => {

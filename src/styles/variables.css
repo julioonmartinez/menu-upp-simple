@@ -1,0 +1,41 @@
+:root {
+    /* Colores */
+    --primary: #F15A29; /* Vibrant Orange/Red from logo */
+    --primary-light: #F37B52; /* Lighter version of primary */
+    --primary-dark: #D44723; /* Darker version of primary */
+    --dark: #222D35; /* Dark Blue/Slate from logo background */
+    --light: #FFFFFF; /* White from logo text */
+    --gray: #5F6A73; /* Mid-tone derived from dark background */
+    --light-gray: #F2F2F2; /* Off-White from dotted line */
+    
+    /* Tipografía */
+    --font-primary: 'Outfit', sans-serif;
+    --font-display: 'Playfair Display', serif;
+    
+    /* Espaciado */
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 2rem;
+    --space-lg: 3rem;
+    --space-xl: 4rem;
+    --space-xxl: 6rem;
+    
+    /* Bordes */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 30px;
+    --radius-full: 50%;
+    
+  /* Sombras */
+  --shadow-sm: 0 3px 10px rgba(34, 45, 53, 0.1);
+  --shadow-md: 0 8px 30px rgba(34, 45, 53, 0.06);
+  --shadow-lg: 0 15px 40px rgba(34, 45, 53, 0.1);
+  --shadow-primary: 0 5px 15px rgba(241, 90, 41, 0.3);
+    
+    /* Transiciones */
+    --transition: all 0.3s ease;
+    
+    /* Contenedor */
+    --container-width: 90%;
+    --container-max-width: 1200px;
+  }

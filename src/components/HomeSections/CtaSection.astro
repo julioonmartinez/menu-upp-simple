@@ -1,0 +1,82 @@
+---
+// import '../styles/cta.css';
+import Button from './Button.astro';
+---
+
+<section class="cta" id="contacto">
+  <div class="container">
+    <div class="cta-content">
+      <h2>¿Listo para digitalizar tu menú?</h2>
+      <p>Da el primer paso hacia la transformación digital de tu restaurante. Contáctanos hoy mismo y descubre cómo Menu-Upp puede ayudarte a mejorar la experiencia de tus clientes.</p>
+      <div class="cta-actions">
+        <Button
+          text="Comenzar ahora"
+          href={'https://wa.me/' + 5510986418 +'/?text=Quiero%20información%20sobre%20sus%20menús%20digitales' }
+          variant="secondary"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+    /* Estilos para la sección de llamada a la acción */
+.cta {
+  background-image: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: 200px;
+  height: 200px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.cta::after {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  right: -100px;
+  width: 200px;
+  height: 200px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.cta-content {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-md) 0;
+}
+
+.cta h2 {
+  color: white;
+  margin-bottom: var(--space-sm);
+}
+
+.cta p {
+  max-width: 600px;
+  margin: 0 auto var(--space-md);
+  opacity: 0.9;
+}
+
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+@media (max-width: 576px) {
+  .cta-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>

@@ -1,0 +1,410 @@
+---
+// import '../styles/header.css';
+---
+
+<header class="header" id="header">
+  <div class="container-nav">
+    <div class="logo">
+      <!-- <img src="/images/logo/menuup128x128.png" alt="Menu-Upp Logo" width="40" height="40"> -->
+      <h1>Menu-Upp</h1>
+    </div>
+    
+    <div class="column-right">
+      <a href="/login" class="nav-button">Inicia gratis</a>
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
+        <div class="hamburger-container">
+          <span class="hamburger"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Side Nav -->
+<div class="sidenav" id="sidenav">
+  <div class="sidenav-content">
+    <div class="sidenav-header">
+      <h2>Menu</h2>
+      <button class="close-sidenav" id="closeSidenav">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav class="nav">
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#features">Características</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#pricing">Paquetes</a></li>
+        <li><a href="#extras">Extras</a></li>
+      </ul>
+    </nav>
+    <div class="sidenav-footer">
+      <a href="/login" class="nav-button nav-button-full">Inicia gratis</a>
+    </div>
+  </div>
+  <div class="sidenav-overlay" id="sidenavOverlay"></div>
+</div>
+
+<style>
+/* Estilos para el header */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: transparent;
+  transition: var(--transition);
+  z-index: 100;
+  padding: 1rem 0;
+}
+
+.header.scrolled {
+  background-color: var(--light);
+  box-shadow: var(--shadow-sm);
+  padding: 0.5rem 0;
+}
+
+.header .container-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.logo h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--primary);
+}
+
+.column-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.nav-button {
+  display: inline-block;
+  padding: 0.6rem 1.5rem;
+  background-color: var(--primary);
+  color: white;
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.nav-button:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-primary);
+}
+
+.nav-button-full {
+  width: 100%;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+/* Estilos mejorados para el botón mobile */
+.mobile-toggle {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger-container {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.hamburger, 
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  background-color: var(--dark);
+  transition: all 0.3s ease;
+  left: 0;
+}
+
+.hamburger {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.hamburger::before {
+  top: -6px;
+}
+
+.hamburger::after {
+  bottom: -6px;
+}
+
+/* Side Nav Styles */
+.sidenav {
+  visibility: hidden;
+}
+
+.sidenav-content {
+  position: fixed;
+  top: 0;
+  right: -300px; /* Comienza fuera de la pantalla */
+  width: 300px;
+  height: 100vh;
+  background-color: var(--light);
+  z-index: 1000;
+  padding: 2rem 1.5rem;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+
+.sidenav.active .sidenav-content {
+  right: 0;
+}
+
+.sidenav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.sidenav.active {
+  visibility: visible;
+}
+
+.sidenav.active .sidenav-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidenav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidenav-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--primary);
+}
+
+.close-sidenav {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--dark);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  display: block;
+  padding: 0.5rem 0;
+  color: var(--dark);
+  font-weight: 500;
+  transition: var(--transition);
+  font-size: 1.1rem;
+  position: relative;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary);
+  transition: var(--transition);
+}
+
+.nav-links a:hover {
+  color: var(--primary);
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.sidenav-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+body.sidenav-open {
+  overflow: hidden;
+}
+
+/* Versión de escritorio del menú (horizontal) */
+@media (min-width: 992px) {
+  .mobile-toggle {
+    display: none;
+  }
+  
+  /* Mostrar menú horizontal en el header para pantallas grandes */
+  .header .container-nav {
+    position: relative;
+  }
+  
+  .header .nav {
+    display: block;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .header .nav-links {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+  }
+  
+  .header .nav-links a {
+    font-size: 0.9rem;
+    padding: 0;
+  }
+}
+
+/* Media queries */
+@media (max-width: 576px) {
+  .header .container-nav {
+    padding: 0 1rem;
+  }
+  
+  .nav-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .sidenav-content {
+    width: 85%;
+    right: -85%;
+  }
+}
+</style>
+
+<script>
+  // Script para manejar el menú lateral y el cambio de apariencia del header al hacer scroll
+  document.addEventListener('DOMContentLoaded', () => {
+    const header = document.getElementById('header');
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidenav = document.getElementById('sidenav');
+    const closeSidenav = document.getElementById('closeSidenav');
+    const sidenavOverlay = document.getElementById('sidenavOverlay');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    
+    // Función para abrir el menú lateral
+    const openSidenav = () => {
+      sidenav.classList.add('active');
+      document.body.classList.add('sidenav-open');
+    };
+    
+    // Función para cerrar el menú lateral
+    const closeSidenavFunc = () => {
+      sidenav.classList.remove('active');
+      document.body.classList.remove('sidenav-open');
+    };
+    
+    // Toggle menú lateral
+    mobileToggle.addEventListener('click', openSidenav);
+    closeSidenav.addEventListener('click', closeSidenavFunc);
+    sidenavOverlay.addEventListener('click', closeSidenavFunc);
+    
+    // Cambiar estilo del header al hacer scroll
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+    
+    // Cerrar menú lateral al hacer clic en un enlace
+    navLinks.forEach(link => {
+      link.addEventListener('click', closeSidenavFunc);
+    });
+    
+    // Mostrar el menú horizontal en el header para pantallas grandes
+    const checkScreenSize = () => {
+      if (window.innerWidth >= 992) {
+        // Si es pantalla grande, añadir el nav al header
+        if (document.querySelector('.header .nav') === null) {
+          const navClone = document.querySelector('.sidenav .nav').cloneNode(true);
+          document.querySelector('.header .container-nav').appendChild(navClone);
+          
+          // Añadir event listeners a los enlaces del nav clonado
+          const headerNavLinks = document.querySelectorAll('.header .nav-links a');
+          headerNavLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              const href = link.getAttribute('href');
+              document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+            });
+          });
+        }
+      } else {
+        // Si es pantalla pequeña, eliminar el nav del header si existe
+        const headerNav = document.querySelector('.header .nav');
+        if (headerNav !== null) {
+          headerNav.remove();
+        }
+      }
+    };
+    
+    // Comprobar tamaño de pantalla al cargar y al redimensionar
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+  });
+</script>

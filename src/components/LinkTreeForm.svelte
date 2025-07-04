@@ -470,7 +470,7 @@
             />
 
             <!-- Campo de solo lectura para mostrar el customSlug -->
-            <div class="form-group">
+            <!-- <div class="form-group">
               <label for="customSlug" class="form-label">URL Personalizada</label>
               <input 
                 type="text" 
@@ -483,7 +483,7 @@
               <div class="form-help">
                 La URL de tu LinkTree será: <strong>/{formData.customSlug}</strong>
               </div>
-            </div>
+            </div> -->
           </div>
 
         {:else if activeSection === 'images' && isEditMode && $currentLinkTree}

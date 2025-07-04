@@ -1,0 +1,67 @@
+---
+// Ventajas.astro - Sección de ventajas/beneficios
+---
+<section class="ventajas-section content-section">
+  <h2>¿Por qué elegir MenuUpp?</h2>
+  <div class="ventajas-list">
+    <div class="ventaja">
+      <span class="icon">💸</span>
+      <h3>Aumenta tus ingresos</h3>
+      <p>Recibe más pedidos y clientes sin comisiones.</p>
+    </div>
+    <div class="ventaja">
+      <span class="icon">⚡</span>
+      <h3>Fácil y rápido</h3>
+      <p>Crea tu menú digital en minutos, sin complicaciones.</p>
+    </div>
+    <div class="ventaja">
+      <span class="icon">📱</span>
+      <h3>Acceso desde cualquier dispositivo</h3>
+      <p>Funciona en móviles, tablets y computadoras.</p>
+    </div>
+    <div class="ventaja">
+      <span class="icon">🔒</span>
+      <h3>Seguro y confiable</h3>
+      <p>Tus datos y los de tus clientes siempre protegidos.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+.ventajas-section {
+  padding: var(--spacing-4xl) var(--spacing-lg) var(--spacing-3xl) var(--spacing-lg);
+  background: var(--bg-primary);
+  text-align: center;
+}
+.ventajas-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-3xl);
+  margin-top: var(--spacing-3xl);
+}
+.ventaja {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-3xl) var(--spacing-xl);
+  width: 220px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-md);
+}
+h3 {
+  margin: var(--spacing-sm) 0 var(--spacing-xs) 0;
+  font-size: var(--font-lg);
+  color: var(--primary-color);
+}
+p {
+  color: var(--text-secondary);
+  font-size: var(--font-base);
+}
+</style> 

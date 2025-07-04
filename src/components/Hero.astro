@@ -1,0 +1,88 @@
+---
+// Hero.astro - Sección principal tipo hero para la landing page
+---
+<section class="hero-section">
+  <div class="hero-badge">#1 APP DE RESTAURANTES EN 2025</div>
+  <h1>Menú digital gratis<br/>Crece tus <span class="resaltado">ingresos</span></h1>
+  <p class="hero-sub">Meniu es la app más completa para restaurantes</p>
+  <div class="hero-testimonios">
+    <img src="/avatars/avatar1.png" alt="Cliente 1" class="avatar"/>
+    <img src="/avatars/avatar2.png" alt="Cliente 2" class="avatar"/>
+    <img src="/avatars/avatar3.png" alt="Cliente 3" class="avatar"/>
+    <span class="emoji">😍</span>
+  </div>
+  <!-- <div class="hero-rating">
+    <strong>4000 clientes ya confían</strong><br/>
+    <span class="stars">★★★★★</span> <span class="rating">4.8 en Google</span>
+  </div> -->
+  <a href="#prueba" class="cta-button btn btn-primary btn-lg btn-rounded">Pruébalo gratis</a>
+  <div class="hero-img">
+    <!-- Aquí puedes poner una imagen o ilustración -->
+  </div>
+</section>
+
+<style>
+.hero-section {
+  text-align: center;
+  padding: var(--spacing-5xl) var(--spacing-lg) var(--spacing-3xl) var(--spacing-lg);
+  background: var(--bg-primary);
+}
+.hero-badge {
+  display: inline-block;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: var(--radius-full);
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-xs) var(--spacing-2xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-base);
+}
+h1 {
+  font-size: var(--font-5xl);
+  font-weight: var(--weight-extrabold);
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--text-primary);
+}
+.resaltado {
+  color: var(--primary-color);
+}
+.hero-sub {
+  font-size: var(--font-xl);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-2xl);
+}
+.hero-testimonios {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+}
+.emoji {
+  font-size: 2rem;
+}
+.hero-rating {
+  font-size: var(--font-lg);
+  margin-bottom: var(--spacing-2xl);
+  color: var(--text-primary);
+}
+.stars {
+  color: #ffb400;
+  font-size: var(--font-lg);
+}
+.cta-button {
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+}
+.hero-img {
+  margin-top: var(--spacing-3xl);
+}
+</style>

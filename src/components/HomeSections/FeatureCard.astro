@@ -1,0 +1,69 @@
+---
+export interface Props {
+  icon: string;
+  title: string;
+  description: string;
+  index: number;
+}
+
+const { icon, title, description, index } = Astro.props;
+
+// Calcula un leve retraso en la animación según el índice
+const animationDelay = `${index * 0.1}s`;
+---
+
+<div class="feature-card fade-in" style={`animation-delay: ${animationDelay}`}>
+  <div class="feature-icon">{icon}</div>
+  <h3>{title}</h3>
+  <p>{description}</p>
+</div>
+
+<style>
+  .feature-card {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background-color: white;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background-color: var(--primary);
+    transition: var(--transition);
+    z-index: -1;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .feature-card:hover::before {
+    width: 100%;
+    opacity: 0.05;
+  }
+  
+  .feature-icon {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: var(--space-sm);
+  }
+  
+  .feature-card h3 {
+    margin-bottom: 0.8rem;
+  }
+  
+  .feature-card p {
+    color: var(--gray);
+    margin-bottom: 0;
+  }
+</style>

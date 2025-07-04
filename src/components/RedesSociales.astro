@@ -1,0 +1,44 @@
+---
+// RedesSociales.astro - Sección de links a redes sociales
+---
+<section class="redes-section cta-section">
+  <h2>Síguenos en redes sociales</h2>
+  <div class="redes-list">
+    <a href="https://facebook.com" target="_blank" rel="noopener" class="red-social" aria-label="Facebook">📘</a>
+    <a href="https://instagram.com" target="_blank" rel="noopener" class="red-social" aria-label="Instagram">📸</a>
+    <a href="https://wa.me/" target="_blank" rel="noopener" class="red-social" aria-label="WhatsApp">💬</a>
+    <a href="https://tiktok.com" target="_blank" rel="noopener" class="red-social" aria-label="TikTok">🎵</a>
+    <a href="https://youtube.com" target="_blank" rel="noopener" class="red-social" aria-label="YouTube">▶️</a>
+  </div>
+</section>
+
+<style>
+.redes-section {
+  padding: var(--spacing-4xl) var(--spacing-lg) var(--spacing-3xl) var(--spacing-lg);
+  background: var(--bg-primary);
+  text-align: center;
+}
+.redes-list {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-3xl);
+  margin-top: var(--spacing-xl);
+}
+.red-social {
+  font-size: 2.2rem;
+  text-decoration: none;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+  padding: var(--spacing-md);
+  transition: transform 0.15s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.red-social:hover {
+  transform: scale(1.2);
+  background: var(--primary-color);
+  color: var(--text-inverse);
+}
+</style> 

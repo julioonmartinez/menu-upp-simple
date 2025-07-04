@@ -1,0 +1,36 @@
+---
+const beneficios = [
+  {
+    icon: '🍽️',
+    title: 'Atractivo y moderno',
+    desc: 'Haz que tu menú luzca profesional y atractivo en cualquier dispositivo.'
+  },
+  {
+    icon: '⚡',
+    title: 'Actualiza en segundos',
+    desc: 'Cambia precios, platillos o fotos al instante, sin complicaciones.'
+  },
+  {
+    icon: '📱',
+    title: 'Comparte fácil',
+    desc: 'Envía tu menú por WhatsApp, redes sociales o QR.'
+  },
+  {
+    icon: '💸',
+    title: 'Sin comisiones',
+    desc: 'Tu menú es tuyo, sin intermediarios ni costos ocultos.'
+  }
+];
+---
+<section class="beneficios-section container">
+  <h2 class="text-3xl font-bold text-center mb-2xl">Beneficios de tu menú digital</h2>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-lg mt-xl">
+    {beneficios.map(b => (
+      <div class="card card-compact text-center animate-fade-in">
+        <div class="text-4xl mb-lg">{b.icon}</div>
+        <h3 class="text-xl font-semibold mb-md">{b.title}</h3>
+        <p class="text-muted">{b.desc}</p>
+      </div>
+    ))}
+  </div>
+</section> 

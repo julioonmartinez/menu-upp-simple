@@ -398,8 +398,10 @@
       <p>No hay hero slides configurados.</p>
       <p>Agrega tu primer slide usando el formulario de abajo.</p>
     </div>
-  {:else}
-    <!-- Slides existentes -->
+  {/if}
+
+  <!-- Slides existentes -->
+  {#if $slidesOrderedByPosition && $slidesOrderedByPosition.length > 0}
     <div class="slides-container">
       {#each $slidesOrderedByPosition as slide (slide.position)}
         <div 
@@ -587,132 +589,133 @@
         </div>
       {/each}
     </div>
+  {/if}
 
-    <!-- Cinta para nuevo slide -->
-    {#if $canAddMore}
-      <div class="slide-accordion new-slide" class:expanded={newSlideExpanded}>
-        <div class="accordion-header" on:click={toggleNewSlideExpanded}>
-          <div class="new-slide-icon">+</div>
-          <div class="new-slide-info">
-            <h3>Agregar nuevo slide</h3>
-            <p>Crear un nuevo slide para el carrusel</p>
-          </div>
-          <div class="accordion-actions">
-            <button 
-              class="btn-toggle"
-              aria-label={newSlideExpanded ? 'Contraer' : 'Expandir'}
-            >
-              {newSlideExpanded ? '−' : '+'}
-            </button>
-          </div>
+  <!-- Cinta para nuevo slide -->
+  {#if $canAddMore}
+    <div class="slide-accordion new-slide" class:expanded={newSlideExpanded}>
+      <div class="accordion-header" on:click={toggleNewSlideExpanded}>
+        <div class="new-slide-icon">+</div>
+        <div class="new-slide-info">
+          <h3>Agregar nuevo slide</h3>
+          <p>Crear un nuevo slide para el carrusel</p>
         </div>
+        <div class="accordion-actions">
+          <button 
+            class="btn-toggle"
+            aria-label={newSlideExpanded ? 'Contraer' : 'Expandir'}
+          >
+            {newSlideExpanded ? '−' : '+'}
+          </button>
+        </div>
+      </div>
 
-        {#if newSlideExpanded}
-          <div class="accordion-content">
-            <div class="new-slide-form">
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="new-title">Título *</label>
-                  <input
-                    id="new-title"
-                    type="text"
-                    bind:value={newSlideData.title}
-                    maxlength="100"
-                    placeholder="Título del slide"
-                  />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="new-subtitle">Subtítulo *</label>
-                  <input
-                    id="new-subtitle"
-                    type="text"
-                    bind:value={newSlideData.subtitle}
-                    maxlength="200"
-                    placeholder="Subtítulo del slide"
-                  />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="new-alt">Texto alternativo</label>
-                  <input
-                    id="new-alt"
-                    type="text"
-                    bind:value={newSlideData.alt}
-                    maxlength="150"
-                    placeholder="Descripción para accesibilidad"
-                  />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <ImageUploader
-                    label="Imagen *"
-                    id="new-image"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    required
-                    on:fileSelected={(e) => {
-                      newSlideImage = e.detail.file;
-                      newSlideImagePreview = e.detail.preview;
-                      newSlideImageError = '';
-                    }}
-                    on:error={(e) => {
-                      newSlideImageError = e.detail.message;
-                      toastStore.error(e.detail.message);
-                    }}
-                    on:dimensionWarning={(e) => toastStore.info(e.detail.message)}
-                    error={newSlideImageError}
-                    uploading={$isAdding}
-                  />
-                </div>
-              </div>
-
-              {#if newSlideImagePreview}
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Vista previa</label>
-                    <div class="image-preview">
-                      <img src={newSlideImagePreview} alt="Preview" />
-                    </div>
-                  </div>
-                </div>
-              {/if}
-
-              <div class="form-actions">
-                <button 
-                  class="btn btn-primary"
-                  on:click={createNewSlide}
-                  disabled={$isAdding || !newSlideImage}
-                >
-                  {#if $isAdding}
-                    <span class="spinner-small"></span>
-                    Creando...
-                  {:else}
-                    Crear slide
-                  {/if}
-                </button>
-                <button 
-                  class="btn btn-secondary"
-                  on:click={cancelNewSlide}
-                  disabled={$isAdding}
-                >
-                  Cancelar
-                </button>
+      {#if newSlideExpanded}
+        <div class="accordion-content">
+          <div class="new-slide-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-title">Título *</label>
+                <input
+                  id="new-title"
+                  type="text"
+                  bind:value={newSlideData.title}
+                  maxlength="100"
+                  placeholder="Título del slide"
+                />
               </div>
             </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-subtitle">Subtítulo *</label>
+                <input
+                  id="new-subtitle"
+                  type="text"
+                  bind:value={newSlideData.subtitle}
+                  maxlength="200"
+                  placeholder="Subtítulo del slide"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-alt">Texto alternativo</label>
+                <input
+                  id="new-alt"
+                  type="text"
+                  bind:value={newSlideData.alt}
+                  maxlength="150"
+                  placeholder="Descripción para accesibilidad"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <ImageUploader
+                  label="Imagen *"
+                  id="new-image"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  required
+                  on:fileSelected={(e) => {
+                    newSlideImage = e.detail.file;
+                    newSlideImagePreview = e.detail.preview;
+                    newSlideImageError = '';
+                  }}
+                  on:error={(e) => {
+                    newSlideImageError = e.detail.message;
+                    toastStore.error(e.detail.message);
+                  }}
+                  on:dimensionWarning={(e) => toastStore.info(e.detail.message)}
+                  error={newSlideImageError}
+                  uploading={$isAdding}
+                />
+              </div>
+            </div>
+
+            {#if newSlideImagePreview}
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Vista previa</label>
+                  <div class="image-preview">
+                    <img src={newSlideImagePreview} alt="Preview" />
+                  </div>
+                </div>
+              </div>
+            {/if}
+
+            <div class="form-actions">
+              <button 
+                class="btn btn-primary"
+                on:click={createNewSlide}
+                disabled={$isAdding || !newSlideImage}
+              >
+                {#if $isAdding}
+                  <span class="spinner-small"></span>
+                  Creando...
+                {:else}
+                  Crear slide
+                {/if}
+              </button>
+              <button 
+                class="btn btn-secondary"
+                on:click={cancelNewSlide}
+                disabled={$isAdding}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
-        {/if}
-      </div>
-    {:else}
-      <div class="no-more-slots">
-        <p>Has alcanzado el límite máximo de slides (5)</p>
-      </div>
-    {/if}
+        </div>
+      {/if}
+    </div>
+  {:else}
+    <div class="no-more-slots">
+      <p>Has alcanzado el límite máximo de slides (5)</p>
+    </div>
+  {/if}
 
     <!-- Información de upload -->
     {#if $uploadInfo && $uploadInfo.recommendations}
@@ -734,7 +737,6 @@
         </div>
       </div>
     {/if}
-  {/if}
 
   <!-- Errores -->
   {#if $addError}

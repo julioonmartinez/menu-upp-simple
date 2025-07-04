@@ -1,0 +1,159 @@
+---
+import PricingCard from './PricingCard.astro';
+import Button from './Button.astro';
+
+const pricingData = [
+  {
+    name: 'Gratuito',
+    price: 0,
+    discount: 0,
+    popular: true,
+    features: [
+      'Menú digital básico',
+      'Hasta 20 platillos',
+      'Subida manual de información',
+      'Inclusión de links externos',
+      'Código QR básico',
+      'Sin funcionalidad de tienda',
+      'Soporte por email',
+    ]
+  },
+  {
+    name: 'Paquete 1',
+    price: 999,
+    discount: 30,  // Aplicamos un 30% de descuento
+    popular: false,
+    features: [
+      'Modo menú simple',
+      'Hasta 60 platillos',
+      'Fotos y descripciones',
+      'Categorización',
+      'Código QR personalizado',
+      'Subdominio incluido',
+      'Opción de dominio personalizado',
+      'Sistema de favoritos y rating'
+    ]
+  },
+  // {
+  //   name: 'Paquete 2',
+  //   price: 2499,
+  //   discount: 20,  // Aplicamos un 20% de descuento
+  //   popular: true,
+  //   features: [
+  //     'Todo lo del Paquete 1 más:',
+  //     'Modo tienda completo',
+  //     'Carrito de compras',
+  //     'Múltiples métodos de pago',
+  //     'Compra programada',
+  //     'Sistema de ofertas y descuentos',
+  //     'Opciones de entrega configurables',
+  //     'Registro y perfil de clientes'
+  //   ]
+  // },
+  //   {
+  //     name: 'Paquete 3',
+  //     price: 3499,
+    
+  //     popular: false,
+  //     features: [
+  //       'Todo lo del Paquete 1 y 2 más:',
+  //       'Sistema de estadísticas',
+  //       'Base de datos de compras',
+  //       'Insights impulsados por IA',
+  //       'Recomendaciones personalizadas',
+  //       'Dashboard administrativo avanzado',
+  //       'Soporte prioritario',
+  //       'Actualizaciones premium'
+  //     ]
+  //   }
+];
+
+---
+
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Nuestros Paquetes</h2>
+      <p>Encuentra el plan perfecto para las necesidades de tu restaurante.</p>
+    </div>
+    
+    <div class="pricing-grid">
+      {pricingData.map((plan, index) => (
+        <PricingCard
+          name={plan.name}
+          price={plan.price}
+          period="MXN / anual"
+          features={plan.features}
+          popular={plan.popular}
+          index={index}
+          discount={plan.discount}
+          popularText={plan.name === 'Gratuito' ? 'Más usado' : 'Más popular'}
+        >
+          <Button
+            text="Elegir plan"
+            href={plan.name === 'Gratuito' ? '/login' : 'https://wa.me/' + 5510986418 +'/?text=Quiero%20información%20sobre%20sus%20menús%20digitales%20' + plan.name }
+            variant={plan.popular ? "primary" : "outline"}
+            fullWidth={true}
+          />
+        </PricingCard>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+.pricing {
+  background-color: var(--light);
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-xl) 0; /* Reducido de xxl a xl */
+}
+
+.pricing::before {
+  content: '';
+  position: absolute;
+  bottom: -10%;
+  right: -5%;
+  width: 250px; /* Reducido de 300px */
+  height: 250px; /* Reducido de 300px */
+  background-color: rgba(255, 69, 0, 0.05);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.pricing .container {
+  position: relative;
+  z-index: 1;
+}
+
+.section-header {
+  margin-bottom: var(--space-lg); /* Reducido de xl a lg */
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Tablets */
+@media (max-width: 768px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 450px;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .pricing {
+    padding: var(--space-lg) 0; /* Aún más reducido en móvil */
+  }
+  
+  .section-header {
+    margin-bottom: var(--space-md); /* Más reducido en móvil */
+  }
+}
+</style>

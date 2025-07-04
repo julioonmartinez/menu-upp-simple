@@ -1,0 +1,99 @@
+---
+// Platillos.astro - Sección de platillos destacados y funcionalidades
+---
+<section class="platillos-section content-section">
+  <h2>Descubre nuestros platillos destacados</h2>
+  <div class="platillos-list">
+    <div class="platillo-card">
+      <img src="/platillos/taco.jpg" alt="Taco" class="platillo-img"/>
+      <div class="platillo-info">
+        <h3>Taco al Pastor</h3>
+        <div class="platillo-categorias">🌮 Mexicano</div>
+        <div class="platillo-interacciones">
+          <span>👍 120</span>
+          <span>💬 34</span>
+        </div>
+      </div>
+    </div>
+    <div class="platillo-card">
+      <img src="/platillos/pizza.jpg" alt="Pizza" class="platillo-img"/>
+      <div class="platillo-info">
+        <h3>Pizza Margarita</h3>
+        <div class="platillo-categorias">🍕 Italiano</div>
+        <div class="platillo-interacciones">
+          <span>👍 98</span>
+          <span>💬 21</span>
+        </div>
+      </div>
+    </div>
+    <div class="platillo-card">
+      <img src="/platillos/sushi.jpg" alt="Sushi" class="platillo-img"/>
+      <div class="platillo-info">
+        <h3>Sushi Roll</h3>
+        <div class="platillo-categorias">🍣 Japonés</div>
+        <div class="platillo-interacciones">
+          <span>👍 76</span>
+          <span>💬 15</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="qr-section">
+    <h3>Escanea el menú digital</h3>
+    <img src="/qr-demo.png" alt="Código QR del menú" class="qr-img"/>
+    <p>Accede al menú desde cualquier dispositivo</p>
+  </div>
+</section>
+
+<style>
+.platillos-section {
+  padding: var(--spacing-4xl) var(--spacing-lg) var(--spacing-3xl) var(--spacing-lg);
+  background: var(--bg-tertiary);
+  text-align: center;
+}
+.platillos-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-3xl);
+  margin: var(--spacing-3xl) 0 var(--spacing-4xl) 0;
+}
+.platillo-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  width: 220px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.platillo-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+.platillo-info {
+  padding: var(--spacing-xl) var(--spacing-sm);
+}
+.platillo-categorias {
+  font-size: var(--font-base);
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+}
+.platillo-interacciones {
+  display: flex;
+  gap: var(--spacing-lg);
+  justify-content: center;
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+}
+.qr-section {
+  margin-top: var(--spacing-4xl);
+}
+.qr-img {
+  width: 120px;
+  height: 120px;
+  margin: var(--spacing-md) 0;
+}
+</style> 

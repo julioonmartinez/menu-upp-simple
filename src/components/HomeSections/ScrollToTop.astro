@@ -1,0 +1,52 @@
+---
+// import '../styles/scroll-top.css';
+---
+
+<a href="#home" class="scroll-top" id="scrollTop" aria-label="Volver al inicio">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+</a>
+<style>
+    /* Estilos para el botón de volver arriba */
+.scroll-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  background-color: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition);
+  z-index: 999;
+  box-shadow: var(--shadow-primary);
+}
+
+.scroll-top.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scroll-top:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-5px);
+}
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const scrollTop = document.getElementById('scrollTop');
+    
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        scrollTop.classList.add('active');
+      } else {
+        scrollTop.classList.remove('active');
+      }
+    });
+  });
+</script>

@@ -1,0 +1,20 @@
+---
+const pasos = [
+  { icon: '📝', title: 'Crea tu menú', desc: 'Empieza a digitalizar tu carta.' },
+  { icon: '🔑', title: 'Regístrate', desc: 'Accede y gestiona tus menús.' },
+  { icon: '🍔', title: 'Agrega restaurante y platillos', desc: 'Personaliza tu menú con tus mejores platillos.' },
+  { icon: '📲', title: 'Comparte tu menú', desc: 'Envíalo por WhatsApp, redes o QR.' }
+];
+---
+<section class="pasos-section container mt-4xl">
+  <h2 class="text-3xl font-bold text-center mb-2xl">¿Cómo funciona?</h2>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-lg mt-xl">
+    {pasos.map((p, i) => (
+      <div class="card card-compact text-center animate-fade-in">
+        <div class="text-4xl mb-lg">{p.icon}</div>
+        <h3 class="text-xl font-semibold mb-md">{p.title}</h3>
+        <p class="text-muted">{p.desc}</p>
+      </div>
+    ))}
+  </div>
+</section> 

@@ -5,7 +5,7 @@ import type { ImageData } from "./restaurant";
 // ===== ENUMS =====
 
 export enum LinkType {
-  // Enlaces Sociales
+  // // Enlaces Sociales
   SOCIAL = "social",
   INSTAGRAM = "instagram",
   FACEBOOK = "facebook",
@@ -73,6 +73,7 @@ export enum LinkType {
   // Enlaces Personalizados
   CUSTOM = "custom",
   OTHER = "other"
+  
 }
 
 // ===== INTERFACES PARA ANALYTICS =====

@@ -1,0 +1,143 @@
+---
+// import '../styles/extras.css';
+import Button from './Button.astro';
+---
+
+<section class="extras" id="extras">
+  <div class="container">
+    <div class="extras-content">
+      <div class="extras-text fade-in">
+        <h2>Fotografía Profesional para tus Platillos</h2>
+        <p>Destaca tu menú con fotografías de alta calidad que harán que tus clientes se antojen antes de probar.</p>
+        <ul class="extras-list">
+          <li>Sesiones fotográficas profesionales para tus platillos</li>
+          <li>Edición y retoque para resaltar colores y texturas</li>
+          <li>Imágenes optimizadas para web y dispositivos móviles</li>
+          <li>Asesoría en presentación y estilismo culinario</li>
+        </ul>
+        <p>El precio es variable según la cantidad de platillos. Contáctanos para una cotización personalizada.</p>
+        <div class="extras-action">
+          <Button
+            text="Solicitar información"
+            href="#contacto"
+            variant="primary"
+          />
+        </div>
+      </div>
+      
+      <div class="extras-image fade-in">
+        <img 
+          src="/images/food-photography.webp" 
+          alt="Fotografía profesional de alimentos"
+          width="500"
+          height="400"
+        >
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+    /* Estilos para la sección de extras */
+.extras {
+  background-color: var(--light-gray);
+  position: relative;
+  overflow: hidden;
+}
+
+.extras::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 40%;
+  height: 80%;
+  background-color: rgba(255, 69, 0, 0.05);
+  clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
+  z-index: 0;
+}
+
+.extras-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+.extras-text {
+  flex: 1;
+  min-width: 300px;
+}
+
+.extras-text h2 {
+  margin-bottom: var(--space-sm);
+}
+
+.extras-list {
+  margin: var(--space-md) 0;
+}
+
+.extras-list li {
+  position: relative;
+  padding-left: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.extras-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+.extras-action {
+  margin-top: var(--space-md);
+}
+
+.extras-image {
+  flex: 1;
+  min-width: 300px;
+  position: relative;
+}
+
+.extras-image img {
+  width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition);
+  object-fit: cover;
+}
+
+.extras-image::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  width: 60%;
+  height: 60%;
+  border: 3px solid var(--primary);
+  border-radius: var(--radius-md);
+  opacity: 0.2;
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .extras-content {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  
+  .extras-text, .extras-image {
+    width: 100%;
+  }
+  
+  .extras-image::before {
+    display: none;
+  }
+}
+</style>

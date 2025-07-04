@@ -1,0 +1,95 @@
+---
+// import '../styles/features.css';
+import FeatureCard from './FeatureCard.astro';
+
+const featuresData = [
+  // {
+  //   icon: '⚡',
+  //   title: 'Modos Flexibles',
+  //   description: 'Cambia rápidamente entre modo menú simple y modo tienda según las necesidades de tu negocio.'
+  // },
+  // {
+  //   icon: '🛒',
+  //   title: 'Carrito de Compras',
+  //   description: 'Sistema completo de carrito con opciones de pago integradas para facilitar las compras en línea.'
+  // },
+  // {
+  //   icon: '💳',
+  //   title: 'Múltiples Métodos de Pago',
+  //   description: 'Ofrece a tus clientes diversas opciones de pago, desde tarjetas hasta Apple Pay y efectivo.'
+  // },
+  {
+    icon: '🗂️',
+    title: 'Categorización Inteligente',
+    description: 'Organiza tu menú en categorías para que tus clientes encuentren fácilmente lo que buscan.'
+  },
+  {
+    icon: '📸',
+    title: 'Fotografía Profesional',
+    description: 'Servicio especial de fotografía para hacer que tus platillos luzcan irresistibles.'
+  },
+  {
+    icon: '⭐',
+    title: 'Sistema de Favoritos y Rating',
+    description: 'Permite que tus clientes guarden sus platillos favoritos y califiquen su experiencia.'
+  }
+];
+---
+
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Características Destacadas</h2>
+      <p>Menu-Upp ofrece todo lo que necesitas para digitalizar tu menú y mejorar la experiencia de tus clientes.</p>
+    </div>
+    
+    <div class="features-grid">
+      {featuresData.map((feature, index) => (
+        <FeatureCard
+          icon={feature.icon}
+          title={feature.title}
+          description={feature.description}
+          index={index}
+        />
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+    /* Estilos para la sección de características */
+.features {
+  background-color: var(--light);
+  position: relative;
+  overflow: hidden;
+}
+
+.features::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -5%;
+  width: 300px;
+  height: 300px;
+  background-color: rgba(255, 69, 0, 0.05);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.features .container {
+  position: relative;
+  z-index: 1;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+@media (max-width: 576px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

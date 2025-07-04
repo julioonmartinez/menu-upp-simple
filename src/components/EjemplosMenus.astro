@@ -1,0 +1,19 @@
+---
+const ejemplos = [
+  { nombre: 'La Parrilla Feliz', img: '/demo/menu1.jpg' },
+  { nombre: 'Sushi Express', img: '/demo/menu2.jpg' },
+  { nombre: 'Pizza & Pasta', img: '/demo/menu3.jpg' }
+];
+---
+<section class="ejemplos-section container mt-4xl">
+  <h2 class="text-3xl font-bold text-center mb-2xl">Ejemplos de menús</h2>
+  <div class="grid-cards-responsive mt-xl">
+    {ejemplos.map(e => (
+      <div class="card card-size-controlled animate-fade-in">
+        <img src={e.img} alt={e.nombre} class="rounded-xl mb-lg w-full h-auto" style="aspect-ratio:4/3;object-fit:cover;" loading="lazy" />
+        <h3 class="text-xl font-semibold mb-md text-center">{e.nombre}</h3>
+        <a href="/demo" class="btn btn-secondary w-full">Ver demo</a>
+      </div>
+    ))}
+  </div>
+</section> 

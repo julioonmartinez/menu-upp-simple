@@ -33,6 +33,7 @@
   export let links: Link[] = [];
   export let editable = true;
   export let showAnalytics = false;
+  export let restaurantUsername: string = '';
 
   // Event dispatcher
   const dispatch = createEventDispatcher<{
@@ -77,6 +78,9 @@
     customColor: '#3b82f6'
   };
 
+  // Menu link state
+  let isMenuLink = false;
+
   let formErrors: string[] = [];
 
   // Reactive statements
@@ -102,6 +106,7 @@
       customColor: '#3b82f6'
     };
     formErrors = [];
+    isMenuLink = false;
   }
 
   // Validate link form
@@ -153,6 +158,10 @@
       active: link.active,
       customColor: link.customColor || '#3b82f6'
     };
+    
+    // Check if this is a menu link
+    isMenuLink = link.type === LinkTypeEnum.MENU && link.url.includes('/menu');
+    
     formErrors = [];
     showEditForm = true;
   }
@@ -341,6 +350,27 @@
     return LINK_TYPE_ICONS[link.type] || 'fa-solid fa-link';
   }
 
+  // Handle menu link toggle
+  function handleMenuLinkToggle() {
+    if (isMenuLink) {
+      // Set menu link properties
+      linkForm.type = LinkTypeEnum.MENU;
+      linkForm.url = `https://www.menuupp.com/${restaurantUsername}/menu`;
+      linkForm.icon = 'utensils';
+      if (!linkForm.title) {
+        linkForm.title = 'Ver Menú';
+      }
+      if (!linkForm.description) {
+        linkForm.description = 'Descubre nuestros platillos';
+      }
+    } else {
+      // Reset to custom type
+      linkForm.type = LinkTypeEnum.CUSTOM;
+      linkForm.url = '';
+      linkForm.icon = '';
+    }
+  }
+
   // Initialize on mount
   initializeLinks();
 </script>
@@ -508,14 +538,36 @@
         bind:value={linkForm.url}
         placeholder="https://ejemplo.com"
         required={true}
+        disabled={isMenuLink}
       />
 
-      <SelectField
-        id="create-type"
-        label="Tipo"
-        bind:value={linkForm.type}
-        options={Object.entries(LINK_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-      />
+      <!-- Menu Link Switch -->
+      <div class="md:col-span-2">
+        <div class="bg-info-bg border border-info rounded-lg p-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-semibold text-primary mb-xs">Link al Menú</h4>
+              <p class="text-xs text-muted">Activa esta opción para crear un enlace directo a tu menú en MenuUpp</p>
+            </div>
+            <ToggleSwitch
+              id="create-menu-link"
+              label=""
+              checked={isMenuLink}
+              color="blue"
+              on:change={(e) => {
+                isMenuLink = e.detail.checked;
+                handleMenuLinkToggle();
+              }}
+            />
+          </div>
+          {#if isMenuLink}
+            <div class="mt-sm text-xs text-info">
+              <i class="fa-solid fa-info-circle"></i>
+              URL automática: <code>https://www.menuupp.com/{restaurantUsername}/menu</code>
+            </div>
+          {/if}
+        </div>
+      </div>
 
       <div class="form-group">
         <label for="create-icon" class="text-sm font-medium text-secondary mb-xs">Icono</label>
@@ -601,14 +653,36 @@
         type="url"
         bind:value={linkForm.url}
         required={true}
+        disabled={isMenuLink}
       />
 
-      <SelectField
-        id="edit-type"
-        label="Tipo"
-        bind:value={linkForm.type}
-        options={Object.entries(LINK_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-      />
+      <!-- Menu Link Switch -->
+      <div class="md:col-span-2">
+        <div class="bg-info-bg border border-info rounded-lg p-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-semibold text-primary mb-xs">Link al Menú</h4>
+              <p class="text-xs text-muted">Activa esta opción para crear un enlace directo a tu menú en MenuUpp</p>
+            </div>
+            <ToggleSwitch
+              id="edit-menu-link"
+              label=""
+              checked={isMenuLink}
+              color="blue"
+              on:change={(e) => {
+                isMenuLink = e.detail.checked;
+                handleMenuLinkToggle();
+              }}
+            />
+          </div>
+          {#if isMenuLink}
+            <div class="mt-sm text-xs text-info">
+              <i class="fa-solid fa-info-circle"></i>
+              URL automática: <code>https://www.menuupp.com/{restaurantUsername}/menu</code>
+            </div>
+          {/if}
+        </div>
+      </div>
 
       <div class="form-group">
         <label class="text-sm font-medium text-secondary mb-xs">Icono</label>

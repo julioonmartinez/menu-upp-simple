@@ -1,202 +1,28 @@
 ---
-// src/pages/index.astro - Página de inicio con contenido destacado
-import HomePage from '../components/HomePage.svelte'
-import MenuuppLayout from '../layouts/MenuuppLayout.astro';
+import HeaderIndex from '../components/HomeSections/HeaderIndex.astro';
+import HeroIndex from '../components/HomeSections/HeroIndex.astro';
+import Features from '../components/HomeSections/Features.astro';
+import DemoSection from '../components/HomeSections/DemoSection.astro';
+import PricingSection from '../components/HomeSections/PricingSection.astro';
+import ExtraSection from '../components/HomeSections/ExtraSection.astro';
+import TermsSection from '../components/HomeSections/TermsSection.astro';
+import CtaSection from '../components/HomeSections/CtaSection.astro';
+import Footer from '../components/HomeSections/Footer.astro';
+import ScrollToTop from '../components/HomeSections/ScrollToTop.astro';
+import LayoutIndex from '../layouts/LayoutIndex.astro';
 ---
 
-<MenuuppLayout 
-  title="MenuUpp - Descubre los mejores restaurantes y platillos"
-  description="Explora los restaurantes y platillos mejor valorados por nuestra comunidad. Descubre sabores increíbles cerca de ti."
-  showHeaderShadow={false}
-  transparentHeader={false}
->
-  <HomePage client:load />
-</MenuuppLayout>
-
-<!-- Scripts para funcionalidad del header -->
-<script>
-  // Actualización del contador de favoritos
-  function updateFavoritesCount() {
-    // Conectar con el store de favoritos real
-    const favoritesCount = localStorage.getItem('favoriteItems') 
-      ? JSON.parse(localStorage.getItem('favoriteItems')).length 
-      : 0;
-    
-    // Enviar evento personalizado para actualizar el header
-    window.dispatchEvent(new CustomEvent('favoritesCountUpdate', {
-      detail: { count: favoritesCount }
-    }));
-  }
-  
-  // Actualizar contador al cargar la página
-  document.addEventListener('DOMContentLoaded', updateFavoritesCount);
-  
-  // Escuchar cambios en favoritos
-  window.addEventListener('favoritesChanged', updateFavoritesCount);
-  
-  // Analytics tracking para interacciones del header
-  document.addEventListener('click', (e) => {
-    const target = e.target.closest('button');
-    if (target) {
-      if (target.classList.contains('brand-button')) {
-        // Track logo clicks
-        window.menupp?.track('header_logo_click');
-      } else if (target.classList.contains('favorites-btn')) {
-        // Track favorites button clicks
-        window.menupp?.track('header_favorites_click');
-      } else if (target.classList.contains('login-btn')) {
-        // Track login button clicks
-        window.menupp?.track('header_login_click');
-      } else if (target.classList.contains('search-cta-btn')) {
-        // Track search CTA clicks
-        window.menupp?.track('homepage_search_cta_click');
-      } else if (target.classList.contains('cta-button')) {
-        // Track final CTA clicks
-        window.menupp?.track('homepage_final_cta_click');
-      }
-    }
-  });
-
-  // Track scroll behavior para analytics
-  let scrollTimeout;
-  let hasScrolled50 = false;
-  let hasScrolled100 = false;
-
-  window.addEventListener('scroll', () => {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-      
-      if (scrollPercent >= 50 && !hasScrolled50) {
-        hasScrolled50 = true;
-        window.menupp?.track('homepage_scroll_50_percent');
-      }
-      
-      if (scrollPercent >= 100 && !hasScrolled100) {
-        hasScrolled100 = true;
-        window.menupp?.track('homepage_scroll_bottom');
-      }
-    }, 100);
-  });
-
-  // Track time on page
-  const startTime = Date.now();
-  
-  window.addEventListener('beforeunload', () => {
-    const timeOnPage = Date.now() - startTime;
-    if (timeOnPage > 30000) { // Más de 30 segundos
-      window.menupp?.track('homepage_engaged_user', { timeOnPage });
-    }
-  });
-
-  // Intersection Observer para trackear qué secciones son vistas
-  if ('IntersectionObserver' in window) {
-    const sectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-          const sectionName = entry.target.className.includes('hero') ? 'hero' :
-                             entry.target.className.includes('content-section') ? 'content' :
-                             entry.target.className.includes('cta-section') ? 'cta' : 'unknown';
-          
-          window.menupp?.track('homepage_section_viewed', { section: sectionName });
-        }
-      });
-    }, { threshold: 0.5 });
-
-    // Observar secciones principales
-    setTimeout(() => {
-      document.querySelectorAll('.hero-section, .content-section, .cta-section').forEach(section => {
-        sectionObserver.observe(section);
-      });
-    }, 1000);
-  }
-</script>
-
-<style>
-  /* Estilos específicos para la página de inicio */
-  
-  /* Animación de entrada global */
-  :global(.homepage) {
-    animation: fadeIn 0.8s ease-out;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  /* Mejoras de performance */
-  :global(.hero-section) {
-    will-change: transform;
-  }
-
-  :global(.content-section) {
-    contain: layout style paint;
-  }
-
-  /* Optimizaciones para dispositivos de alto DPI */
-  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    :global(.hero-section) {
-      background-image: linear-gradient(135deg, 
-        rgba(255, 107, 53, 0.08) 0%, 
-        rgba(255, 140, 105, 0.05) 50%, 
-        transparent 100%);
-    }
-  }
-
-  /* Mejoras para modo oscuro del sistema */
-  /* @media (prefers-color-scheme: dark) {
-    :global(.homepage) {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    }
-    
-    :global(.hero-section) {
-      background: linear-gradient(135deg, 
-        rgba(255, 107, 53, 0.1) 0%, 
-        rgba(255, 140, 105, 0.05) 50%, 
-        transparent 100%);
-    }
-  } */
-
-  /* Transiciones suaves para cambios de tema */
-  :global(*) {
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-  /* Precarga de recursos críticos */
-  /* :global(.hero-section::before) {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 1px;
-    height: 1px;
-    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDIxTDE2LjUxNCAxNi41MDZMMJEMJTI0Wk0xOSAxMC41QzE5IDE1LjE5NCAxNS4xOTQgMTkgMTAuNSAxOUM1LjgwNiAxOSAyIDE1LjE5NCAyIDEwLjVDMiA1LjgwNiA1LjgwNiAyIDEwLjUgMkMxNS4xOTQgMiAxOSA1LjgwNiAxOSAxMC41WiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=');
-    opacity: 0;
-    pointer-events: none;
-  } */
-
-  /* Estados de carga mejorados */
-  :global(.loading-grid) {
-    contain: layout style;
-  }
-
-  :global(.skeleton-card) {
-    contain: layout style paint;
-  }
-
-  /* Optimización para scroll suave en dispositivos móviles */
-  @media (max-width: 768px) {
-    :global(html) {
-      scroll-behavior: auto;
-    }
-    
-    :global(.homepage) {
-      -webkit-overflow-scrolling: touch;
-    }
-  }
-</style>
+<LayoutIndex title="Menu-Upp | Digitaliza el menú de tu restaurante">
+  <HeaderIndex />
+  <main>
+    <HeroIndex />
+    <Features />
+    <DemoSection />
+    <PricingSection />
+    <ExtraSection />
+    <TermsSection />
+    <CtaSection />
+  </main>
+  <Footer />
+  <ScrollToTop />
+</LayoutIndex>

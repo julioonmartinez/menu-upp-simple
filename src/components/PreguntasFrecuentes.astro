@@ -1,0 +1,56 @@
+---
+// PreguntasFrecuentes.astro - Sección de FAQ
+---
+<section class="faq-section content-section">
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq-list">
+    <details>
+      <summary>¿Cómo creo mi menú digital?</summary>
+      <p>Solo necesitas registrarte, subir tus platillos y tu menú estará listo en minutos.</p>
+    </details>
+    <details>
+      <summary>¿Cuánto cuesta MenuUpp?</summary>
+      <p>¡Es gratis! No cobramos comisiones ni mensualidades ocultas.</p>
+    </details>
+    <details>
+      <summary>¿Puedo recibir pedidos por WhatsApp?</summary>
+      <p>Sí, puedes conectar tu menú con WhatsApp para recibir pedidos directos.</p>
+    </details>
+    <details>
+      <summary>¿Funciona en cualquier dispositivo?</summary>
+      <p>Tu menú es accesible desde cualquier móvil, tablet o computadora.</p>
+    </details>
+  </div>
+</section>
+
+<style>
+.faq-section {
+  padding: var(--spacing-4xl) var(--spacing-lg) var(--spacing-3xl) var(--spacing-lg);
+  background: var(--bg-tertiary);
+  text-align: center;
+}
+.faq-list {
+  max-width: 600px;
+  margin: var(--spacing-3xl) auto 0 auto;
+  text-align: left;
+}
+details {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  cursor: pointer;
+}
+summary {
+  font-weight: var(--weight-semibold);
+  font-size: var(--font-lg);
+  outline: none;
+  color: var(--primary-color);
+}
+p {
+  margin: var(--spacing-md) 0 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-base);
+}
+</style> 

@@ -78,9 +78,19 @@
         
         retryCount = 0; // Reset counter on success
         console.log(`🍽️ Successfully loaded ${dishes.length} dishes for category ${categoryId}`);
+        
+        // Disparar evento para indicar que el menú está listo
+        setTimeout(() => {
+          document.dispatchEvent(new CustomEvent('svelteMenuReady'));
+        }, 100);
       } else {
         console.warn('⚠️ Invalid data structure received');
         dishes = [];
+        
+        // Disparar evento incluso si no hay datos
+        setTimeout(() => {
+          document.dispatchEvent(new CustomEvent('svelteMenuReady'));
+        }, 100);
       }
       
     } catch (err) {
@@ -103,6 +113,11 @@
       error = `No se pudieron cargar los platillos. ${err.message}`;
       dishes = [];
       retryCount = 0;
+      
+      // Disparar evento incluso si hay error
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('svelteMenuReady'));
+      }, 100);
     } finally {
       isLoading = false;
     }
@@ -171,6 +186,11 @@
         index: 0
       };
       fetchDishesByCategory(firstCategory.id);
+    } else {
+      // Si no hay categorías, disparar evento inmediatamente
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('svelteMenuReady'));
+      }, 100);
     }
     
     console.log('🚀 DynamicMenu mounted for username:', username);

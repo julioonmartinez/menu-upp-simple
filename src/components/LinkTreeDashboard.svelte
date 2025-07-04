@@ -640,6 +640,7 @@
             links={safeLinks.slice() }
             editable={true}
             showAnalytics={true}
+            restaurantUsername={currentRestaurant?.username || ''}
             on:linkCreated={handleLinkChanged}
             on:linkUpdated={handleLinkChanged}
             on:linkDeleted={handleLinkChanged}

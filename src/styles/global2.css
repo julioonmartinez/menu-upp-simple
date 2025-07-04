@@ -1,0 +1,95 @@
+/* Estilos globales */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--dark);
+    background-color: var(--light);
+    overflow-x: hidden;
+  }
+  
+  /* Tipografía */
+  h1, h2, h3, h4 {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  
+  h1 {
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+  }
+  
+  h2 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    margin-bottom: var(--space-md);
+  }
+  
+  h3 {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    margin-bottom: var(--space-sm);
+  }
+  
+  p {
+    line-height: 1.6;
+    margin-bottom: var(--space-sm);
+  }
+  
+  /* Layout */
+  .container {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-sm);
+  }
+  
+  section {
+    padding: var(--space-xxl) 0;
+  }
+  
+  /* Encabezados de sección */
+  .section-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+  }
+  
+  .section-header p {
+    color: var(--gray);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  /* Utilidades */
+  .text-center {
+    text-align: center;
+  }
+  
+  .text-primary {
+    color: var(--primary);
+  }
+  
+  .mb-sm {
+    margin-bottom: var(--space-sm);
+  }
+  
+  .mb-md {
+    margin-bottom: var(--space-md);
+  }
+  
+  .mb-lg {
+    margin-bottom: var(--space-lg);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    section {
+      padding: var(--space-xl) 0;
+    }
+    
+    .section-header {
+      margin-bottom: var(--space-lg);
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .container {
+      width: 95%;
+    }
+  }

@@ -1,0 +1,69 @@
+---
+// import '../styles/terms.css';
+---
+
+<section class="terms" id="terms">
+  <div class="container">
+    <div class="section-header fade-in">
+      <h2>Condiciones de Servicio</h2>
+      <p>Información importante sobre nuestros paquetes y servicios.</p>
+    </div>
+    
+    <div class="terms-list fade-in">
+      <h3>Lo que debes saber:</h3>
+      <ul>
+        <li>Los precios solo incluyen un máximo de 60 platillos.</li>
+        <li>Necesitamos que nos proporciones una lista del menú, ya sea en físico o en digital, preferiblemente con una breve descripción.</li>
+        <li>Para más platillos, el costo aumenta según las necesidades específicas del cliente.</li>
+        <li>Las cuentas digitales para pagos son manejadas por el cliente, solo se conectan a nuestro sistema.</li>
+        <li>Aunque el proceso de pago es automatizado, la empresa no maneja las cuentas financieras del cliente.</li>
+        <li>Te ayudamos a conectar tu dominio personalizado, pero no incluimos la compra del mismo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<style>
+    /* Estilos para la sección de términos y condiciones */
+.terms {
+  background-color: var(--light);
+}
+
+.terms-list {
+  background-color: white;
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.terms-list h3 {
+  color: var(--primary);
+  margin-bottom: var(--space-md);
+}
+
+.terms-list ul {
+  list-style: none;
+}
+
+.terms-list li {
+  position: relative;
+  padding-left: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.terms-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .terms-list {
+    padding: var(--space-md);
+  }
+}
+</style>

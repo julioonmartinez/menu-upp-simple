@@ -1,0 +1,197 @@
+---
+// PricingCard.astro
+const { name, price, period, features, popular, index,  discount, popularText = "Más popular" } = Astro.props;
+
+// Determinar precio con descuento
+const hasDiscount = discount && (discount > 0) && (price > 0);
+const discountedPrice = hasDiscount ? Math.round(price * (1 - discount / 100)) : price;
+// Determinar clases de animación
+const animationClass = index === 1 ? 'scale-in' : (index === 0 ? 'slide-in-left' : 'slide-in-right');
+---
+
+<div class={`pricing-card ${popular ? 'popular' : ''} ${animationClass}`}>
+  {popular && <div class="popular-badge">{popularText}</div>}
+  {hasDiscount && price > 0 && discount > 0 && <div class="discount-badge">-{discount > 0 ? discount : ''}%</div>}
+
+  <div class="card-header">
+    <h3>{name}</h3>
+    <div class="price">
+      {price === 0 ? (
+        <span class="amount free">Gratis</span>
+      ) : (
+        <>
+          {(hasDiscount) && <span class="old-price">${price}</span>}
+          <span class="amount">${discountedPrice}</span>
+          <span class="period">{period}</span>
+        </>
+      )}
+    </div>
+  </div>
+
+  <ul class="features">
+    {features.map((feature: any) => (
+      <li>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13.3334 4L6.00002 11.3333L2.66669 8" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        {feature}
+      </li>
+    ))}
+  </ul>
+
+  <div class="card-footer">
+    <slot />
+  </div>
+</div>
+
+
+<style>
+  .pricing-card {
+    background-color: var(--light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    transition: var(--transition);
+    overflow: hidden;
+  }
+  
+  .pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .pricing-card.popular {
+    border: 2px solid var(--primary-light);
+    box-shadow: var(--shadow-primary);
+    transform: scale(1.02);
+  }
+  
+  .pricing-card.popular:hover {
+    transform: scale(1.02) translateY(-5px);
+  }
+  
+  .popular-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--primary), #ff6b35);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 1rem;
+    border-radius: 0 var(--radius-md) 0 var(--radius-md);
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+    50% {
+      box-shadow: 0 2px 12px rgba(255, 107, 53, 0.5);
+    }
+    100% {
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+  }
+  
+  .card-header {
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--light-gray);
+  }
+  .card-header h3{
+    text-align: center;
+  }
+  
+  .price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+  
+  .amount {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+  
+  .amount.free {
+    color: var(--primary);
+    font-size: 2.2rem;
+  }
+  
+  .period {
+    color: var(--gray);
+    font-size: 0.9rem;
+  }
+  
+  .features {
+    flex-grow: 1;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-md) 0;
+  }
+  
+  .features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.7rem;
+    font-size: 0.95rem;
+    color: var(--gray);
+  }
+  
+  .features li svg {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+  }
+  
+  .card-footer {
+    margin-top: auto;
+  }
+
+  .old-price {
+  text-decoration: line-through;
+  color: var(--gray);
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.discount-badge {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+  background-color: var(--primary);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: bold;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+
+  /* Versión más compacta para dispositivos móviles */
+  @media (max-width: 768px) {
+    .pricing-card {
+      
+      padding: var(--space-sm);
+    }
+    
+    .features li {
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .amount {
+      font-size: 2rem;
+    }
+  }
+
+</style>

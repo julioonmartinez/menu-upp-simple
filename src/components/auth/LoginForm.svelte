@@ -346,14 +346,14 @@
         <a href="/register" class="link-secondary">
           ¿No tienes cuenta? Regístrate
         </a>
-        <a href="/forgot-password" class="link-secondary">
+        <!-- <a href="/forgot-password" class="link-secondary">
           ¿Olvidaste tu contraseña?
-        </a>
+        </a> -->
       </div>
     </form>
 
     <!-- Debug info (solo en desarrollo) -->
-    {#if import.meta.env.DEV}
+    <!-- {#if import.meta.env.DEV}
       <details class="debug-info">
         <summary>Debug Info</summary>
         <pre>
@@ -364,7 +364,7 @@ Submitting: {isSubmitting}
 Form Valid: {isFormValid}
         </pre>
       </details>
-    {/if}
+    {/if} -->
   </div>
 </div>
 
