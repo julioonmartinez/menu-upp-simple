@@ -182,6 +182,10 @@
     searchValue = chip.label;
     // Ejecutar búsqueda inmediatamente
     performSearch(chip.label);
+    // Disparar evento de búsqueda completa
+    setTimeout(() => {
+      handleSearchSubmit();
+    }, 500); // Pequeño delay para que se complete la búsqueda
     // Focus en el input para mejor UX
     searchInputElement?.focus();
   }
@@ -243,9 +247,12 @@
 
   function handleSearchSubmit() {
     if (searchValue.trim()) {
-      // Redirigir a página de búsqueda con query
-      const params = new URLSearchParams({ search: searchValue.trim() });
-      window.location.href = `/buscar?${params.toString()}`;
+      // Disparar evento con los resultados de búsqueda
+      dispatch('searchSubmit', {
+        query: searchValue.trim(),
+        results: searchResults
+      });
+      closeDropdown();
     }
   }
 

@@ -15,6 +15,7 @@
 
   import DishModal from './DishModal.svelte';
   import type { DishWithRatings } from '../interfaces/dishRating';
+  import type { RestaurantSearchResult } from '../interfaces/restaurantRating';
   
   // Stores
   import { 
@@ -61,6 +62,16 @@
   // Agregar estos estados después de las variables existentes:
 let showDishModal = $state(false);
 let selectedDish = $state<DishWithRatings | null>(null);
+
+// Estados para búsqueda integrada
+let showSearchResults = $state(false);
+let searchQuery = $state('');
+let searchResults = $state({
+  restaurants: [] as RestaurantSearchResult[],
+  dishes: [] as DishWithRatings[],
+  total: 0
+});
+let isSearching = $state(false);
   
   let data = $state({
     topRestaurants: [] as RestaurantRanking[],
@@ -125,6 +136,27 @@ function openDishModal(dish: DishWithRatings) {
 function closeDishModal() {
   showDishModal = false;
   selectedDish = null;
+}
+
+// Funciones para manejar la búsqueda integrada
+function handleSearchSubmit(event: CustomEvent<{ query: string; results: any }>) {
+  searchQuery = event.detail.query;
+  searchResults = event.detail.results;
+  showSearchResults = true;
+  
+  // Scroll suave a los resultados
+  setTimeout(() => {
+    const resultsElement = document.querySelector('.search-results-section');
+    if (resultsElement) {
+      resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
+}
+
+function clearSearchResults() {
+  showSearchResults = false;
+  searchQuery = '';
+  searchResults = { restaurants: [], dishes: [], total: 0 };
 }
 
   async function loadAllData() {
@@ -257,7 +289,11 @@ function closeDishModal() {
         
         <div class="hero-cta" in:fly={{ y: 20, duration: 500, delay: 200 }}>
           <!-- Búsqueda directa con autocomplete -->
-          <HeroSearchBox {isMobile} onDishSelect={openDishModal} />
+          <HeroSearchBox 
+            {isMobile} 
+            onDishSelect={openDishModal}
+            on:searchSubmit={handleSearchSubmit}
+          />
           
           <!-- <div class="hero-stats" in:fade={{ duration: 400, delay: 400 }}>
             <div class="stat-item">
@@ -280,7 +316,104 @@ function closeDishModal() {
     </div>
   </section>
 
+  <!-- Search Results Section -->
+  {#if showSearchResults}
+    <section class="search-results-section" in:fly={{ y: 20, duration: 500, easing: quintOut }}>
+      <div class="section-container">
+        <div class="search-results-header">
+          <div class="search-info">
+            <h2 class="search-title">
+              Resultados para "{searchQuery}"
+            </h2>
+            <p class="search-subtitle">
+              {searchResults.total} resultados encontrados
+            </p>
+          </div>
+          <button 
+            class="clear-search-btn"
+            onclick={clearSearchResults}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Limpiar búsqueda
+          </button>
+        </div>
+
+        <!-- Restaurantes encontrados -->
+        {#if searchResults.restaurants.length > 0}
+          <div class="search-section" in:fly={{ y: 20, duration: 400, delay: 100 }}>
+            <div class="section-header">
+              <h3 class="section-title">🍽️ Restaurantes</h3>
+              <p class="section-subtitle">{searchResults.restaurants.length} restaurantes encontrados</p>
+            </div>
+            
+            <div class="restaurants-grid">
+              {#each searchResults.restaurants as restaurant, index (restaurant.id)}
+                <div 
+                  in:fly={{ 
+                    y: isMobile ? 15 : 25, 
+                    duration: 350, 
+                    delay: index * 75,
+                    easing: quintOut 
+                  }}
+                >
+                  <RestaurantCardCompact 
+                    restaurant={restaurant}
+                    storeInitialized={storeInitialized}
+                    on:toast={(e) => showToastMessage(e.detail.message, e.detail.type)}
+                  />
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Platillos encontrados -->
+        {#if searchResults.dishes.length > 0}
+          <div class="search-section" in:fly={{ y: 20, duration: 400, delay: 200 }}>
+            <div class="section-header">
+              <h3 class="section-title">🍕 Platillos</h3>
+              <p class="section-subtitle">{searchResults.dishes.length} platillos encontrados</p>
+            </div>
+            
+            <div class="dishes-grid">
+              {#each searchResults.dishes as dish, index (dish.id)}
+                <div 
+                  in:fly={{ 
+                    y: isMobile ? 15 : 25, 
+                    duration: 350, 
+                    delay: index * 75,
+                    easing: quintOut 
+                  }}
+                >
+                  <CardDishSvelte 
+                    item={dish}
+                    index={index}
+                    storeMode={false}
+                  />
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Sin resultados -->
+        {#if searchResults.total === 0}
+          <div class="empty-search-state" in:scale={{ duration: 500, easing: quintOut }}>
+            <div class="empty-card">
+              <div class="empty-icon">🔍</div>
+              <h3>No encontramos resultados</h3>
+              <p>Intenta con otros términos de búsqueda</p>
+            </div>
+          </div>
+        {/if}
+      </div>
+    </section>
+  {/if}
+
     <!-- Top Rated Dishes Section -->
+  {#if !showSearchResults}
   <section class="content-section">
     <div class="section-container">
       <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
@@ -327,8 +460,10 @@ function closeDishModal() {
       {/if}
     </div>
   </section>
+  {/if}
 
   <!-- Top Rated Restaurants Section -->
+  {#if !showSearchResults}
   <section class="content-section">
     <div class="section-container">
       <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
@@ -377,9 +512,10 @@ function closeDishModal() {
       {/if}
     </div>
   </section>
+  {/if}
 
   <!-- Most Commented Dishes Section -->
-  {#if data.mostCommentedDishes.length > 0}
+  {#if !showSearchResults && data.mostCommentedDishes.length > 0}
     <section class="content-section">
       <div class="section-container">
         <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
@@ -420,7 +556,7 @@ function closeDishModal() {
 
 
   <!-- Featured Restaurants Section -->
-  {#if data.featuredRestaurants && data.featuredRestaurants.featured_restaurants.length > 0}
+  {#if !showSearchResults && data.featuredRestaurants && data.featuredRestaurants.featured_restaurants.length > 0}
     <section class="content-section featured-section">
       <div class="section-container">
         <div class="section-header" in:fly={{ y: 20, duration: 400 }}>
@@ -471,6 +607,7 @@ function closeDishModal() {
 
 
   <!-- CTA Final Section -->
+  {#if !showSearchResults}
   <section class="cta-section">
     <div class="section-container">
       <div class="cta-content" in:scale={{ duration: 500, easing: elasticOut }}>
@@ -492,6 +629,7 @@ function closeDishModal() {
       </div>
     </div>
   </section>
+  {/if}
 
   <!-- Toast Notifications -->
   {#if showToast}
@@ -615,6 +753,10 @@ function closeDishModal() {
     padding: 0 var(--spacing-lg);
   }
 
+  .search-results-section .section-container {
+    max-width: 1200px;
+  }
+
   .section-header {
     text-align: center;
     margin-bottom: var(--spacing-xl);
@@ -639,14 +781,18 @@ function closeDishModal() {
   /* Grids */
   .restaurants-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spacing-xl);
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   .dishes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--spacing-xl);
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   .featured-grid {
@@ -841,10 +987,22 @@ function closeDishModal() {
     
     .restaurants-grid {
       grid-template-columns: 1fr;
+      max-width: 100%;
     }
 
     .dishes-grid {
       grid-template-columns: 1fr;
+      max-width: 100%;
+    }
+
+    .search-section .restaurants-grid {
+      grid-template-columns: 1fr;
+      max-width: 100%;
+    }
+
+    .search-section .dishes-grid {
+      grid-template-columns: 1fr;
+      max-width: 100%;
     }
 
     .cta-title {
@@ -853,6 +1011,34 @@ function closeDishModal() {
 
     .cta-subtitle {
       font-size: var(--font-lg);
+    }
+
+    /* Search Results Mobile */
+    .search-results-header {
+      flex-direction: column;
+      gap: var(--spacing-md);
+      text-align: center;
+    }
+
+    .search-title {
+      font-size: var(--font-2xl);
+    }
+
+    .search-subtitle {
+      font-size: var(--font-md);
+    }
+
+    .clear-search-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .search-section .section-title {
+      font-size: var(--font-xl);
+    }
+
+    .search-section .section-subtitle {
+      font-size: var(--font-sm);
     }
   }
 
@@ -863,15 +1049,15 @@ function closeDishModal() {
     }
 
     .restaurants-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
 
     .featured-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
 
     .loading-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
 
     .content-section {
@@ -883,10 +1069,152 @@ function closeDishModal() {
     }
   }
 
+  /* Large Desktop Improvements */
+  @media (min-width: 1200px) {
+    .restaurants-grid {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .dishes-grid {
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    }
+
+    .search-section .restaurants-grid {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 320px));
+    }
+
+    .search-section .dishes-grid {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+  }
+
+  /* Search Results Section */
+  .search-results-section {
+    padding: var(--spacing-xl) 0;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--bg-tertiary);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--bg-accent);
+  }
+
+  .search-info {
+    flex: 1;
+  }
+
+  .search-title {
+    font-size: var(--font-3xl);
+    font-weight: var(--weight-extrabold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .search-subtitle {
+    font-size: var(--font-lg);
+    color: var(--text-secondary);
+  }
+
+  .clear-search-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    color: var(--text-secondary);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .clear-search-btn:hover {
+    background: var(--bg-accent);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  .search-section {
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .search-section .restaurants-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    max-width: 1000px;
+  }
+
+  .search-section .dishes-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    max-width: 1000px;
+  }
+
+  .search-section .section-header {
+    text-align: left;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .search-section .section-title {
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .search-section .section-subtitle {
+    font-size: var(--font-md);
+    color: var(--text-secondary);
+    text-align: left;
+  }
+
+  .empty-search-state {
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .empty-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-3xl);
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .empty-icon {
+    font-size: var(--font-6xl);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .empty-card h3 {
+    font-size: var(--font-xl);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .empty-card p {
+    color: var(--text-secondary);
+    font-size: var(--font-md);
+  }
+
   /* Touch device optimizations */
   @media (hover: none) and (pointer: coarse) {
     .cta-button:hover,
-    .retry-btn:hover {
+    .retry-btn:hover,
+    .clear-search-btn:hover {
       transform: none;
     }
   }

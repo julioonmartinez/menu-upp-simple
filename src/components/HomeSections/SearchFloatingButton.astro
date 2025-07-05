@@ -1,0 +1,188 @@
+---
+// Componente de botón flotante para búsqueda de restaurantes
+---
+
+<div class="search-floating-container">
+  <!-- <div class="floating-text">
+    <span class="text-slide active">Busca restaurantes</span>
+    <span class="text-slide">Encuentra tus platillos</span>
+    <span class="text-slide">Guarda tus favoritos</span>
+    <span class="text-slide">Descubre nuevos sabores</span>
+    <span class="text-slide">¡Ordena fácil y rápido!</span>
+  </div> -->
+  
+  <a href="/restaurants/search" class="search-floating-btn" aria-label="Buscar restaurantes">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.35-4.35"></path>
+    </svg>
+  </a>
+</div>
+
+<style>
+  /* Contenedor principal del botón flotante */
+  .search-floating-container {
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  /* Estilos para el texto flotante */
+  .floating-text {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-primary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    min-width: 200px;
+    text-align: center;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .floating-text::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+  }
+
+  /* Animación de flotación */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  /* Efecto shimmer */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Estilos para las frases que cambian */
+  .text-slide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: all 0.5s ease;
+    width: 100%;
+  }
+
+  .text-slide.active {
+    opacity: 1;
+  }
+
+  /* Estilos para el botón flotante de búsqueda */
+  .search-floating-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-full);
+    background-color: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-primary);
+    text-decoration: none;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .search-floating-btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: var(--shadow-lg);
+    animation: none;
+  }
+
+  .search-floating-btn:active {
+    transform: translateY(-2px) scale(0.95);
+  }
+
+  /* Animación de pulso para el botón */
+  @keyframes pulse {
+    0%, 100% { 
+      transform: scale(1);
+      box-shadow: var(--shadow-primary);
+    }
+    50% { 
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(241, 90, 41, 0.5);
+    }
+  }
+
+  /* Responsive para móviles */
+  @media (max-width: 768px) {
+    .search-floating-container {
+      bottom: 16px;
+      right: 20px;
+      gap: 10px;
+    }
+
+    .floating-text {
+      padding: 10px 15px;
+      font-size: 0.8rem;
+      min-width: 160px;
+    }
+
+    .search-floating-btn {
+      width: 45px;
+      height: 45px;
+    }
+    
+    .search-floating-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  /* Ocultar texto en pantallas muy pequeñas */
+  @media (max-width: 480px) {
+    .floating-text {
+      /* display: none; */
+    }
+    
+    .search-floating-container {
+      gap: 0;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const textSlides = document.querySelectorAll('.text-slide');
+    let currentSlide = 0;
+    
+    function changeText() {
+      // Remover clase active de todos los slides
+      textSlides.forEach(slide => slide.classList.remove('active'));
+      
+      // Agregar clase active al slide actual
+      textSlides[currentSlide].classList.add('active');
+      
+      // Incrementar índice para el siguiente slide
+      currentSlide = (currentSlide + 1) % textSlides.length;
+    }
+    
+    // Cambiar texto cada 3 segundos
+    setInterval(changeText, 3000);
+    
+    // Cambio inicial
+    changeText();
+  });
+</script> 
