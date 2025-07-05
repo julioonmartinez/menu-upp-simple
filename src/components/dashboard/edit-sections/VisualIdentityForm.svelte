@@ -7,6 +7,8 @@
   import LoadingButton from '../../ui/LoadingButton.svelte';
   import ErrorMessage from '../../ui/ErrorMessage.svelte';
   import SuccessMessage from '../../ui/SuccessMessage.svelte';
+  import FontPreview from '../../ui/FontPreview.svelte';
+  import { fontFamilies } from '../../../utils/fontLoader';
 
   export let restaurant;
   export let restaurantId;
@@ -44,18 +46,7 @@
   $: updateError = $restaurantStore.updateError;
   $: isUploadingAny = Object.values(uploading).some(Boolean);
 
-  // Fuentes disponibles
-  const fontFamilies = [
-    { value: 'Inter', label: 'Inter (Moderna)' },
-    { value: 'Roboto', label: 'Roboto (Clásica)' },
-    { value: 'Open Sans', label: 'Open Sans (Amigable)' },
-    { value: 'Montserrat', label: 'Montserrat (Elegante)' },
-    { value: 'Poppins', label: 'Poppins (Redonda)' },
-    { value: 'Lato', label: 'Lato (Profesional)' },
-    { value: 'Nunito', label: 'Nunito (Casual)' },
-    { value: 'Playfair Display', label: 'Playfair (Serif)' },
-    { value: 'Dancing Script', label: 'Dancing Script (Script)' }
-  ];
+  // Fuentes disponibles (importadas desde fontLoader.ts)
 
   // Actualizar formData cuando cambie restaurant
   $: if (restaurant) {
@@ -308,15 +299,11 @@
       </div>
 
       <!-- Preview de fuente -->
-      <div class="font-preview" style="font-family: {formData.fontFamily}">
-        <h4 class="preview-title">Vista Previa de Fuente</h4>
-        <h1 class="font-preview-h1">{restaurant?.name || 'Nombre del Restaurante'}</h1>
-        <h2 class="font-preview-h2">Especialidades de la Casa</h2>
-        <p class="font-preview-p">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor 
-          incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
-        </p>
-      </div>
+      <FontPreview 
+        fontFamily={formData.fontFamily}
+        restaurantName={restaurant?.name || 'Nombre del Restaurante'}
+        description={restaurant?.description || 'Descripción del restaurante aparecerá aquí...'}
+      />
     </div>
 
     <!-- Botones -->
@@ -513,36 +500,7 @@
     margin: 0;
   }
 
-  /* Preview de fuente */
-  .font-preview {
-    background-color: var(--bg-tertiary);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-2xl);
-    box-shadow: var(--shadow-sm);
-  }
 
-  .font-preview-h1 {
-    font-size: var(--font-4xl);
-    font-weight: var(--weight-bold);
-    margin: 0 0 var(--spacing-sm) 0;
-    color: var(--text-primary);
-    line-height: var(--leading-tight);
-  }
-
-  .font-preview-h2 {
-    font-size: var(--font-2xl);
-    font-weight: var(--weight-semibold);
-    margin: 0 0 var(--spacing-lg) 0;
-    color: var(--text-secondary);
-    line-height: var(--leading-snug);
-  }
-
-  .font-preview-p {
-    font-size: var(--font-base);
-    line-height: var(--leading-relaxed);
-    margin: 0;
-    color: var(--text-secondary);
-  }
 
   /* Acciones del formulario */
   .form-actions {
@@ -599,8 +557,7 @@
       margin-bottom: var(--spacing-xl);
     }
 
-    .color-preview,
-    .font-preview {
+    .color-preview {
       padding: var(--spacing-xl);
     }
 
@@ -612,13 +569,7 @@
       padding: var(--spacing-xl);
     }
 
-    .font-preview-h1 {
-      font-size: var(--font-3xl);
-    }
 
-    .font-preview-h2 {
-      font-size: var(--font-xl);
-    }
   }
 
   @media (max-width: 640px) {
@@ -676,8 +627,7 @@
 
   /* Dark mode support */
   @media (prefers-color-scheme: dark) {
-    .color-preview,
-    .font-preview {
+    .color-preview {
       background-color: var(--bg-accent);
     }
 

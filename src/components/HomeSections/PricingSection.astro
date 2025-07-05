@@ -10,7 +10,7 @@ const pricingData = [
     popular: true,
     features: [
       'Menú digital básico',
-      'Hasta 20 platillos',
+      'Hasta 80 platillos',
       'Subida manual de información',
       'Inclusión de links externos',
       'Código QR básico',
@@ -25,7 +25,7 @@ const pricingData = [
     popular: false,
     features: [
       'Modo menú simple',
-      'Hasta 60 platillos',
+      'Hasta 120 platillos',
       'Fotos y descripciones',
       'Categorización',
       'Código QR personalizado',
@@ -91,7 +91,7 @@ const pricingData = [
         >
           <Button
             text="Elegir plan"
-            href={plan.name === 'Gratuito' ? '/login' : 'https://wa.me/' + 5510986418 +'/?text=Quiero%20información%20sobre%20sus%20menús%20digitales%20' + plan.name }
+            href={plan.name === 'Gratuito' ? '/login' : 'https://wa.me/52' + 5510986418 +'/?text=Quiero%20información%20sobre%20sus%20menús%20digitales%20' + plan.name }
             variant={plan.popular ? "primary" : "outline"}
             fullWidth={true}
           />

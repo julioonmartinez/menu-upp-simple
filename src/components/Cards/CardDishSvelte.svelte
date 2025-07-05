@@ -128,7 +128,8 @@
       showReviews: true,
       enableFavorites: true,
       showIngredients: storeMode,
-      showQuantitySelector: storeMode
+      showQuantitySelector: storeMode,
+      modalType: 'auto'
     });
   }
   
@@ -207,17 +208,19 @@
     // Prevenir que se abra el modal
     event.stopPropagation();
     
-    const index = selectedOptions.findIndex(opt => opt.id === option.id);
+    // Usar id si existe, sino usar nombre como identificador
+    const optionId = option.id || option.name;
+    const index = selectedOptions.findIndex(opt => (opt.id || opt.name) === optionId);
     
     if (index >= 0) {
-      selectedOptions = selectedOptions.filter(opt => opt.id !== option.id);
+      selectedOptions = selectedOptions.filter(opt => (opt.id || opt.name) !== optionId);
     } else {
       selectedOptions = [...selectedOptions, {...option}];
     }
     
     // Registrar interacción de analytics
-    if (item.id && option.id) {
-      recordLinkClick(`dish-option-${option.id}-${item.id}`);
+    if (item.id && optionId) {
+      recordLinkClick(`dish-option-${optionId}-${item.id}`);
     }
   }
   
@@ -235,8 +238,9 @@
   
   // Comprobar si una opción está seleccionada
   function isOptionSelected(optionId: string | number) {
-    return selectedOptions.some(opt => opt.id === optionId);
+    return selectedOptions.some(opt => (opt.id || opt.name) === optionId);
   }
+  console.log( 'item', item)
 </script>
 
 {#if mounted}
@@ -289,7 +293,7 @@
         </div>
       {/if}
       <div data-favorite-button>
-        <FavoriteButton id={item.id!} title={item.name} isSaved={item.userFav} />
+        <FavoriteButton id={item.id!} title={item.name} isSaved={item.favorites == 1 ? true : false} />
       </div>
     </div>
     
@@ -342,7 +346,7 @@
                 <label class="option-item" on:click={(e) => toggleOption(option, e)}>
                   <input 
                     type="checkbox" 
-                    checked={isOptionSelected(option.id)} 
+                    checked={isOptionSelected(option.id || option.name)} 
                     on:change={(e:any) => toggleOption(option, e)}
                     on:click={(e) => e.stopPropagation()}
                     class="option-checkbox"

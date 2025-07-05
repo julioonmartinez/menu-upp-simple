@@ -1,5 +1,6 @@
 // modalStore.js
 import { writable } from 'svelte/store';
+import { isMobileDevice } from '../components/utils/modalUtils';
 
 // Estado del modal
 export const modalState = writable({
@@ -101,12 +102,19 @@ export const openCustomDishModal = (dish, colorScheme = {}, additionalProps = {}
     backgroundColor = '#FFFFFF'
   } = colorScheme;
 
+  // Determinar el tipo de modal basado en las props o detección automática
+  let modalType = additionalProps.modalType;
+  if (!modalType || modalType === 'auto') {
+    modalType = isMobileDevice() ? 'bottom-sheet' : 'modal';
+  }
+
   openModal('dishCustom', {
     dish,
     primaryColor,
     secondaryColor,
     textColor,
     backgroundColor,
+    modalType,
     ...additionalProps
   });
 };

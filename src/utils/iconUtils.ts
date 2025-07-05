@@ -173,7 +173,7 @@ export const ICON_MAP: Record<string, string> = {
  * @param fallback - Clase de fallback si no se encuentra el icono
  * @returns Clase CSS completa de Font Awesome
  */
-export function getIconClass(iconName: string, fallback: string = 'fa-solid fa-link'): string {
+export function getIconClass(iconName: string | undefined, fallback: string = 'fa-solid fa-link'): string {
   if (!iconName) return fallback;
   
   const normalizedName = iconName.toLowerCase().trim();
@@ -185,7 +185,7 @@ export function getIconClass(iconName: string, fallback: string = 'fa-solid fa-l
  * @param iconName - Nombre del icono a verificar
  * @returns true si el icono existe, false en caso contrario
  */
-export function iconExists(iconName: string): boolean {
+export function iconExists(iconName: string | undefined): boolean {
   if (!iconName) return false;
   return iconName.toLowerCase().trim() in ICON_MAP;
 }

@@ -3,6 +3,7 @@
   import { modalState, closeModal } from '../stores/modalStore';
   import { fade, scale, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
+  import { isMobileDevice } from './utils/modalUtils';
   
   // Importar todos los tipos de modales
   import CommentsModal from './CommentsModal.svelte';
@@ -33,13 +34,17 @@
   const type = $derived(modalStateValue.type);
   const props = $derived(modalStateValue.props);
   const currentComponent = $derived(type ? modalComponents[type] : null);
-  const useBottomSheet = $derived(props?.bottomSheet && isMobile);
+  
+  // Determinar si usar bottom sheet basado en modalType o detección automática
+  const useBottomSheet = $derived(
+    props?.modalType === 'bottom-sheet' || 
+    (props?.modalType === 'auto' && isMobile) ||
+    (type === 'dishCustom' && isMobile) // Fallback para modales de platillo en móvil
+  );
   
   // Funciones
   function checkMobile() {
-    if (typeof window !== 'undefined') {
-      isMobile = window.innerWidth < 768;
-    }
+    isMobile = isMobileDevice();
   }
   
   function handleBackdropClick(event) {

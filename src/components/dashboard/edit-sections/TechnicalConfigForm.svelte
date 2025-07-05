@@ -7,6 +7,8 @@
   import LoadingButton from '../../ui/LoadingButton.svelte';
   import ErrorMessage from '../../ui/ErrorMessage.svelte';
   import SuccessMessage from '../../ui/SuccessMessage.svelte';
+  // import QRCode from 'qrcode';
+  import QRCodeGeneratorComponent from './QRCodeGenerator.svelte';
 
   export let restaurant;
   export let restaurantId;
@@ -145,20 +147,47 @@
       // Generar URL del restaurante
       const restaurantUrl = formData.customDomain 
         ? `https://${formData.customDomain}`
-        : `${window.location.origin}/restaurant/${restaurant?.username}`;
+        : `https://menuupp.com/${restaurant?.username}`;
 
-      // Aquí podrías usar una API para generar QR, por ahora simulamos
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(restaurantUrl)}`;
+      // Generar QR usando la librería qrcode
+      const QRCode = await import('qrcode');
+      const qrDataUrl = await QRCode.toDataURL(restaurantUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'M'
+      });
       
-      formData.qrCode = qrApiUrl;
+      formData.qrCode = qrDataUrl;
       
-      // En una implementación real, podrías subir el QR a tu servidor
-      // const result = await restaurantStore.uploadRestaurantImage(restaurantId, qrBlob, 'qrCode');
+      // Opcional: Guardar el QR en el servidor
+      // const result = await restaurantStore.updateRestaurant(restaurantId, { qrCode: qrDataUrl });
       
     } catch (err) {
+      console.error('Error generando QR:', err);
       error = 'Error generando código QR';
     } finally {
       isGeneratingQR = false;
+    }
+  }
+
+  async function downloadQRCode() {
+    if (!formData.qrCode) return;
+    
+    try {
+      // Crear un enlace temporal para descargar
+      const link = document.createElement('a');
+      link.href = formData.qrCode;
+      link.download = `qr-${restaurant?.username || 'restaurant'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error descargando QR:', err);
+      error = 'Error descargando código QR';
     }
   }
 
@@ -172,7 +201,7 @@
   // URLs del restaurante
   $: publicUrl = formData.customDomain 
     ? `https://${formData.customDomain}`
-    : `${typeof window !== 'undefined' ? window.location.origin : ''}/restaurant/${restaurant?.username}`;
+    : `${typeof window !== 'undefined' ? `https://menuupp.com` : ''}/${restaurant?.username}`;
 </script>
 
 <div class="technical-config-form">
@@ -383,64 +412,37 @@
         Código QR
       </h3>
       <p class="section-description">
-        Genera un código QR para que tus clientes accedan fácilmente a tu página.
+        Genera un código QR personalizado para que tus clientes accedan fácilmente a tu página.
       </p>
 
-      <div class="qr-container">
-        {#if formData.qrCode}
-          <div class="qr-preview">
-            <img src={formData.qrCode} alt="Código QR del restaurante" class="qr-image" />
-            <div class="qr-actions">
-              <button 
-                type="button" 
-                class="qr-btn secondary"
-                on:click={() => window.open(formData.qrCode, '_blank')}
-              >
-                <i class="fas fa-download"></i>
-                Descargar QR
-              </button>
-              <button 
-                type="button" 
-                class="qr-btn primary"
-                on:click={generateQRCode}
-                disabled={isGeneratingQR}
-              >
-                {#if isGeneratingQR}
-                  <i class="fas fa-spinner fa-spin"></i>
-                  Generando...
-                {:else}
-                  <i class="fas fa-sync-alt"></i>
-                  Regenerar
-                {/if}
-              </button>
-            </div>
-          </div>
-        {:else}
-          <div class="qr-empty">
-            <div class="qr-placeholder">
-              <div class="qr-placeholder-icon">
-                <i class="fas fa-mobile-alt"></i>
-              </div>
-              <p class="qr-placeholder-text">No hay código QR generado</p>
-            </div>
-            <button 
-              type="button" 
-              class="qr-btn primary"
-              on:click={generateQRCode}
-              disabled={isGeneratingQR || !restaurant?.username}
-            >
-              {#if isGeneratingQR}
-                <i class="fas fa-spinner fa-spin"></i>
-                Generando...
-              {:else}
-                <i class="fas fa-qrcode"></i>
-                Generar Código QR
-              {/if}
-            </button>
-          </div>
-        {/if}
-      </div>
+      <QRCodeGeneratorComponent 
+        url={publicUrl}
+        restaurantName={restaurant?.username}
+        restaurantId={restaurantId}
+        qrCodeData={restaurant?.qrCode_data || null}
+        on:generated={(event) => {
+          formData.qrCode = event.detail.dataUrl;
+        }}
+        on:saved={(event) => {
+          if (event.detail.success) {
+            // El QR se guardó correctamente en el servidor
+            // Actualizar el formulario con la respuesta del servidor
+            if (event.detail.data?.qrCode_data?.url) {
+              formData.qrCode = event.detail.data.qrCode_data.url;
+            }
+            // Mostrar mensaje de éxito
+            success = 'Código QR guardado correctamente en el servidor';
+            setTimeout(() => {
+              success = null;
+            }, 3000);
+          } else {
+            // Mostrar error
+            error = event.detail.error || 'Error guardando código QR';
+          }
+        }}
+      />
     </div>
+    
 
     <!-- Información del sistema -->
     <div class="system-info">

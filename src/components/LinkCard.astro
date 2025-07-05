@@ -1,5 +1,6 @@
 ---
 import type { Link } from '../interfaces';
+import { getIconClass } from '../utils/iconUtils.ts';
 
 interface Props {
   link: Link;
@@ -13,124 +14,52 @@ interface Props {
 
 const { link, theme, username, primaryColor = '#FF4500' } = Astro.props;
 
-// Función mejorada para convertir iconos del backend a clases de Font Awesome 6
-const getIconClass = (iconKey?: string) => {
-  if (!iconKey) return 'fa-solid fa-link';
-  
-  // Limpiar el iconKey de espacios y convertir a minúsculas
-  const cleanIconKey = iconKey.trim().toLowerCase();
-  
-  // Si ya viene con formato Font Awesome 6 moderno (fa-solid, fa-brands, etc.)
-  if (cleanIconKey.startsWith('fa-solid') || cleanIconKey.startsWith('fa-brands') || 
-      cleanIconKey.startsWith('fa-regular') || cleanIconKey.startsWith('fa-light')) {
-    return cleanIconKey;
-  }
-  
-  // Si viene con formato Font Awesome 5/6 legacy (fas-, fab-, etc.)
-  if (cleanIconKey.includes('-')) {
-    let result = cleanIconKey;
-    
-    // Mapeo de prefijos legacy a modernos
-    const prefixMap = {
-      'fas-': 'fa-solid fa-',
-      'fab-': 'fa-brands fa-',
-      'far-': 'fa-regular fa-',
-      'fal-': 'fa-light fa-',
-      'fat-': 'fa-thin fa-',
-      'fad-': 'fa-duotone fa-'
-    };
-    
-    // Aplicar el mapeo correspondiente
-    for (const [oldPrefix, newPrefix] of Object.entries(prefixMap)) {
-      if (result.startsWith(oldPrefix)) {
-        result = result.replace(oldPrefix, newPrefix);
-        break;
-      }
-    }
-    
-    return result;
-  }
-  
-  // Mapeo de iconos específicos a Font Awesome 6 (para iconos sin prefijo)
-  const iconMap: Record<string, string> = {
-    // Iconos de menú y comida
-    'menu': 'fa-solid fa-utensils',
-    'utensils': 'fa-solid fa-utensils',
-    'food': 'fa-solid fa-burger',
-    'hamburger': 'fa-solid fa-burger',
-    'cutlery': 'fa-solid fa-utensils', // Fallback para FA4
-    
-    // Iconos de calendario y eventos
-    'calendar': 'fa-solid fa-calendar',
-    'event': 'fa-solid fa-star',
-    'events': 'fa-solid fa-calendar-days',
-    
-    // Iconos de delivery y tienda
-    'delivery': 'fa-solid fa-truck',
-    'store': 'fa-solid fa-bag-shopping',
-    'shop': 'fa-solid fa-store',
-    'shopping': 'fa-solid fa-cart-shopping',
-    
-    // Iconos de ubicación
-    'location': 'fa-solid fa-location-dot',
-    'location_on': 'fa-solid fa-location-dot',
-    'map': 'fa-solid fa-map',
-    'pin': 'fa-solid fa-map-pin',
-    
-    // Iconos de redes sociales
-    'instagram': 'fa-brands fa-instagram',
-    'facebook': 'fa-brands fa-facebook-f',
-    'twitter': 'fa-brands fa-twitter',
-    'x': 'fa-brands fa-x-twitter',
-    'whatsapp': 'fa-brands fa-whatsapp',
-    'tiktok': 'fa-brands fa-tiktok',
-    'youtube': 'fa-brands fa-youtube',
-    'linkedin': 'fa-brands fa-linkedin',
-    'pinterest': 'fa-brands fa-pinterest',
-    'snapchat': 'fa-brands fa-snapchat',
-    
-    // Iconos de contacto
-    'phone': 'fa-solid fa-phone',
-    'email': 'fa-solid fa-envelope',
-    'contact': 'fa-solid fa-address-book',
-    'mail': 'fa-solid fa-envelope',
-    
-    // Iconos de web y enlaces
-    'website': 'fa-solid fa-globe',
-    'link': 'fa-solid fa-external-link-alt',
-    'web': 'fa-solid fa-earth-americas',
-    'url': 'fa-solid fa-link',
-    
-    // Iconos de galería y multimedia
-    'gallery': 'fa-solid fa-images',
-    'photo': 'fa-solid fa-camera',
-    'video': 'fa-solid fa-video',
-    'music': 'fa-solid fa-music',
-    
-    // Iconos de bebidas y especialidades
-    'wine': 'fa-solid fa-wine-glass',
-    'drink': 'fa-solid fa-champagne-glasses',
-    'coffee': 'fa-solid fa-mug-saucer',
-    'beer': 'fa-solid fa-beer-mug-empty',
-    
-    // Iconos adicionales
-    'info': 'fa-solid fa-circle-info',
-    'about': 'fa-solid fa-circle-user',
-    'news': 'fa-solid fa-newspaper',
-    'blog': 'fa-solid fa-blog',
-    'download': 'fa-solid fa-download',
-    'upload': 'fa-solid fa-upload',
-    'search': 'fa-solid fa-magnifying-glass',
-    'home': 'fa-solid fa-house',
-    'user': 'fa-solid fa-user',
-    'users': 'fa-solid fa-users',
-    'heart': 'fa-solid fa-heart',
-    'star': 'fa-solid fa-star',
-    'settings': 'fa-solid fa-gear',
-    'config': 'fa-solid fa-gear'
+// Función para calcular el contraste y determinar el color del texto
+const calculateTextColor = (backgroundColor: string): { main: string; secondary: string } => {
+  // Función auxiliar para convertir hex a RGB
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
   };
+
+  // Función para calcular la luminancia relativa
+  const getLuminance = (r: number, g: number, b: number) => {
+    const [rs, gs, bs] = [r, g, b].map(c => {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+  };
+
+  // Obtener el color de fondo
+  const bgColor = backgroundColor || '#FFFFFF';
+  const rgb = hexToRgb(bgColor);
   
-  return iconMap[cleanIconKey] || 'fa-solid fa-link';
+  if (!rgb) {
+    // Fallback si no se puede parsear el color
+    return { main: '#2C2C2C', secondary: '#666666' };
+  }
+
+  // Calcular luminancia del color de fondo
+  const luminance = getLuminance(rgb.r, rgb.g, rgb.b);
+  
+  // Si la luminancia es alta (color claro), usar texto oscuro
+  // Si la luminancia es baja (color oscuro), usar texto claro
+  if (luminance > 0.5) {
+    return {
+      main: '#2C2C2C',
+      secondary: '#666666'
+    };
+  } else {
+    return {
+      main: '#FFFFFF',
+      secondary: '#E0E0E0'
+    };
+  }
 };
 
 // Lógica de colores para el icono
@@ -154,6 +83,10 @@ const getIconColors = () => {
 const iconColors = getIconColors();
 const iconClass = getIconClass(link.icon);
 
+// Calcular colores de texto basados en el color de fondo
+const backgroundColor = link.customColor || theme?.backgroundColor || '#FFFFFF';
+const textColors = calculateTextColor(backgroundColor);
+
 // Debug mejorado para desarrollo
 if (import.meta.env.DEV) {
   console.log('🔍 Link icon debug:', {
@@ -162,7 +95,9 @@ if (import.meta.env.DEV) {
     finalIconClass: iconClass,
     customColor: link.customColor,
     finalColors: iconColors,
-    linkTitle: link.title
+    linkTitle: link.title,
+    backgroundColor: backgroundColor,
+    textColors: textColors
   });
   
   // Verificar si el icono es válido
@@ -177,12 +112,12 @@ if (import.meta.env.DEV) {
   class="link-card"
   target={link.type == 'menu' ? '_self' : (link.url.startsWith('http') ? '_blank' : '_self') }
   rel={link.url.startsWith('http') ? 'noopener noreferrer' : ''}
-  style={theme ? `--link-bg: ${theme.backgroundColor || '#FFFFFF'}; --link-text: ${theme.textColor || '#2C2C2C'}` : ''}
+  style={`--link-bg: ${backgroundColor}; --link-text: ${textColors.main}; --link-text-secondary: ${textColors.secondary};`}
 >
   <div class="link-content">
     <div 
       class="link-icon"
-      style={` color: ${primaryColor};`}
+      style={` color: ${textColors.main};`}
     >
       <i class={iconClass} aria-hidden="true"></i>
     </div>
@@ -301,6 +236,7 @@ if (import.meta.env.DEV) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--link-text, #2C2C2C);
   }
   
   .link-description {
@@ -311,6 +247,7 @@ if (import.meta.env.DEV) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0.8;
   }
   
   .link-arrow {

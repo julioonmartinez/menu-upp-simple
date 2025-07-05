@@ -1,9 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { favoritesStore } from '../../stores/favoritesStore';
-    import { ratingStore } from '../../stores/ratingStore';
-    import dishRatingStore from '../../stores/dishRatingStore';
-  // import  {ratingStore}
+  import unifiedFavoritesStore from '../../stores/unifiedFavoritesStore';
 
   export let id: string | number;
   export let title: string;
@@ -15,22 +12,23 @@
   // Variable para controlar la dirección de la animación
   let isTogglingToSaved = false;
 
+  // Variables reactivas para el estado de carga
+  let isTogglingFavorite = false;
+
   async function toggleSavedState(e: Event) {
     // Prevenir propagación del evento
     e.stopPropagation();
     
     // Evitar múltiples clics mientras se procesa
-    if (isToggling) return;
+    if (isToggling || isTogglingFavorite) return;
     
     try {
       // Activar estado de carga y guardar la dirección del cambio
       isToggling = true;
       isTogglingToSaved = !isSaved;
       
-      // IMPORTANTE: No modificamos isSaved manualmente aquí
-      // Dejamos que la suscripción al store se encargue de eso
-      // await favoritesStore.toggleFavorite(id);
-      await dishRatingStore.toggleFavorite(id as string)
+      // Usar el store unificado que maneja automáticamente la lógica
+      await unifiedFavoritesStore.toggleFavorite(id);
     } catch (error) {
       console.error('Error al cambiar estado de favorito:', error);
     } finally {
@@ -43,18 +41,26 @@
   }
 
   onMount(() => {
-    // Al montar, nos suscribimos al store para mantener el componente actualizado
-    const unsubscribe = favoritesStore.subscribe(state => {
-      // Verificar si este platillo está en favoritos
-      const isInFavorites = state.favorites.some(fav => fav.id === id);
-      
-      if (isInFavorites !== isSaved) {
-        isSaved = isInFavorites;
+    let unsubscribeFavorite: (() => void) | undefined;
+    let unsubscribeToggling: (() => void) | undefined;
+
+    // Suscribirse al estado de favorito
+    unsubscribeFavorite = unifiedFavoritesStore.isDishFavorite(id).subscribe(isFavorite => {
+      if (isFavorite !== isSaved) {
+        isSaved = isFavorite;
       }
     });
+
+    // Suscribirse al estado de carga
+    unsubscribeToggling = unifiedFavoritesStore.isTogglingFavorite(id).subscribe(toggling => {
+      isTogglingFavorite = toggling;
+    });
     
-    // Limpiar la suscripción cuando el componente se desmonte
-    return unsubscribe;
+    // Limpiar las suscripciones cuando el componente se desmonte
+    return () => {
+      if (unsubscribeFavorite) unsubscribeFavorite();
+      if (unsubscribeToggling) unsubscribeToggling();
+    };
   });
 </script>
 
@@ -63,16 +69,16 @@
     aria-label="toggle-favorite" 
     type="button" 
     on:click={(e) => toggleSavedState(e)} 
-    class="saved-button {isToggling ? 'loading' : ''}"
+    class="saved-button {(isToggling || isTogglingFavorite) ? 'loading' : ''}"
     data-item-title={title}
     data-is-saved={isSaved}
     data-item-id={id}
-    disabled={isToggling}
+    disabled={isToggling || isTogglingFavorite}
   >
     <div class="heart-container">
       <!-- Corazón principal (siempre visible) -->
       <svg 
-        class="heart-icon {isSaved ? 'saved' : 'unsaved'} {isToggling ? 'toggling' : ''}" 
+        class="heart-icon {isSaved ? 'saved' : 'unsaved'} {(isToggling || isTogglingFavorite) ? 'toggling' : ''}" 
         fill={isSaved ? 'currentColor' : 'none'} 
         stroke="currentColor" 
         viewBox="0 0 24 24"
@@ -86,7 +92,7 @@
       </svg>
       
       <!-- Efecto de onda/pulso cuando está cargando -->
-      {#if isToggling}
+      {#if isToggling || isTogglingFavorite}
         <div class="pulse-effect {isTogglingToSaved ? 'adding' : 'removing'}">
           <svg 
             class="pulse-icon {isTogglingToSaved ? 'pulse-add' : 'pulse-remove'}" 

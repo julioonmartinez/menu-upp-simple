@@ -3,6 +3,7 @@
 import MenuuppLayout from '../../../../layouts/MenuuppLayout.astro';
 import LinksDashboard from '../../../../components/LinkTreeDashboard.svelte';
 import { linkTreeService } from '../../../../services/linkTreeService.ts';
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
 
 const id = Astro.params.id;
 let linkTree = null;
@@ -16,6 +17,6 @@ let linkTree = null;
 //   linkTree = null;
 // }
 ---
-<MenuuppLayout title='' description=''>
+<PrivateLayout title='Menuupp - Links' description='Links de tu restaurante'>
   <LinksDashboard client:load restaurantId={id} linkTree={linkTree} />
-</MenuuppLayout>
+</PrivateLayout>

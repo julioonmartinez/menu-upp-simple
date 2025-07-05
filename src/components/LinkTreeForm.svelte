@@ -18,6 +18,7 @@
   } from '../interfaces/links.ts';
   import { useLinkTrees } from '../stores/linkTreeStore.ts';
   import { useRestaurants } from '../stores/restaurantStore.ts';
+  import { toastStore } from '../stores/toastStore.ts';
   
   // Importar componentes de UI personalizados
   import ColorPicker from './ui/ColorPicker.svelte';
@@ -219,7 +220,13 @@
       validationErrors.push('ID del restaurante es requerido');
     }
     
-    return validation.isValid && validationErrors.length === 0;
+    const isValid = validation.isValid && validationErrors.length === 0;
+    
+    if (!isValid) {
+      toastStore.error('Por favor, corrige los errores en el formulario');
+    }
+    
+    return isValid;
   }
 
   // Manejar envío del formulario
@@ -248,14 +255,17 @@
 
       if (result.success && result.linkTree) {
         console.log('✅ Operation successful:', result.linkTree);
+        toastStore.success(isEditMode ? 'LinkTree actualizado correctamente' : 'LinkTree creado correctamente');
         onSuccess?.(result.linkTree);
         dispatch('success', result.linkTree);
         handleCancel();
       } else {
         console.error('❌ Operation failed:', result.error);
+        toastStore.error(`Error al ${isEditMode ? 'actualizar' : 'crear'} LinkTree: ${result.error}`);
       }
     } catch (error) {
       console.error('❌ Error in handleSubmit:', error);
+      toastStore.error('Error inesperado al procesar el formulario');
     }
   }
 
@@ -287,11 +297,13 @@
       
       if (result.success) {
         console.log(`Imagen ${type} subida correctamente`);
+        toastStore.success(`Imagen ${type} subida correctamente`);
       } else {
-        alert(`Error subiendo imagen: ${result.error}`);
+        toastStore.error(`Error subiendo imagen: ${result.error}`);
       }
     } catch (error) {
       console.error('Error subiendo imagen:', error);
+      toastStore.error('Error inesperado al subir imagen');
     }
   }
 
@@ -501,7 +513,7 @@
                 help="Recomendado: 400x400px, máximo 5MB"
                 uploading={$isUploadingImage}
                 on:fileSelected={(e) => handleFileChange('profile', e)}
-                on:error={(e) => alert(e.detail.message)}
+                on:error={(e) => toastStore.error(e.detail.message)}
               />
 
               <!-- Cover Image -->
@@ -515,7 +527,7 @@
                 help="Recomendado: 1200x300px, máximo 5MB"
                 uploading={$isUploadingImage}
                 on:fileSelected={(e) => handleFileChange('cover', e)}
-                on:error={(e) => alert(e.detail.message)}
+                on:error={(e) => toastStore.error(e.detail.message)}
               />
 
               <!-- Text Image -->
@@ -526,7 +538,7 @@
                 help="Reemplaza el título y descripción con una imagen personalizada"
                 uploading={$isUploadingImage}
                 on:fileSelected={(e) => handleFileChange('text', e)}
-                on:error={(e) => alert(e.detail.message)}
+                on:error={(e) => toastStore.error(e.detail.message)}
               />
             </div>
           </div>
@@ -560,11 +572,11 @@
               </div>
 
               <ColorPicker
-                id="linksBackgroundColor"
-                label="Color de Fondo de Enlaces"
-                value={formData.linksBackgroundColor}
-                help="Color de fondo para los botones de enlaces"
-                on:change={(e) => handleColorChange('linksBackgroundColor', e)}
+                id="backgroundColor"
+                label="Color de Fondo"
+                value={formData.backgroundColor}
+                help="Color de fondo de la página"
+                on:change={(e) => handleColorChange('backgroundColor', e)}
               />
 
               <ColorPicker

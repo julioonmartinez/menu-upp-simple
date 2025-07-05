@@ -1,12 +1,18 @@
 ---
 import type { Restaurant, LinkTree } from '../interfaces';
 import '../styles/reset.css'
+import { getFontUrl, getFontFamilyCSS } from '../utils/fontLoader';
+
 interface Props {
   restaurant: Restaurant;
   linkTree: LinkTree;
 }
 
 const { restaurant, linkTree } = Astro.props;
+
+// Obtener la URL de la fuente seleccionada
+const selectedFont = restaurant.fontFamily || 'Inter';
+const fontUrl = getFontUrl(selectedFont);
 
 // Generar colores CSS personalizados basados en el tema
 const cssVariables = {
@@ -20,7 +26,7 @@ const cssVariables = {
   '--social-text': linkTree.socialMediaTextColor || '#FFFFFF',
   '--cta-bg': linkTree.ctaBackgroundColor || restaurant.primaryColor || '#FF4500',
   '--cta-text': linkTree.ctaTextColor || '#FFFFFF',
-  '--font-family-personal': restaurant.fontFamily
+  '--font-family-personal': getFontFamilyCSS(selectedFont)
 };
 ---
 
@@ -55,11 +61,11 @@ const cssVariables = {
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href={fontUrl} rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href= { restaurant.logo || '/ico.PNG'}>
 </head>
 
 <body style={  Object.entries(cssVariables).map(([key, value]) => `${key}:${value}`).join(';') }>
@@ -90,7 +96,7 @@ const cssVariables = {
     }
     
     body {
-      font-family: var( --font-family-personal, --font-family);
+      font-family: var(--font-family-personal, --font-family);
       background-color: var(--background-color);
       color: var(--text-color);
       line-height: 1.6;
@@ -163,7 +169,7 @@ const cssVariables = {
         entries.forEach((entry, index) => {
           if (entry.isIntersecting) {
             setTimeout(() => {
-              entry.target.style.animation = 'fadeInUp 0.6s ease forwards';
+              (entry.target as HTMLElement).style.animation = 'fadeInUp 0.6s ease forwards';
             }, index * 100);
             observer.unobserve(entry.target);
           }
@@ -171,14 +177,14 @@ const cssVariables = {
       }, { threshold: 0.1 });
       
       animatedElements.forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
+        (el as HTMLElement).style.opacity = '0';
+        (el as HTMLElement).style.transform = 'translateY(20px)';
         observer.observe(el);
       });
     });
 
     // Analytics tracking (opcional)
-    const trackClick = (linkId) => {
+    const trackClick = (linkId: string) => {
       // Implementar tracking de clicks si es necesario
       console.log(`Click tracked for link: ${linkId}`);
     };

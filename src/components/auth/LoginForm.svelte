@@ -330,8 +330,8 @@
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.3"/>
               <path fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6V2z"/>
             </svg>
-            <span>{buttonText()}</span>
           </div>
+          <span>{buttonText()}</span>
         {:else}
           {buttonText()}
         {/if}

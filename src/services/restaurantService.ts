@@ -65,6 +65,8 @@ export interface RestaurantUpdateRequest {
   allowReviews?: boolean;
   allowOrders?: boolean;
   active?: boolean;
+  customDomain?: string;
+  qrCode?: string;
 }
 
 export type RestaurantResponse = Restaurant;

@@ -13,7 +13,6 @@
   import ErrorMessage from './ui/ErrorMessage.svelte';
   import Modal from './ui/Modal.svelte';
   import { toastStore } from '../stores/toastStore.ts';
-    import { deleteRestaurantRating } from '../services/apiRatingService.ts';
 
   export let restaurantId;
 
@@ -127,29 +126,6 @@
     // Recargar el restaurante después de una actualización
     loadRestaurant();
   }
-  async function Restaurant() {
-   try {
-    const result = await restaurantStore.deleteRestaurant(restaurantId);
-    if (result.success) {
-      toastStore.addToast({
-        message: 'Restaurante eliminado correctamente',
-        type: 'success'
-      });
-      window.location.href = '/dashboard';
-    } else {
-      toastStore.addToast({
-        message: 'Error al eliminar el restaurante',
-        type: 'error'
-      });
-    }
-   } catch (error) {
-    console.error(error);
-    toastStore.addToast({
-        message: 'Error al eliminar el restaurante',
-        type: 'error'
-      });
-  }
-}
 
   // Obtener la sección activa
   $: activeSection = sections.find(s => s.id === activeModal);
@@ -371,9 +347,6 @@
         </div>
       </div>
     </div>
-    <button on:click={deleteRestaurantRating}  class='btn btn-ghost btn-lg mt-lg'>
-      <i class="fas fa-trash mr-xs"></i> Borrar restaurante
-    </button>
   {:else}
     <div class="flex justify-center py-3xl text-center">
       <p class="text-muted">No se encontró el restaurante.</p>

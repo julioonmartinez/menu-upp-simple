@@ -4,6 +4,7 @@
   import { quintOut, elasticOut } from 'svelte/easing';
   
   import Modal from '../components/Modal.svelte';
+  import { isMobileDevice } from '../components/utils/modalUtils';
   
   // Stores
   import { 
@@ -38,13 +39,15 @@
     primaryColor = '#FF6B35',
     secondaryColor = '#4ECDC4', 
     textColor = '#2C3E50',
-    backgroundColor = '#FFFFFF'
+    backgroundColor = '#FFFFFF',
+    modalType = 'modal'
   } = $props<{ 
     dish: DishWithRatings;
     primaryColor?: string;
     secondaryColor?: string;
     textColor?: string;
     backgroundColor?: string;
+    modalType?: 'modal' | 'bottom-sheet' | 'auto';
   }>();
 
   // Estados del componente
@@ -80,6 +83,9 @@
   // Loading states del store
   const isRatingInProgress = $derived(dishStore.ratingsInProgress[dish.id!] || false);
   const isCommentInProgress = $derived(dishStore.commentsInProgress[dish.id!] || false);
+
+  // Determinar si usar bottom sheet
+  const useBottomSheet = $derived(modalType === 'bottom-sheet' || (modalType === 'auto' && isMobileDevice()));
 
   // Funciones de utilidad para colores
   function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -385,6 +391,7 @@
     size="large"
     headerless={true}
     backgroundColor={backgroundColor}
+    bottomSheet={useBottomSheet}
     on:close
   >
     <!-- Header personalizado con botón de cerrar -->

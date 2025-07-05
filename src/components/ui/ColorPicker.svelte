@@ -18,6 +18,7 @@
   let isOpen = false;
   let inputValue = value;
   let pickerValue = value;
+  let isInputValid = true;
   
   // Paleta de colores predefinidos
   const presetColors = [
@@ -39,8 +40,8 @@
     '#06b6d4', '#0891b2', '#0e7490', '#155e75'
   ];
   
-  // Reactive: sincronizar valores
-  $: if (value !== inputValue) {
+  // Reactive: sincronizar valores solo cuando el dropdown está cerrado
+  $: if (value !== inputValue && !isOpen) {
     inputValue = value;
     pickerValue = value;
   }
@@ -50,6 +51,35 @@
     if (color) {
       value = color;
       pickerValue = color;
+      isInputValid = true;
+      dispatch('change', { color });
+    }
+  }
+
+  function handleInputKeydown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleInputChange();
+    }
+  }
+
+  function handleInputInput() {
+    // Validar en tiempo real mientras se escribe
+    const trimmedInput = inputValue.trim();
+    if (!trimmedInput || /^#[0-9a-f]*$/i.test(trimmedInput)) {
+      isInputValid = true;
+    } else {
+      isInputValid = false;
+    }
+  }
+
+  function handleInputBlur() {
+    // Intentar aplicar el color cuando se pierde el foco
+    const color = validateAndFormatColor(inputValue);
+    if (color) {
+      value = color;
+      pickerValue = color;
+      isInputValid = true;
       dispatch('change', { color });
     }
   }
@@ -74,12 +104,15 @@
     // Remover espacios y convertir a lowercase
     let color = colorString.trim().toLowerCase();
     
+    // Si está vacío, no hacer nada
+    if (!color) return null;
+    
     // Agregar # si no tiene
     if (!color.startsWith('#')) {
       color = '#' + color;
     }
     
-    // Validar formato hex
+    // Validar formato hex completo
     const hexRegex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/;
     if (hexRegex.test(color)) {
       // Convertir hex corto a largo (ej: #abc -> #aabbcc)
@@ -89,12 +122,24 @@
       return color;
     }
     
+    // Si no es válido pero tiene el formato básico, permitir edición
+    const basicHexRegex = /^#[0-9a-f]*$/i;
+    if (basicHexRegex.test(color) && color.length <= 7) {
+      return null; // No actualizar el valor pero permitir seguir editando
+    }
+    
     return null;
   }
   
   function toggleDropdown() {
     if (!disabled) {
       isOpen = !isOpen;
+      if (isOpen) {
+        // Asegurar que el input tenga el valor actual cuando se abre
+        inputValue = value;
+        pickerValue = value;
+        isInputValid = true;
+      }
     }
   }
   
@@ -117,6 +162,11 @@
     if (isOpen && !event.target.closest('.color-picker')) {
       closeDropdown();
     }
+  }
+
+  // Prevenir que el dropdown se cierre cuando se hace clic en elementos internos
+  function handleDropdownClick(event) {
+    event.stopPropagation();
   }
 </script>
 
@@ -153,19 +203,27 @@
       </div>
     </button>
     {#if isOpen}
-      <div class="dropdown-panel absolute left-0 right-0 mt-xs bg-white border border-accent rounded-xl shadow-lg p-lg z-50 flex flex-col gap-lg">
+      <div class="dropdown-panel absolute left-0 right-0 mt-xs bg-white border border-accent rounded-xl shadow-lg p-lg z-50 flex flex-col gap-lg" on:click={handleDropdownClick}>
         {#if showInput}
           <div class="flex flex-col gap-xs input-section">
             <label class="text-xs font-medium text-primary input-label">Código de color:</label>
             <input
               type="text"
-              bind:value={inputValue}
-              on:change={handleInputChange}
-              on:blur={handleInputChange}
+              value={inputValue}
+              on:input={(e) => {
+                inputValue = e.target.value;
+                handleInputInput();
+              }}
+              on:blur={handleInputBlur}
+              on:keydown={handleInputKeydown}
               placeholder="#3b82f6"
-              class="input input-sm font-mono color-input"
+              class="input input-sm font-mono color-input {!isInputValid ? 'input-error' : ''}"
               maxlength="7"
+              autocomplete="off"
             />
+            {#if !isInputValid}
+              <p class="text-xs text-error mt-xs">Formato inválido. Usa formato hexadecimal (ej: #3b82f6)</p>
+            {/if}
           </div>
         {/if}
         {#if showCustomPicker}
@@ -239,6 +297,17 @@
   .arrow-icon.rotated {
     transform: rotate(180deg);
     transition: transform 0.2s;
+  }
+
+  /* Estilos para input con error */
+  .input-error {
+    border-color: var(--error-color, #ef4444) !important;
+    box-shadow: 0 0 0 1px var(--error-color, #ef4444) !important;
+  }
+
+  .input-error:focus {
+    border-color: var(--error-color, #ef4444) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
   }
   @media (max-width: 640px) {
     .color-grid {

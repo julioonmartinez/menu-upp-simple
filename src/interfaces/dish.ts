@@ -41,6 +41,7 @@ export interface Dish {
 
 // ✅ Opciones personalizables para un platillo
 export interface DishOption {
+  id?: string | number; // Identificador único opcional
   name: string;
   price: number;
   description?: string;

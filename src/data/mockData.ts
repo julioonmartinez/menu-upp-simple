@@ -139,7 +139,7 @@ export const mockLinkTree: LinkTree = {
 const mockTacosElRey: Restaurant = {
   id: "rest-002",
   name: "Tacos El Rey",
-  username: "tacoselrey",
+  username: "tacos_el_rey",
   description: "Los mejores tacos de la ciudad desde 1985",
   isPremium: false,
   
@@ -262,7 +262,7 @@ const mockTacosElReyLinkTree: LinkTree = {
 const mockSushiZen: Restaurant = {
   id: "rest-003",
   name: "Sushi Zen",
-  username: "sushizen",
+  username: "sushi_zen",
   description: "Experiencia gastronómica japonesa auténtica",
   isPremium: true,
   

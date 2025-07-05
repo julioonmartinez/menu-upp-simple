@@ -5,6 +5,7 @@ import '../styles/global.css'
 import type { Restaurant } from '../interfaces'
 import ModalManager from '../components/ ModalManager.svelte'
 import ToastContainer from '../components/ui/ToastContainer.svelte'
+import { getFontUrl, getFontFamilyCSS } from '../utils/fontLoader';
 
 interface Props {
   restaurant: Restaurant
@@ -56,6 +57,10 @@ const restaurantStructuredData = restaurant ? {
   } : undefined
 } : null
 
+// Obtener la URL de la fuente seleccionada
+const selectedFont = restaurant?.fontFamily || 'Inter';
+const fontUrl = getFontUrl(selectedFont);
+
 // Preload critical resources
 const criticalFonts = [
   restaurant?.fontFamily && `/fonts/${restaurant.fontFamily}.woff2`
@@ -103,10 +108,10 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     <meta name="apple-mobile-web-app-title" content={restaurant?.name || 'Menú Digital'} />
     
     <!-- Favicons -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/svg+xml" href={restaurant.logo || '/ico.PNG'} />
+    <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /> -->
     
     <!-- Preload Critical Resources -->
     {criticalFonts.map(font => 
@@ -116,6 +121,10 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     <!-- DNS Prefetch for external resources -->
     <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Dynamic Font Loading -->
+    <link href={fontUrl} rel="stylesheet" />
     
     <!-- Font Awesome with performance optimization -->
     <link 
@@ -165,7 +174,7 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
   
   <body 
     style={`
-      --font-family: ${restaurant?.fontFamily || 'system-ui, -apple-system, sans-serif'}; 
+      --font-family: ${getFontFamilyCSS(selectedFont)}; 
       --bg-color: ${backgroundColor};
       --primary-color: ${restaurant?.primaryColor || '#FF4500'};
       --secondary-color: ${restaurant?.secondaryColor || '#FF6B35'};
@@ -228,7 +237,7 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     padding: 0;
     width: 100%;
     min-height: 100vh;
-    font-family: var(--font-family);
+    font-family: var(--font-family, 'Inter', system-ui, -apple-system, sans-serif);
     background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;

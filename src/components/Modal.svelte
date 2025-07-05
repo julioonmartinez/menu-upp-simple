@@ -93,7 +93,7 @@
 <div 
   bind:this={modalElement}
   class="modal-content"
-  style={`background-color:${ backgroundColor || 'var(--bg-primary)' };`} 
+  style={`background-color:${ backgroundColor || 'var(--bg-primary)' }; `} 
   class:size-{size}
   class:bottom-sheet={useBottomSheet}
   class:dragging={isDragging}
@@ -309,11 +309,12 @@
   .bottom-sheet-handle {
     width: 40px;
     height: 4px;
-    background: var(--bg-accent);
+    background: rgba(0, 0, 0, 0.4);
     border-radius: 2px;
     margin: 8px auto 12px auto;
     cursor: grab;
     flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
   
   .bottom-sheet-handle:active {
