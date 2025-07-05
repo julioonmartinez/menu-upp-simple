@@ -11,7 +11,7 @@
   import CardDishSvelte from './Cards/CardDishDyanmic.svelte';
   import Toast from './Toast.svelte';
   import HeroSearchBox from './HeroSearchBox.svelte';
-  import CSSVariableTest from './CSSVariableTest.svelte';
+  // import CSSVariableTest from './CSSVariableTest.svelte';
 
   import DishModal from './DishModal.svelte';
   import type { DishWithRatings } from '../interfaces/dishRating';
@@ -250,9 +250,9 @@ function closeDishModal() {
           <span class="gradient-text">increíbles</span>
         </h1>
         <p class="hero-subtitle">
-          {isMobile 
+          {!isMobile 
             ? 'Los mejores restaurantes y platillos cerca de ti' 
-            : 'Explora los mejores restaurantes y platillos valorados por nuestra comunidad'}
+            : ''}
         </p>
         
         <div class="hero-cta" in:fly={{ y: 20, duration: 500, delay: 200 }}>
@@ -516,6 +516,7 @@ function closeDishModal() {
     background-image: none !important;
     position: relative;
     z-index: var(--z-dropdown);
+    padding-top: 59px;
   }
 
   .hero-container {

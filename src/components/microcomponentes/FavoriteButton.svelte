@@ -116,7 +116,7 @@
 <style>
   /* Variables CSS nativas */
   :root {
-    --primary-color: #eb0000;
+    --favorite-color: #eb0000;
     --color-white: #ffffff;
     --color-white-80: rgba(255, 255, 255, 0.8);
     --color-gray-500: #6b7280;
@@ -176,11 +176,11 @@
   }
 
   .heart-icon.unsaved:hover {
-    color: #eb0000;
+    color: var(--favorite-color);
   }
 
   .heart-icon.saved {
-    color: #eb0000 ;
+    color: var(--favorite-color);
     fill: currentColor;
   }
 
@@ -213,7 +213,7 @@
   }
 
   .pulse-icon.pulse-add {
-    color: var(--primary-color);
+    color: var(--favorite-color);
   }
 
   .pulse-icon.pulse-remove {
@@ -262,7 +262,7 @@
 
   /* Focus states para accesibilidad */
   .saved-button:focus {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--favorite-color);
     outline-offset: 2px;
   }
 
