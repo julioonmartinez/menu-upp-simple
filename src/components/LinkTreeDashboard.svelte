@@ -31,7 +31,6 @@
   const dispatch = createEventDispatcher();
 
   // Svelte 5 state
-  let showDeleteConfirm = $state(false);
   let showShareModal = $state(false);
   let showEditModal = $state(false);
   let activeTab = $state('overview');
@@ -284,33 +283,6 @@
     }
   }
 
-  async function handleDeleteLinkTree() {
-    if (!currentLinkTree) return;
-    showDeleteConfirm = false;
-    try {
-      const result = await deleteLinkTree(currentLinkTree.id!);
-      if (result.success) {
-        // Limpiar estado local
-        linkTree = null;
-        loadResult = {
-          success: true,
-          data: null,
-          message: 'LinkTree eliminado correctamente'
-        };
-        dispatch('deleteLinkTree', currentLinkTree);
-        
-        // Toast de éxito
-        toastStore.success('LinkTree eliminado correctamente');
-      } else {
-        // Toast de error si la operación falló
-        toastStore.error(result.error || 'No se pudo eliminar el LinkTree');
-      }
-    } catch (err) {
-      console.error('Error deleting LinkTree:', err);
-      toastStore.error('Error al eliminar el LinkTree');
-    }
-  }
-
   function handleShare() {
     showShareModal = true;
   }
@@ -348,32 +320,7 @@
     };
   });
 
-  // Effect para debug (puedes comentar en producción)
-  $effect(() => {
-    console.log('🔄 Reactive state update:', {
-      appState,
-      currentLinkTree: !!currentLinkTree,
-      currentRestaurant: !!currentRestaurant,
-      isInitialLoading,
-      isLoadingData,
-      loadResult: loadResult ? {
-        success: loadResult.success,
-        hasData: !!loadResult.data,
-        hasRestaurant: !!loadResult.restaurant,
-        errorType: loadResult.errorType
-      } : null
-    });
-  });
 
-  // Effect para debug de links
-  $effect(() => {
-    console.log('🔗 Links updated:', {
-      totalLinks,
-      activeLinkCount,
-      links: safeLinks.length,
-      currentLinkTreeId: currentLinkTree?.id
-    });
-  });
 </script>
 
 <div class="container mx-auto p-lg md:p-xl">
@@ -444,22 +391,6 @@
         <i class="icon-plus"></i>
         Crear LinkTree para {currentRestaurant?.name}
       </button>
-      
-      <!-- Debug info -->
-      <details class="mt-lg text-xs text-muted">
-        <summary>Debug Info</summary>
-        <pre class="text-left mt-xs">{JSON.stringify({
-          appState,
-          hasCurrentRestaurant: !!currentRestaurant,
-          restaurantName: currentRestaurant?.name,
-          hasCurrentLinkTree: !!currentLinkTree,
-          loadResultSuccess: loadResult?.success,
-          loadResultData: loadResult?.data,
-          hasLoadResultRestaurant: !!loadResult?.restaurant,
-          isInitialLoading,
-          isLoadingData
-        }, null, 2)}</pre>
-      </details>
     </div>
   
   <!-- Dashboard Content -->
@@ -506,11 +437,6 @@
           <button class="btn btn-primary" on:click={handleEditLinkTree}>
             <i class="icon-edit"></i>
             Editar
-          </button>
-          
-          <button class="btn btn-danger" on:click={() => showDeleteConfirm = true}>
-            <i class="icon-trash"></i>
-            Eliminar
           </button>
         </div>
       </div>
@@ -757,23 +683,6 @@
   />
 </GlobalModal>
 
-<!-- Delete Confirmation Modal -->
-<ConfirmationModal 
-  isOpen={showDeleteConfirm}
-  title="Confirmar Eliminación"
-  message={currentRestaurant 
-    ? `¿Estás seguro de que quieres eliminar este LinkTree?\n\nEsta acción no se puede deshacer.\n\nSe eliminará el LinkTree de ${currentRestaurant.name} con URL: /${currentRestaurant.username}`
-    : "¿Estás seguro de que quieres eliminar este LinkTree?\n\nEsta acción no se puede deshacer."
-  }
-  confirmText="Eliminar LinkTree"
-  cancelText="Cancelar"
-  type="danger"
-  loading={$isDeletingStore}
-  loadingText="Eliminando..."
-  on:confirm={handleDeleteLinkTree}
-  on:cancel={() => showDeleteConfirm = false}
-/>
-
 <!-- Share Modal -->
 {#if showShareModal}
   <div class="modal-overlay" on:click={() => showShareModal = false}>
@@ -802,12 +711,12 @@
         
         <div class="share-buttons">
           <a 
-            href="https://twitter.com/intent/tweet?url={encodeURIComponent(publicUrl)}&text={encodeURIComponent('Visita mi LinkTree')}"
+            href="https://twitter.com/intent/tweet?url={encodeURIComponent(publicUrl)}&text={encodeURIComponent('Visita mi Menú')}"
             target="_blank"
             rel="noopener"
             class="share-btn twitter"
           >
-            <i class="icon-twitter"></i>
+            <i class="icon-twitter"></i>debus
             Twitter
           </a>
           

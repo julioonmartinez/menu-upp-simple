@@ -20,29 +20,79 @@ document.addEventListener('DOMContentLoaded', () => {
       animationObserver.observe(element);
     });
     
-    // Función para resaltar el enlace activo en el menú
+    // Función optimizada para resaltar el enlace activo en el menú
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-links a');
     
+    // Cache de las posiciones de las secciones para evitar lecturas repetidas
+    let sectionPositions = [];
+    let isScrolling = false;
+    
+    // Función para calcular y cachear las posiciones de las secciones
+    const calculateSectionPositions = () => {
+      sectionPositions = Array.from(sections).map(section => ({
+        id: section.getAttribute('id'),
+        top: section.offsetTop,
+        height: section.offsetHeight
+      }));
+    };
+    
+    // Función optimizada para resaltar navegación
     const highlightNavigation = () => {
-      let scrollPosition = window.scrollY + 150; // Offset para mejor detección
+      if (isScrolling) return;
       
-      sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.offsetHeight;
-        const sectionId = section.getAttribute('id');
+      isScrolling = true;
+      
+      requestAnimationFrame(() => {
+        const scrollPosition = window.scrollY + 150; // Offset para mejor detección
         
-        if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-          navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${sectionId}`) {
-              link.classList.add('active');
-            }
-          });
+        // Encontrar la sección activa
+        let activeSectionId = null;
+        
+        for (const section of sectionPositions) {
+          if (scrollPosition >= section.top && scrollPosition < section.top + section.height) {
+            activeSectionId = section.id;
+            break;
+          }
         }
+        
+        // Actualizar clases solo si es necesario
+        navLinks.forEach(link => {
+          const href = link.getAttribute('href');
+          const isActive = href === `#${activeSectionId}`;
+          
+          if (isActive && !link.classList.contains('active')) {
+            link.classList.add('active');
+          } else if (!isActive && link.classList.contains('active')) {
+            link.classList.remove('active');
+          }
+        });
+        
+        isScrolling = false;
       });
     };
     
-    window.addEventListener('scroll', highlightNavigation);
-    highlightNavigation(); // Inicializar al cargar
+    // Throttled scroll handler para mejor performance
+    let scrollTimeout;
+    const throttledScrollHandler = () => {
+      if (scrollTimeout) return;
+      
+      scrollTimeout = setTimeout(() => {
+        highlightNavigation();
+        scrollTimeout = null;
+      }, 16); // ~60fps
+    };
+    
+    // Inicializar posiciones de secciones
+    calculateSectionPositions();
+    
+    // Event listeners optimizados
+    window.addEventListener('scroll', throttledScrollHandler, { passive: true });
+    window.addEventListener('resize', () => {
+      // Recalcular posiciones en resize
+      calculateSectionPositions();
+    }, { passive: true });
+    
+    // Inicializar al cargar
+    highlightNavigation();
   });

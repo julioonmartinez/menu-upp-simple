@@ -37,16 +37,4 @@
 }
 </style>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const scrollTop = document.getElementById('scrollTop');
-    
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        scrollTop.classList.add('active');
-      } else {
-        scrollTop.classList.remove('active');
-      }
-    });
-  });
-</script>
+<script src="/src/scripts/scroll-top-optimized.js"></script>

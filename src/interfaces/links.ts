@@ -521,7 +521,7 @@ export function formatClickCount(count: number): string {
 export function getLinkTreePublicUrl(linkTree: LinkTree, baseUrl?: string): string {
   const base = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
   return linkTree.customSlug 
-    ? `${base}/links/${linkTree.customSlug}`
+    ? `${base}/${linkTree.customSlug}`
     : `${base}/links/${linkTree.id}`;
 }
 

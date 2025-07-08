@@ -1080,7 +1080,7 @@ function clearSearchResults() {
     }
 
     .search-section .restaurants-grid {
-      grid-template-columns: repeat(auto-fit, minmax(300px, 320px));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
 
     .search-section .dishes-grid {

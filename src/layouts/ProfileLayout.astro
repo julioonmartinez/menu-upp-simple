@@ -51,7 +51,7 @@ const cssVariables = {
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content={`${restaurant.name} - Menú Digital`}>
   <meta name="twitter:description" content={restaurant.description || `Descubre el menú digital de ${restaurant.name}`}>
-  <meta name="twitter:image" content={linkTree.coverImage?.url || restaurant.imageCover || '/images/default-og.webp'}>
+  <meta name="twitter:image" content={ restaurant.logo || linkTree.coverImage?.url || restaurant.imageCover || '/images/default-og.webp'}>
   
   <!-- Mobile -->
   <meta name="theme-color" content={restaurant.primaryColor || '#FF4500'}>

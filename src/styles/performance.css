@@ -1,0 +1,229 @@
+/* Optimizaciones CSS para evitar redistribuciones forzadas */
+
+/* 1. Usar transform y opacity para animaciones en lugar de propiedades que causan reflow */
+.animate-on-scroll,
+.fade-in,
+.slide-in-left,
+.slide-in-right,
+.scale-in {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Forzar layer compositing */
+}
+
+/* 2. Optimizar transiciones para usar solo propiedades que no causan reflow */
+.scroll-top,
+.header,
+.nav-links a,
+.btn,
+.card {
+  transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
+  will-change: transform, opacity, background-color;
+}
+
+/* 3. Evitar cambios en propiedades que causan reflow durante animaciones */
+.animate-on-scroll.animate-in,
+.fade-in.appear,
+.slide-in-left.appear,
+.slide-in-right.appear,
+.scale-in.appear {
+  transform: translate3d(0, 0, 0); /* Usar translate3d para forzar GPU */
+}
+
+/* 4. Optimizar elementos fijos para evitar reflows */
+.scroll-top,
+.header {
+  position: fixed;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* 5. Optimizar contenedores para evitar layout shifts */
+.container,
+.section {
+  contain: layout style paint;
+}
+
+/* 6. Optimizar imágenes para evitar Cumulative Layout Shift (CLS) */
+img {
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* 7. Optimizar fuentes para evitar FOUT (Flash of Unstyled Text) */
+body {
+  font-display: swap;
+}
+
+/* 8. Optimizar scrollbar para evitar reflows */
+::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* 9. Optimizar elementos que cambian frecuentemente */
+.nav-links a.active,
+.btn:hover,
+.card:hover {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* 10. Optimizar modales y overlays */
+.modal-overlay,
+.sidenav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateZ(0);
+  will-change: opacity;
+}
+
+/* 11. Optimizar elementos con animaciones complejas */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 12. Optimizar para dispositivos móviles */
+@media (max-width: 768px) {
+  /* Reducir complejidad de animaciones en móviles */
+  .animate-on-scroll,
+  .fade-in,
+  .slide-in-left,
+  .slide-in-right,
+  .scale-in {
+    will-change: auto;
+    transform: none;
+  }
+  
+  /* Optimizar scroll en móviles */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 13. Optimizar para usuarios que prefieren movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-on-scroll,
+  .fade-in,
+  .slide-in-left,
+  .slide-in-right,
+  .scale-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* 14. Optimizar para modo oscuro */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* 15. Optimizar para pantallas de alta densidad */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .scroll-top,
+  .header,
+  .btn {
+    transform: translateZ(0) scale(1);
+  }
+}
+
+/* 16. Optimizar para pantallas táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover,
+  .card:hover,
+  .nav-links a:hover {
+    transform: none;
+  }
+}
+
+/* 17. Optimizar para pantallas grandes */
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* 18. Optimizar para impresión */
+@media print {
+  .scroll-top,
+  .header,
+  .sidenav {
+    display: none !important;
+  }
+  
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* 19. Optimizar para lectores de pantalla */
+@media (prefers-reduced-motion: reduce) {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* 20. Optimizar para conexiones lentas */
+@media (prefers-reduced-data: reduce) {
+  .animate-on-scroll,
+  .fade-in,
+  .slide-in-left,
+  .slide-in-right,
+  .scale-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+} 
