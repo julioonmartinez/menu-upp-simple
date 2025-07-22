@@ -24,6 +24,7 @@
     imageText: '',
     primaryColor: '#3b82f6',
     secondaryColor: '#10b981',
+    backgroundColor: '#ffffff',
     fontFamily: 'Inter'
   };
 
@@ -58,6 +59,7 @@
       imageText: restaurant.imageText || '',
       primaryColor: restaurant.primaryColor || '#3b82f6',
       secondaryColor: restaurant.secondaryColor || '#10b981',
+      backgroundColor: restaurant.backgroundColor || '#ffffff',
       fontFamily: restaurant.fontFamily || 'Inter'
     };
   }
@@ -106,6 +108,7 @@
       const updateData = {
         primaryColor: formData.primaryColor,
         secondaryColor: formData.secondaryColor,
+        backgroundColor: formData.backgroundColor,
         fontFamily: formData.fontFamily
       };
 
@@ -253,10 +256,18 @@
             help="Color complementario"
           />
         </div>
+
+        <div class="color-field">
+          <ColorPicker
+            label="Color de Fondo"
+            bind:value={formData.backgroundColor}
+            help="Color de fondo de la página"
+          />
+        </div>
       </div>
 
       <!-- Preview de colores -->
-      <div class="color-preview">
+      <div class="color-preview" style="background-color: {formData.backgroundColor}">
         <h4 class="preview-title">Vista Previa</h4>
         <div class="preview-card" style="border-color: {formData.primaryColor}">
           <div class="preview-header" style="background-color: {formData.primaryColor}">
