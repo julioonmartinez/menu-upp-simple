@@ -11,30 +11,50 @@ const { restaurant, linkTree } = Astro.props;
 
 <div class="profile-header">
   <div class="cover-image">
-    {linkTree.coverImage?.url && (
+    {(linkTree.coverImage?.url || restaurant.imageCover) ? (
       <img 
-        src={linkTree.coverImage.url} 
+        src={linkTree.coverImage?.url || restaurant.imageCover  } 
         alt={`${restaurant.name} cover`}
         class="cover-img"
       />
+    ) : (
+      <div 
+        class="cover-placeholder"
+        style={`background:${restaurant.primaryColor || '#e0e0e0'}; width:100%; height:100%;`}
+      ></div>
     )}
     <div class="overlay"></div>
   </div>
   
   <div class="profile-content">
     <div class="profile-image-container">
-      {linkTree.profileImage?.url ? (
+      {(linkTree.profileImage?.url || restaurant.imageProfile) ? (
         <img 
-          src={linkTree.profileImage.url} 
+          src={linkTree.profileImage?.url || restaurant.imageProfile} 
           alt={`${restaurant.name} logo`}
           class="profile-image"
         />
-      ) : restaurant.logo && (
+      ) : restaurant.logo ? (
         <img 
           src={restaurant.logo} 
           alt={`${restaurant.name} logo`}
           class="profile-image"
         />
+      ) : (
+        <div 
+          class="profile-initials profile-image"
+          style={`background:${restaurant.primaryColor || '#e0e0e0'}; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; user-select: none;`}
+        >
+          {(() => {
+            const name = restaurant.name || linkTree.title ||  '';
+            const words = name.trim().split(' ');
+            if (words.length === 1) {
+              return words[0].substring(0, 2).toUpperCase();
+            } else {
+              return (words[0][0] + words[1][0]).toUpperCase();
+            }
+          })()}
+        </div>
       )}
     </div>
     {restaurant.imageText_data ? (
@@ -181,6 +201,13 @@ const { restaurant, linkTree } = Astro.props;
     flex-shrink: 0;
   }
   
+  .cover-placeholder {
+    width: 100%;
+    height: 200px;
+    border-radius: 0 0 24px 24px;
+    /* El color de fondo se setea inline para usar el primaryColor dinámicamente */
+  }
+  
   @media (max-width: 480px) {
     .cover-image {
       height: 160px;
@@ -198,6 +225,13 @@ const { restaurant, linkTree } = Astro.props;
     .business-subtitle {
       font-size: 0.9rem;
     }
+    .cover-placeholder {
+      height: 160px;
+    }
+  }
+  .profile-initials {
+    /* El resto de estilos se heredan de .profile-image */
+    /* El color de fondo y texto se setean inline para usar el primaryColor dinámicamente */
   }
 </style>
 
