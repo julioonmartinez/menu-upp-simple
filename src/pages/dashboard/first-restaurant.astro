@@ -1,0 +1,8 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+import CreateFirstRestaurant from "../../components/CreateFirstRestaurant.svelte";
+---
+
+<PrivateLayout title="Tu primer restaurante" description="Crea tu primer restaurante para empezar a usar Menu App" > 
+    <CreateFirstRestaurant client:only="svelte" />
+</PrivateLayout>

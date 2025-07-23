@@ -19,13 +19,13 @@ const cssVariables = {
   '--primary-color': restaurant.primaryColor || linkTree.ctaBackgroundColor || '#FF4500',
   '--secondary-color': restaurant.secondaryColor || '#005F85',
   '--background-color': linkTree.backgroundColor || '#FFF8F0',
-  '--text-color': linkTree.textColor || '#2C2C2C',
+  '--text-color': restaurant.textColor || linkTree.textColor || '#2C2C2C',
   '--links-bg': linkTree.linksBackgroundColor || '#FFFFFF',
   '--links-text': linkTree.linksColor || '#2C2C2C',
   '--social-bg': linkTree.socialMediaBackgroundColor || restaurant.primaryColor || '#FF4500',
   '--social-text': linkTree.socialMediaTextColor || '#FFFFFF',
   '--cta-bg': linkTree.ctaBackgroundColor || restaurant.primaryColor || '#FF4500',
-  '--cta-text': linkTree.ctaTextColor || '#FFFFFF',
+  '--cta-text': restaurant.textColor ||  linkTree.ctaTextColor || '#FFFFFF',
   '--font-family-personal': getFontFamilyCSS(selectedFont)
 };
 ---
@@ -65,7 +65,7 @@ const cssVariables = {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href= { restaurant.logo || '/ico.PNG'}>
+  <link rel="icon" type="image/svg+xml" href= { restaurant.logo || restaurant.imageProfile || '/ico.PNG'}>
 </head>
 
 <body style={  Object.entries(cssVariables).map(([key, value]) => `${key}:${value}`).join(';') }>
@@ -117,7 +117,7 @@ const cssVariables = {
       text-align: center;
       padding: 2rem 1.5rem 1rem;
       font-size: 0.8rem;
-      color: rgba(44, 44, 44, 0.6);
+      color: var(--text-color);
       border-top: 1px solid rgba(0,0,0,0.05);
       margin-top: 3rem;
     }

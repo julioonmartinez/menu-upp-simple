@@ -27,6 +27,7 @@ export interface RestaurantCreateRequest {
   schedule?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  textColor?: string;
   fontFamily?: string;
   features?: string[];
   cuisineType?: string[];
@@ -56,6 +57,7 @@ export interface RestaurantUpdateRequest {
   schedule?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  textColor?: string;
   fontFamily?: string;
   features?: string[];
   cuisineType?: string[];
@@ -340,6 +342,7 @@ class RestaurantService {
         schedule: restaurantData.schedule || '',
         primaryColor: restaurantData.primaryColor || '#FF5733',
         secondaryColor: restaurantData.secondaryColor || '#33FF57',
+        textColor: restaurantData.textColor || '#000000',
         fontFamily: restaurantData.fontFamily || 'Roboto',
         features: restaurantData.features || [],
         cuisineType: restaurantData.cuisineType || [],
@@ -482,6 +485,7 @@ class RestaurantService {
         schedule: restaurantData.schedule || '',
         primaryColor: restaurantData.primaryColor || '#FF5733',
         secondaryColor: restaurantData.secondaryColor || '#33FF57',
+        textColor: restaurantData.textColor || '#000000',
         fontFamily: restaurantData.fontFamily || 'Roboto',
         features: restaurantData.features || [],
         cuisineType: restaurantData.cuisineType || [],

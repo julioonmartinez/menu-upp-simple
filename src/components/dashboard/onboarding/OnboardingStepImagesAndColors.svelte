@@ -15,7 +15,8 @@
       imageCover: restaurant?.imageCover || '',
       primaryColor: restaurant?.primaryColor || '#3b82f6',
       backgroundColor: restaurant?.backgroundColor || '#ffffff',
-      secondaryColor: restaurant?.secondaryColor || '#f59e42' // Color por defecto
+      secondaryColor: restaurant?.secondaryColor || '#f59e42', // Color por defecto
+      textColor: restaurant?.textColor || '#222222'
     };
   
     let uploading = { imageProfile: false, imageCover: false };
@@ -51,7 +52,8 @@
           imageCover: formData.imageCover,
           primaryColor: formData.primaryColor,
           backgroundColor: formData.backgroundColor,
-          secondaryColor: formData.secondaryColor // Nuevo campo
+          secondaryColor: formData.secondaryColor, // Nuevo campo
+          textColor: formData.textColor
         };
         const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
         if (result.success) {
@@ -74,7 +76,8 @@
           imageCover: formData.imageCover,
           primaryColor: formData.primaryColor,
           backgroundColor: formData.backgroundColor,
-          secondaryColor: formData.secondaryColor
+          secondaryColor: formData.secondaryColor,
+          textColor: formData.textColor
         };
         const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
         if (result.success) {
@@ -95,7 +98,7 @@
     <div class="flex md:flex-row gap-xl justify-center items-stretch w-full">
       <div class="flex-1 flex flex-col gap-md items-center justify-center bg-bg-tertiary rounded-xl p-lg">
         <MiniImageUploader
-          label="Logo"
+          label="Perfil"
           currentImage={formData.imageProfile}
           uploading={uploading.imageProfile}
           on:fileSelected={(e) => handleImageUpload('imageProfile', e)}
@@ -121,6 +124,10 @@
         <div class="flex flex-col items-center gap-xs flex-1">
           <ColorPicker label="Color Secundario" bind:value={formData.secondaryColor} class="input w-full" />
           <span class="text-xs text-muted mt-xs">Color secundario</span>
+        </div>
+        <div class="flex flex-col items-center gap-xs flex-1">
+          <ColorPicker label="Color de Texto" bind:value={formData.textColor} class="input w-full" />
+          <span class="text-xs text-muted mt-xs">Color del texto principal</span>
         </div>
       </div>
       <div class="flex flex-col items-center gap-xs flex-1 w-full">

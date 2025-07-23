@@ -20,6 +20,7 @@ export const mockRestaurant: Restaurant = {
   imageCover: "/images/restaurants/labellavita/cover.webp",
   primaryColor: "#D32F2F",
   secondaryColor: "#388E3C",
+  textColor: "#222222",
   
   socialLinks: {
     instagram: "https://instagram.com/labellavita",
@@ -154,6 +155,7 @@ const mockTacosElRey: Restaurant = {
   imageCover: "/images/restaurants/tacoselrey/cover.webp",
   primaryColor: "#FF6B35",
   secondaryColor: "#F7931E",
+  textColor: "#333333",
   
   socialLinks: {
     instagram: "https://instagram.com/tacoselrey",

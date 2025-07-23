@@ -59,6 +59,7 @@ export interface Restaurant {
   image?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  textColor?: string;
   fontFamily?: string;
   imageText?: string;
   textImage?:ImageData;

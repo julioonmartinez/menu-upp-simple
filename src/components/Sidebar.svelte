@@ -39,7 +39,7 @@
       id: 'new-restaurant',
       label: 'Nuevo Restaurante',
       icon: 'fa-solid fa-plus-circle',
-      href: '/dashboard/restaurant-create',
+      href: '/dashboard/first-restaurant',
       description: 'Crear restaurante',
       highlight: true
     },

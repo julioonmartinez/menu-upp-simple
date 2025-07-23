@@ -8,7 +8,7 @@
   interface Props {
     redirectUrl?: string;
   }
-  let { redirectUrl = '/dashboard' }: Props = $props();
+  let { redirectUrl = '/dashboard/first-restaurant' }: Props = $props();
 
   // Form state
   let name = $state<string>('');
@@ -306,7 +306,7 @@
       >
         {#if isSubmitting || $isLoading}
           <div class="btn-spinner">
-            <span>{buttonText()}</span>
+            <!-- <span>{buttonText()}</span> -->
           </div>
         {:else}
           {buttonText()}
@@ -321,7 +321,7 @@
         </a>
       </div>
     </form>
-    {#if import.meta.env.DEV}
+    <!-- {#if import.meta.env.DEV}
       <details class="debug-info">
         <summary>Debug Info</summary>
         <pre>
@@ -334,7 +334,7 @@ Submitting: {isSubmitting}
 Form Valid: {isFormValid}
         </pre>
       </details>
-    {/if}
+    {/if} -->
   </div>
 </div>
 
