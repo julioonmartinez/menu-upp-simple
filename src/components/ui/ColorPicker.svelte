@@ -289,6 +289,7 @@
   /* Solo detalles visuales especiales para dropdown y animaciones */
   .dropdown-panel {
     animation: fadeIn 0.2s ease;
+    z-index: 1000;
   }
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }

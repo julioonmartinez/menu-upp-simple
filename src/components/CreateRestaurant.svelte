@@ -141,29 +141,43 @@
     const result = await createRestaurant(restaurantData);
     
     if (result.success) {
-      // Limpiar formulario
-      formData = {
-        name: '',
-        username: '',
-        description: ''
-      };
-      
-      usernameChecked = false;
-      usernameAvailable = false;
-      
-      // Emitir evento de éxito
-      dispatch('created', {
-        restaurant: result.restaurant
-      });
-      
-      // Mostrar mensaje de éxito usando toast
-      toastStore.success(`¡Restaurante "${result.restaurant.name}" creado exitosamente!`);
-    } else {
-      // Mostrar error usando toast si hay error
-      if (error) {
-        toastStore.error(`Error al crear el restaurante: ${error}`);
-      }
-    }
+  // Limpiar formulario
+  formData = {
+    name: '',
+    username: '',
+    description: ''
+  };
+
+  usernameChecked = false;
+  usernameAvailable = false;
+
+  // Generar y subir QR automáticamente
+  try {
+    const qrUrl = `https://www.menuupp.com/${result.restaurant.username}`;
+    const QRCode = await import('qrcode');
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, {
+      width: 300,
+      margin: 2,
+      color: { dark: '#000000', light: '#FFFFFF' },
+      errorCorrectionLevel: 'M'
+    });
+    const filename = `qr-${result.restaurant.username}.png`;
+    const qrFile = dataURLtoFile(qrDataUrl, filename);
+    await restaurantStore.uploadRestaurantImage(result.restaurant.id, qrFile, 'qrCode');
+  } catch (err) {
+    console.error('Error generando o subiendo el QR:', err);
+  }
+
+  // Mostrar mensaje de éxito usando toast
+  toastStore.success(`¡Restaurante "${result.restaurant.name}" creado exitosamente!`);
+
+  // Redirigir al onboarding (Astro + Svelte)
+  window.location.href = `/dashboard/restaurant/${result.restaurant.id}/onboarding`;
+} else {
+  if (error) {
+    toastStore.error(`Error al crear el restaurante: ${error}`);
+  }
+}
   }
   
   // Limpiar formulario
@@ -176,6 +190,19 @@
     usernameChecked = false;
     usernameAvailable = false;
     clearAllErrors();
+  }
+
+  // Agrega la función para convertir dataURL a File
+  function dataURLtoFile(dataUrl, filename) {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
   }
 </script>
 

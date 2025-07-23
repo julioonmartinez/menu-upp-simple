@@ -30,6 +30,7 @@ try {
   const result = await fetchRestaurantProfile(username);
   restaurant = result.restaurant;
   linkTree = result.linkTree;
+  console.log('linkrtee', linkTree );
 } catch (error) {
   // Si no encuentra el perfil, redirigir a 404
   return Astro.redirect('/404');
@@ -83,6 +84,7 @@ const ctaTheme = {
         ))}
       </div>
     )}
+    
     
     <!-- Call to Action -->
     <!-- <CTAButton restaurant={restaurant} theme={ctaTheme} /> -->

@@ -13,6 +13,8 @@ export interface Props {
   transparentHeader?: boolean;
   showHeader?: boolean;
   backUrl?: string;
+  noHeader?: boolean;
+  fullScreen?: boolean;
 }
 
 const { 
@@ -22,6 +24,8 @@ const {
   transparentHeader = false,
   showHeader = true,
   backUrl = '/dashboard',
+  noHeader = false,
+  fullScreen = false,
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -190,6 +194,12 @@ const {
       }
     }
 
+    /* FULLSCREEN: Elimina el header-height */
+    .fullscreen-layout {
+      --header-height: 0 !important;
+      --header-height-mobile: 0 !important;
+    }
+
     /* Dark mode para páginas privadas */
     @media (prefers-color-scheme: dark) {
       .private-page {
@@ -199,14 +209,14 @@ const {
   </style>
 </head>
 
-<body class="page-loading private-page">
+<body class={`page-loading private-page${fullScreen ? ' fullscreen-layout' : ''}`}>
   <!-- Inicializador de autenticación (invisible) -->
   <AuthInitializer 
     client:load 
   />
   
-  <!-- Header privado -->
-  {showHeader && <PrivateHeader 
+  <!-- Header privado (condicional) -->
+  {(!noHeader && showHeader) && <PrivateHeader 
     client:load 
     showShadow={showHeaderShadow} 
     transparent={transparentHeader}
@@ -214,7 +224,10 @@ const {
   />}
   
   <!-- Contenido principal -->
-  <main id="main-content" role="main">
+  <main id="main-content" role="main"
+    style={fullScreen ? `padding:0;min-height:100vh;max-width:100vw;background:var(--bg-secondary);` : ''}
+    class:list-none={fullScreen}
+  >
     <slot />
   </main>
   

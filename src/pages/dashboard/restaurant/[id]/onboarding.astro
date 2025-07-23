@@ -1,0 +1,8 @@
+---
+import WizardOnboarding from '../../../../components/dashboard/WizardOnboarding.svelte';
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+const { id } = Astro.params;
+---
+<PrivateLayout title='Onboarding' description='' noHeader fullScreen>
+    <WizardOnboarding client:load restaurantId={id} />
+</PrivateLayout>

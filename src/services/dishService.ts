@@ -872,13 +872,13 @@ class DishService {
       errors.push('El nombre no puede exceder 200 caracteres');
     }
     
-    // Validar descripción (requerida)
-    if (!data.description || data.description.trim().length === 0) {
-      errors.push('La descripción del platillo es requerida');
-    } else if (data.description.trim().length < 10) {
-      errors.push('La descripción debe tener al menos 10 caracteres');
-    } else if (data.description.trim().length > 1000) {
-      errors.push('La descripción no puede exceder 1000 caracteres');
+    // Validar descripción (opcional)
+    if (data.description && data.description.trim().length > 0) {
+      if (data.description.trim().length < 10) {
+        errors.push('La descripción debe tener al menos 10 caracteres');
+      } else if (data.description.trim().length > 1000) {
+        errors.push('La descripción no puede exceder 1000 caracteres');
+      }
     }
     
     // Validar precio (requerido)
