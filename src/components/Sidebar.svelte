@@ -18,6 +18,7 @@
   let unsubscribeAuth: () => void;
   let sidebarElement: HTMLElement;
   let backdropElement: HTMLElement;
+  let isDark = false;
 
   // Navegación
   const menuItems = [
@@ -41,7 +42,7 @@
       icon: 'fa-solid fa-plus-circle',
       href: '/dashboard/first-restaurant',
       description: 'Crear restaurante',
-      highlight: true
+      
     },
     // {
     //   id: 'profile',
@@ -91,6 +92,26 @@
   }
 
   onMount(() => {
+    // 1. Si hay preferencia del usuario, úsala
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark') {
+      isDark = true;
+    } else if (storedTheme === 'light') {
+      isDark = false;
+    } else {
+      // 2. Si no hay preferencia, usa la del sistema
+      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    updateTheme();
+
+    // Escucha cambios del sistema SOLO si el usuario no ha elegido
+    if (!storedTheme) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        isDark = e.matches;
+        updateTheme();
+      });
+    }
+
     // Suscribirse al store de autenticación
     unsubscribeAuth = authStore.subscribe((state) => {
       user = state.user;
@@ -125,6 +146,20 @@
   // Actualizar overflow del body cuando cambie isOpen
   $: if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+
+  function toggleTheme() {
+    isDark = !isDark;
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateTheme();
+  }
+
+  function updateTheme() {
+    if (isDark) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
   }
 </script>
 
@@ -197,7 +232,7 @@
         <li class="nav-item">
           <button 
             class="nav-link"
-            class:highlight={item.highlight}
+            
             on:click={() => navigateTo(item.href)}
             aria-label={item.description}
           >
@@ -216,6 +251,25 @@
       {/each}
     </ul>
   </nav>
+
+  <!-- Botón moderno para cambio de tema -->
+  <div class="theme-switch-modern" in:fly={{ y: 20, duration: 300, delay: 300 }}>
+    <button
+      class="theme-modern-btn"
+      on:click={toggleTheme}
+      aria-label="Cambiar tema claro/oscuro"
+      title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+    >
+      <span class="theme-modern-icon {isDark ? 'dark' : 'light'}">
+        {#if isDark}
+          <i class="fa-solid fa-moon"></i>
+        {:else}
+          <i class="fa-solid fa-sun"></i>
+        {/if}
+      </span>
+    </button>
+    <span class="theme-modern-label">{isDark ? 'Oscuro' : 'Claro'}</span>
+  </div>
 
   <!-- Sección de Acciones -->
   <!-- <div class="sidebar-actions" in:fly={{ y: 20, duration: 300, delay: 300 }}>
@@ -444,7 +498,7 @@
   .nav-link:hover {
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    transform: translateX(4px);
+    /* transform: translateX(4px); */
   }
 
   .nav-link.highlight {
@@ -677,5 +731,66 @@
       transition: none;
       transform: none;
     }
+  }
+
+  /* Botón moderno para cambio de tema */
+  .theme-switch-modern {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-lg) 0;
+  }
+
+  .theme-modern-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color) 60%, var(--primary-light) 100%);
+    color: var(--text-inverse);
+    border: none;
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.15), 0 1.5px 6px rgba(0,0,0,0.08);
+    font-size: 2rem;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.25s;
+    position: relative;
+    outline: none;
+  }
+
+  .theme-modern-btn:hover, .theme-modern-btn:focus-visible {
+    background: linear-gradient(135deg, var(--primary-dark) 60%, var(--primary-color) 100%);
+    box-shadow: 0 6px 24px rgba(255, 107, 53, 0.25), 0 2px 8px rgba(0,0,0,0.12);
+    transform: scale(1.08) rotate(-8deg);
+  }
+
+  .theme-modern-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s, transform 0.5s cubic-bezier(0.68,-0.55,0.27,1.55);
+  }
+
+  .theme-modern-icon.light {
+    color: #ffe066; /* Amarillo sol */
+    text-shadow: 0 0 8px #ffe06688;
+    transform: rotate(0deg);
+  }
+
+  .theme-modern-icon.dark {
+    color: #60a5fa; /* Azul luna */
+    text-shadow: 0 0 8px #60a5fa88;
+    transform: rotate(180deg);
+  }
+
+  .theme-modern-label {
+    margin-top: var(--spacing-xs);
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    text-align: center;
+    user-select: none;
   }
 </style> 

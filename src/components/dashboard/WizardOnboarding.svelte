@@ -183,17 +183,15 @@
     border-bottom: 1px solid var(--bg-accent);
     background: var(--bg-primary);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    position: sticky;
+    position: static;
     top: 0;
-    z-index: 2;
   }
   .wizard-footer {
     border-top: 1px solid var(--bg-accent);
     background: var(--bg-primary);
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-    position: sticky;
+    position: static;
     bottom: 0;
-    z-index: 10;
   }
   .wizard-content {
     min-height: 340px;

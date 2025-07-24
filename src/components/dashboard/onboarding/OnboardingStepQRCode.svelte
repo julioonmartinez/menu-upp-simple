@@ -7,7 +7,7 @@
 
   // Construir la URL pública
   $: publicUrl = restaurant?.username
-    ? `https://www.menuupp.com/${restaurant.username}`
+    ? `${window.location.origin}/${restaurant.username}`
     : '';
 
   // QR code data del restaurante (si ya fue generado y guardado)

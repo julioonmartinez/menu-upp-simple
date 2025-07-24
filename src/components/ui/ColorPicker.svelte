@@ -1,6 +1,7 @@
 <!-- src/components/ui/ColorPicker.svelte -->
 <script>
   import { createEventDispatcher } from 'svelte';
+  import ModalPortal from './ModalPortal.svelte';
   
   export let label = '';
   export let id = '';
@@ -12,6 +13,10 @@
   export let showPresets = true;
   export let showCustomPicker = true;
   export let showInput = true;
+  // NUEVAS PROPS
+  export let open = undefined; // Si se pasa, el control es externo
+  export let dropdownWidth = undefined; // Ej: '320px', '100%'
+  export let modal = false; // Si true, el picker se muestra como modal centrado
   
   const dispatch = createEventDispatcher();
   
@@ -19,6 +24,12 @@
   let inputValue = value;
   let pickerValue = value;
   let isInputValid = true;
+  
+  // Cambiar a getter/setter para soportar control externo
+  $: isDropdownOpen = open !== undefined ? open : isOpen;
+  
+  let alignRight = false;
+  let dropdownPanelRef;
   
   // Paleta de colores predefinidos
   const presetColors = [
@@ -133,18 +144,43 @@
   
   function toggleDropdown() {
     if (!disabled) {
-      isOpen = !isOpen;
-      if (isOpen) {
-        // Asegurar que el input tenga el valor actual cuando se abre
-        inputValue = value;
-        pickerValue = value;
-        isInputValid = true;
+      if (open !== undefined) {
+        // Controlado por el padre
+        if (!open) {
+          dispatch('open');
+          // Esperar a que el dropdown se muestre y luego calcular posición
+          setTimeout(checkDropdownPosition, 0);
+        } else {
+          dispatch('close');
+        }
+      } else {
+        isOpen = !isOpen;
+        if (isOpen) {
+          inputValue = value;
+          pickerValue = value;
+          isInputValid = true;
+          setTimeout(checkDropdownPosition, 0);
+        }
+      }
+    }
+  }
+
+  function checkDropdownPosition() {
+    alignRight = false;
+    if (dropdownPanelRef) {
+      const rect = dropdownPanelRef.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) { // 8px margen
+        alignRight = true;
       }
     }
   }
   
   function closeDropdown() {
-    isOpen = false;
+    if (open !== undefined) {
+      dispatch('close');
+    } else {
+      isOpen = false;
+    }
   }
   
   // Obtener contraste para el texto
@@ -159,7 +195,7 @@
   
   // Cerrar dropdown al hacer click afuera
   function handleClickOutside(event) {
-    if (isOpen && !event.target.closest('.color-picker')) {
+    if (isDropdownOpen && !event.target.closest('.color-picker')) {
       closeDropdown();
     }
   }
@@ -171,6 +207,83 @@
 </script>
 
 <svelte:window on:click={handleClickOutside} />
+
+<ModalPortal show={isDropdownOpen && modal}>
+  <div class="colorpicker-modal-backdrop" on:click={closeDropdown}>
+    <div
+      class="dropdown-panel modal-panel bg-white border border-accent rounded-xl shadow-lg p-lg z-50 flex flex-col gap-lg"
+      bind:this={dropdownPanelRef}
+      on:click|stopPropagation={handleDropdownClick}
+      style={dropdownWidth ? `width: ${dropdownWidth}; min-width: ${dropdownWidth};` : ''}
+    >
+      {#if showInput}
+        <div class="flex flex-col gap-xs input-section">
+          <label class="text-xs font-medium text-primary input-label">Código de color:</label>
+          <input
+            type="text"
+            value={inputValue}
+            on:input={(e) => {
+              inputValue = e.target.value;
+              handleInputInput();
+            }}
+            on:blur={handleInputBlur}
+            on:keydown={handleInputKeydown}
+            placeholder="#3b82f6"
+            class="input input-sm font-mono color-input {!isInputValid ? 'input-error' : ''}"
+            maxlength="7"
+            autocomplete="off"
+          />
+          {#if !isInputValid}
+            <p class="text-xs text-error mt-xs">Formato inválido. Usa formato hexadecimal (ej: #3b82f6)</p>
+          {/if}
+        </div>
+      {/if}
+      {#if showCustomPicker}
+        <div class="flex flex-col gap-xs picker-section">
+          <label class="text-xs font-medium text-primary input-label">Selector personalizado:</label>
+          <input
+            type="color"
+            bind:value={pickerValue}
+            on:input={handlePickerChange}
+            class="w-full h-2xl rounded border border-accent cursor-pointer native-picker"
+          />
+        </div>
+      {/if}
+      {#if showPresets}
+        <div class="flex flex-col gap-xs presets-section">
+          <label class="text-xs font-medium text-primary input-label">Colores predefinidos:</label>
+          <div class="grid gap-xs color-grid" style="grid-template-columns: repeat(8, minmax(0, 1fr));">
+            {#each presetColors as color}
+              <button
+                type="button"
+                class="w-xl h-xl border rounded cursor-pointer flex items-center justify-center transition-all preset-color {value === color ? 'border-primary border-2 selected' : 'border-accent'}"
+                style="background-color: {color}"
+                on:click={() => selectPresetColor(color)}
+                title={color}
+                aria-label="Seleccionar color {color}"
+              >
+                {#if value === color}
+                  <svg class="w-md h-md check-icon" fill="currentColor" viewBox="0 0 20 20" style="color: {getTextColor(color)}">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+      <div class="flex justify-end gap-xs border-t border-accent pt-md actions">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm action-btn"
+          on:click={closeDropdown}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</ModalPortal>
 
 <div class="flex flex-col gap-md relative color-picker">
   {#if label}
@@ -202,8 +315,13 @@
         </svg>
       </div>
     </button>
-    {#if isOpen}
-      <div class="dropdown-panel absolute left-0 right-0 mt-xs bg-white border border-accent rounded-xl shadow-lg p-lg z-50 flex flex-col gap-lg" on:click={handleDropdownClick}>
+    {#if isDropdownOpen && !modal}
+      <div
+        class="dropdown-panel absolute mt-xs bg-white border border-accent rounded-xl shadow-lg p-lg z-50 flex flex-col gap-lg {alignRight ? 'align-right' : 'align-left'}"
+        bind:this={dropdownPanelRef}
+        on:click={handleDropdownClick}
+        style={dropdownWidth ? `width: ${dropdownWidth}; min-width: ${dropdownWidth};` : ''}
+      >
         {#if showInput}
           <div class="flex flex-col gap-xs input-section">
             <label class="text-xs font-medium text-primary input-label">Código de color:</label>
@@ -291,6 +409,14 @@
     animation: fadeIn 0.2s ease;
     z-index: 1000;
   }
+  .dropdown-panel.align-left {
+    left: 0;
+    right: 0;
+  }
+  .dropdown-panel.align-right {
+    left: auto;
+    right: 0;
+  }
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -318,5 +444,26 @@
       left: -1rem;
       right: -1rem;
     }
+  }
+  .colorpicker-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.25);
+    z-index: 99999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  .dropdown-panel.modal-panel {
+    position: static;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    z-index: 100000 !important;
   }
 </style>

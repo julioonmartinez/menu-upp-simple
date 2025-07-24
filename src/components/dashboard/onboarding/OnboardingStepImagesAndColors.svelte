@@ -22,6 +22,9 @@
     let uploading = { imageProfile: false, imageCover: false };
     let isSubmitting = false;
     let error = null;
+
+    // Control de apertura de ColorPickers
+    let openPicker = null; // 'primary' | 'secondary' | 'text' | 'background' | null
   
     async function handleImageUpload(type, event) {
       const { file } = event.detail;
@@ -118,20 +121,56 @@
     <div class="flex flex-col gap-xl mt-2xl w-full">
       <div class="flex md:flex-row gap-xl w-full">
         <div class="flex flex-col items-center gap-xs flex-1">
-          <ColorPicker label="Color Primario" bind:value={formData.primaryColor} class="input w-full" />
+          <ColorPicker
+            label="Color Primario"
+            bind:value={formData.primaryColor}
+            class="input w-full"
+            open={openPicker === 'primary'}
+            on:open={() => openPicker = 'primary'}
+            on:close={() => openPicker = null}
+            dropdownWidth="320px"
+            modal={true}
+          />
           <span class="text-xs text-muted mt-xs">Color principal</span>
         </div>
         <div class="flex flex-col items-center gap-xs flex-1">
-          <ColorPicker label="Color Secundario" bind:value={formData.secondaryColor} class="input w-full" />
+          <ColorPicker
+            label="Color Secundario"
+            bind:value={formData.secondaryColor}
+            class="input w-full"
+            open={openPicker === 'secondary'}
+            on:open={() => openPicker = 'secondary'}
+            on:close={() => openPicker = null}
+            dropdownWidth="320px"
+            modal={true}
+          />
           <span class="text-xs text-muted mt-xs">Color secundario</span>
         </div>
         <div class="flex flex-col items-center gap-xs flex-1">
-          <ColorPicker label="Color de Texto" bind:value={formData.textColor} class="input w-full" />
+          <ColorPicker
+            label="Color de Texto"
+            bind:value={formData.textColor}
+            class="input w-full"
+            open={openPicker === 'text'}
+            on:open={() => openPicker = 'text'}
+            on:close={() => openPicker = null}
+            dropdownWidth="320px"
+            modal={true}
+          />
           <span class="text-xs text-muted mt-xs">Color del texto principal</span>
         </div>
       </div>
       <div class="flex flex-col items-center gap-xs flex-1 w-full">
-        <ColorPicker label="Color de Fondo" bind:value={formData.backgroundColor} class="input w-full" />
+        <ColorPicker
+          label="Color de Fondo"
+          bind:value={formData.backgroundColor}
+          class="input w-full"
+          open={openPicker === 'background'}
+          on:open={() => openPicker = 'background'}
+          on:close={() => openPicker = null}
+          dropdownWidth="320px"
+          modal={true}
+        />
         <span class="text-xs text-muted mt-xs">Color de fondo del menú</span>
       </div>
     </div>
