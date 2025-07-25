@@ -7,6 +7,8 @@ interface Props {
 }
 
 const { restaurant, linkTree } = Astro.props;
+// const hasTextImage = restaurant?.textImage_data && restaurant.textImage_data.url !== '';
+const hasTextImage = false;
 ---
 
 <div class="profile-header">
@@ -57,14 +59,14 @@ const { restaurant, linkTree } = Astro.props;
         </div>
       )}
     </div>
-    {restaurant.textImage ? (
+    { hasTextImage ? (
   <div class="content-image-text" >
     <img 
       src={restaurant.textImage } 
       alt={`Logo de ${linkTree.title || restaurant.name}`} 
       height="80"
       width="240"
-      style="object-fit: cover;"
+      style="object-fit: contain;"
       
     />
     <h1 class="sr-only">{linkTree.title || restaurant.name}</h1>
@@ -74,7 +76,7 @@ const { restaurant, linkTree } = Astro.props;
 )}
     <p class="business-subtitle">{linkTree.description || restaurant.description}</p>
     
-    <!-- {restaurant.address && (
+    {restaurant.address && (
       <div class="location-info">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -82,7 +84,7 @@ const { restaurant, linkTree } = Astro.props;
         </svg>
         <span>{restaurant.address}</span>
       </div>
-    )} -->
+    )}
     
     {restaurant.schedule && (
       <div class="schedule-info">
