@@ -50,8 +50,9 @@ const textColor = getSmartContrastColor(backgroundColor);
 // ⭐ ALTERNATIVA SIMPLE (más confiable para legibilidad):
 // const textColor = isLightColor(backgroundColor) ? '#000000' : '#ffffff';
 
-const hasLogo = restaurant?.textImage_data && restaurant.textImage_data.url !== '';
-
+// Más adelante se puede agregar la imagen de texto, me falta un merod diseño para que se vea bien en el header
+// const hasTextImage = restaurant?.textImage_data && restaurant.textImage_data.url !== '';
+const hasTextImage = false;
 const getInitials = (name: string) => {
   if (!name) return '';
   const words = name.trim().split(' ');
@@ -69,9 +70,9 @@ const MAX_NAME_LENGTH = 18;
       <div class="header-container">
         <div class="header-logo">
           <a href={`/${restaurant.username}`}>
-            {hasLogo ? (
+            {hasTextImage ? (
               <div class="logo-container with-image">
-                <img src={linkTree.textImage?.url} alt={restaurant.name} class="logo-image" />
+                <img src={restaurant.textImage_data?.url} alt={restaurant.name} class="logo-image" />
               </div>
             ) : (
               <div class="logo-container text-only">
@@ -169,7 +170,7 @@ const MAX_NAME_LENGTH = 18;
   }
 
   .logo-image {
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
     height: 45px;
     width: 100px;
