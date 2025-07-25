@@ -22,7 +22,6 @@
     profileImage: '',   // antes imageProfile
     coverImage: '',     // antes imageCover
     image: '',
-    textImage: '',      // antes imageText
     primaryColor: '#3b82f6',
     secondaryColor: '#10b981',
     backgroundColor: '#ffffff',
@@ -37,7 +36,6 @@
       profileImage: restaurant.profileImage || '',
       coverImage: restaurant.coverImage || '',
       image: restaurant.image || '',
-      textImage: restaurant.textImage || '',
       primaryColor: restaurant.primaryColor || '#3b82f6',
       secondaryColor: restaurant.secondaryColor || '#10b981',
       backgroundColor: restaurant.backgroundColor || '#ffffff',
@@ -53,8 +51,7 @@
     logo: false,
     imageProfile: false,
     imageCover: false,
-    image: false,
-    imageText: false
+    image: false
   };
 
   // Estados del formulario
@@ -153,7 +150,7 @@
       };
 
       // Solo incluir imágenes que hayan cambiado
-      ['logo', 'profileImage', 'coverImage', 'image', 'textImage'].forEach(imageType => {
+      ['logo', 'profileImage', 'coverImage', 'image'].forEach(imageType => {
         if (formData[imageType] !== restaurant?.[imageType]) {
           updateData[imageType] = formData[imageType];
         }
@@ -239,17 +236,7 @@
           on:fileSelected={(e) => handleImageUpload('image', e)}
           on:remove={() => handleImageRemove('image')}
         />
-        <CompactImageCard
-  label="Imagen con Texto"
-  currentImage={formData.textImage}
-  maxSize={3}
-  width={96}
-  height={96}
-  uploading={uploading.textImage}
-  error={error}
-  on:fileSelected={(e) => handleImageUpload('textImage', e)}
-  on:remove={() => handleImageRemove('textImage')}
-/>
+
         <CompactImageCard
         label="Imagen de Portada"
         currentImage={formData.coverImage}
