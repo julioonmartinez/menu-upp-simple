@@ -35,9 +35,9 @@
   }
   .form-section {
     padding: var(--spacing-2xl);
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--bg-accent);
+    /* background: var(--bg-tertiary); */
+    /* border-radius: var(--radius-xl); */
+    /* border: 1px solid var(--bg-accent); */
     margin-bottom: var(--spacing-2xl);
   }
   .section-title {
