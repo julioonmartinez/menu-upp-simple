@@ -79,10 +79,13 @@
           </div>
           <!-- Lista de beneficios mejorada -->
           <ul class="list-disc improved-benefits-list pl-2xl text-base mb-md opacity-90">
+            <li><i class="fa-solid fa-book"></i>Menú digital ilimitado</li>
+            <li><i class="fa-solid fa-users"></i> Nosotros crearemos tu menú digital</li>
+            <li><i class="fa-solid fa-utensils"></i> Platillo por platillo</li>
             <li><i class="fas fa-sync-alt text-success mr-xs"></i> Actualizaciones ilimitadas</li>
             <li><i class="fas fa-globe text-accent mr-xs"></i> Subdominio gratis</li>
             <li><i class="fas fa-link text-primary mr-xs"></i> O conecta tu propio dominio</li>
-            <li><i class="fas fa-headset text-secondary mr-xs"></i> Asistencia personalizada 24h</li>
+            <li><i class="fas fa-headset mr-xs"></i> Asistencia personalizada 24h</li>
           </ul>
           <a href="https://wa.me/5215510986418?text=Hola%2C%20quiero%20mi%20men%C3%BA%20digital%20con%20la%20promo%20de%20MenuUpp" target="_blank" rel="noopener" class="btn btn-inverse btn-lg btn-rounded flex items-center gap-sm shadow-md hover:scale-105 transition-bounce" style="background: #25D366; color: #fff;">
             <i class="fab fa-whatsapp text-2xl"></i>
