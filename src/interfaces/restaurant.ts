@@ -1,6 +1,7 @@
+// src/interfaces/restaurant.ts
+
 import type { Dish } from "./dish";
 
-// src/interfaces/restaurant.ts
 export interface ImageData {
   url: string;
   public_id?: string;
@@ -29,7 +30,7 @@ export interface Restaurant {
   username?: string; // Slug único para la URL
   description?: string;
   isPremium?: boolean;
-  
+
   // Contacto y ubicación
   address?: string;
   phone?: string;
@@ -39,7 +40,7 @@ export interface Restaurant {
     latitude?: number;
     longitude?: number;
   };
-  
+
   // Horarios
   schedule?: string;
   businessHours?: {
@@ -51,44 +52,49 @@ export interface Restaurant {
     saturday?: { open?: string; close?: string; closed?: boolean };
     sunday?: { open?: string; close?: string; closed?: boolean };
   };
-  
+
   // Identidad visual
   logo?: string;
-  imageProfile?: string;
-  imageCover?: string;
+  logo_data?: ImageData;
+  profileImage?: string;
+  profileImage_data?: ImageData;
+  coverImage?: string;
+  coverImage_data?: ImageData;
   image?: string;
+  image_data?: ImageData;
+  textImage?: string;
+  textImage_data?: ImageData;
   primaryColor?: string;
   secondaryColor?: string;
+  backgroundColor?: string;
   textColor?: string;
   fontFamily?: string;
-  imageText?: string;
-  textImage?:ImageData;
-  imageText_data?: ImageData;
-  qrCode_data?:ImageData;
-  
+  qrCode?: string;
+  qrCode_data?: ImageData;
+
   // Redes sociales
   socialLinks?: SocialLinks;
-  
+
   // Características
   features?: string[];
   cuisineType?: string[];
   paymentMethods?: string[];
   priceRange?: "low" | "medium" | "high" | "premium";
-  
+
   // Configuraciones técnicas
-  qrCode?: string;
   customDomain?: string;
   showRatings?: boolean;
   allowReviews?: boolean;
   allowOrders?: boolean;
   heroSlides?: HeroSlide[];
+
   // Meta-información
   ownerId?: string;
   active?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   planType?: "free" | "basic" | "premium" | "enterprise";
-  
+
   // Analíticas
   analytics?: {
     visitsCount?: number;
@@ -105,16 +111,16 @@ export interface HeroSlide {
   title: string;
   subtitle: string;
   alt?: string;
-  position: number; // Agregado: posición del slide en el carousel (0-4)
+  position: number; // posición del slide en el carousel (0-4)
   image_data?: ImageData;
 }
 
 interface DishWithUserState extends Dish {
-    userFav?: boolean;
-    userRating?: number;
+  userFav?: boolean;
+  userRating?: number;
 }
 
 interface RestaurantWithUserState extends Restaurant {
-    userFav?: boolean;
-    userRating?: number;
+  userFav?: boolean;
+  userRating?: number;
 }

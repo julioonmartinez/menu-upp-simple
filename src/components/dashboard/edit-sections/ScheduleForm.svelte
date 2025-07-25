@@ -68,6 +68,7 @@
       if (result.success) {
         success = 'Horarios actualizados correctamente';
         dispatch('update');
+        dispatch('close');
         
         // Limpiar mensaje de éxito después de 3 segundos
         setTimeout(() => {
@@ -107,39 +108,26 @@
   function setPresetSchedule(preset) {
     const presets = {
       'business': {
-        hours: { open: '09:00', close: '18:00', closed: false },
-        weekendClosed: true
-      },
-      'restaurant': {
-        hours: { open: '12:00', close: '22:00', closed: false },
-        weekendClosed: false
-      },
-      'cafe': {
-        hours: { open: '07:00', close: '19:00', closed: false },
-        weekendClosed: false
-      },
-      '24h': {
-        hours: { open: '00:00', close: '23:59', closed: false },
-        weekendClosed: false
-      }
-    };
+      description: 'Lunes a Viernes de 9:00 a 18:00. Domingo cerrado.'
+    },
+    'restaurant': {
+      description: 'Todos los días de 12:00 a 22:00.'
+    },
+    'cafe': {
+      description: 'Todos los días de 7:00 a 19:00.'
+    },
+    '24h': {
+      description: 'Abierto las 24 horas, todos los días.'
+    }
+  };
 
-    const selectedPreset = presets[preset];
-    if (!selectedPreset) return;
+  const selectedPreset = presets[preset];
+  if (!selectedPreset) return;
 
-    daysOfWeek.forEach(day => {
-      const isSunday = day.key === 'sunday';
-      
-      formData.businessHours[day.key] = {
-        open: selectedPreset.hours.open,
-        close: selectedPreset.hours.close,
-        closed: selectedPreset.weekendClosed && isSunday
-      };
-    });
-
-    // Forzar reactividad
-    formData = { ...formData };
-  }
+  formData.schedule = selectedPreset.description;
+  // Forzar reactividad
+  formData = { ...formData };
+}
 </script>
 
 <div class="p-2xl">
@@ -218,80 +206,9 @@
       </div>
     </div>
 
-    <div class="flex flex-col gap-lg">
-      <h3 class="text-xl font-medium text-primary">
-        <i class="fas fa-calendar-week text-accent mr-sm"></i>
-        Horarios por día
-      </h3>
+    <!-- Elimino la sección de horarios por día -->
 
-      {#each daysOfWeek as day}
-        <div class="card-compact">
-          <div class="flex items-center justify-between mb-lg">
-            <div class="flex items-center gap-md">
-              <i class="{day.icon} text-xl text-accent"></i>
-              <h4 class="font-medium text-primary">{day.label}</h4>
-            </div>
-            
-            <div class="flex items-center gap-sm">
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  bind:checked={formData.businessHours[day.key].closed}
-                  class="mr-sm"
-                />
-                <span class="text-sm text-muted">Cerrado</span>
-              </label>
-              
-              <button
-                type="button"
-                on:click={() => copyToAllDays(day.key)}
-                class="btn btn-ghost btn-sm"
-                title="Copiar este horario a todos los días"
-              >
-                <i class="fas fa-copy mr-xs"></i>
-                Copiar a todos
-              </button>
-            </div>
-          </div>
-
-          {#if !formData.businessHours[day.key].closed}
-            <div class="grid grid-cols-2 gap-lg">
-              <div>
-                <label for="open-{day.key}" class="block text-sm font-medium text-secondary mb-xs">
-                  <i class="fas fa-door-open mr-xs text-success"></i>
-                  Hora de apertura
-                </label>
-                <input
-                  id="open-{day.key}"
-                  type="time"
-                  bind:value={formData.businessHours[day.key].open}
-                  class="input"
-                />
-              </div>
-              
-              <div>
-                <label for="close-{day.key}" class="block text-sm font-medium text-secondary mb-xs">
-                  <i class="fas fa-door-closed mr-xs text-error"></i>
-                  Hora de cierre
-                </label>
-                <input
-                  id="close-{day.key}"
-                  type="time"
-                  bind:value={formData.businessHours[day.key].close}
-                  class="input"
-                />
-              </div>
-            </div>
-          {:else}
-            <div class="text-center py-lg text-muted bg-gray-light rounded">
-              <i class="fas fa-lock text-xl mb-sm"></i>
-              <p>Cerrado este día</p>
-            </div>
-          {/if}
-        </div>
-      {/each}
-    </div>
-
+    <!-- Elimino la vista previa de horarios por día, dejo solo la descripción si existe -->
     <div class="card-compact bg-info-bg border border-info">
       <h4 class="font-medium text-info mb-sm">
         <i class="fas fa-eye mr-sm"></i>
@@ -301,20 +218,6 @@
         {#if formData.schedule.trim()}
           <p class="italic">"{formData.schedule}"</p>
         {/if}
-        {#each daysOfWeek as day}
-          <div class="flex justify-between">
-            <span class="font-medium">{day.label}:</span>
-            <span>
-              {#if formData.businessHours[day.key].closed}
-                <i class="fas fa-lock mr-xs"></i>
-                Cerrado
-              {:else}
-                <i class="fas fa-clock mr-xs"></i>
-                {formData.businessHours[day.key].open} - {formData.businessHours[day.key].close}
-              {/if}
-            </span>
-          </div>
-        {/each}
       </div>
     </div>
 

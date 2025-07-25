@@ -82,7 +82,6 @@
             <li><i class="fas fa-sync-alt text-success mr-xs"></i> Actualizaciones ilimitadas</li>
             <li><i class="fas fa-globe text-accent mr-xs"></i> Subdominio gratis</li>
             <li><i class="fas fa-link text-primary mr-xs"></i> O conecta tu propio dominio</li>
-            <li><i class="fab fa-whatsapp text-success mr-xs"></i> Próximamente: pedidos por WhatsApp</li>
             <li><i class="fas fa-headset text-secondary mr-xs"></i> Asistencia personalizada 24h</li>
           </ul>
           <a href="https://wa.me/5215510986418?text=Hola%2C%20quiero%20mi%20men%C3%BA%20digital%20con%20la%20promo%20de%20MenuUpp" target="_blank" rel="noopener" class="btn btn-inverse btn-lg btn-rounded flex items-center gap-sm shadow-md hover:scale-105 transition-bounce" style="background: #25D366; color: #fff;">
@@ -104,16 +103,23 @@
             <span class="uppercase font-bold tracking-wider text-base text-primary">Plan Pro: Expande tu Negocio</span>
           </div>
           <h2 class="text-xl font-extrabold leading-tight mb-xs text-primary">Crea más de 5 restaurantes y accede a beneficios exclusivos</h2>
-          <ul class="pro-benefits-list pl-2xl text-base mb-md opacity-90">
-            <li><i class="fas fa-store-alt text-primary mr-xs"></i> Crea más de 5 restaurantes</li>
-            <li><i class="fab fa-whatsapp text-success mr-xs"></i> Pedidos por WhatsApp ilimitados</li>
-            <li><i class="fas fa-headset text-secondary mr-xs"></i> Soporte prioritario 24/7</li>
-            <li><i class="fas fa-chart-line text-accent mr-xs"></i> <span class="font-bold text-accent">Nuevo:</span> Estadísticas de visitas y pedidos</li>
-          </ul>
-          <div class="flex items-baseline gap-xs mb-md">
-            <span class="text-3xl font-black text-primary">$199</span>
-            <span class="text-base font-semibold text-success">MXN/mes</span>
+          <!-- Sección de precio mejorada -->
+          <div class="planpro-price-wrapper">
+            <span class="planpro-badge">PRO</span>
+            <div class="planpro-price-main">
+              <span class="planpro-currency">$</span>
+              <span class="planpro-amount">199</span>
+              <span class="planpro-period">MXN/mes</span>
+            </div>
           </div>
+          
+          <ul class="pro-benefits-list pl-2xl text-base mb-md opacity-90">
+            <li><i class="fas fa-store-alt text-primary mr-xs"></i> Crea has 30 restaurantes</li>
+            <li><i class="fab fa-whatsapp text-success mr-xs"></i>Cada restaurante tiene su propio dominio</li>
+            <li><i class="fas fa-headset text-secondary mr-xs"></i> Soporte prioritario 24/7</li>
+            <li><i class="fas fa-chart-line text-accent mr-xs"></i> <span class="font-bold text-accent">Nuevo:</span> Estadísticas de visitas</li>
+          </ul>
+          
           <div class="planpro-btn-wrapper" style="margin-top:auto;">
             <a href="https://wa.me/5215510986418?text=Hola%2C%20quiero%20el%20Plan%20Pro%20de%20MenuUpp" target="_blank" rel="noopener" class="btn btn-primary btn-lg btn-rounded w-full flex items-center gap-sm shadow-md w-fit">
               <i class="fab fa-whatsapp text-2xl"></i>
@@ -680,5 +686,63 @@
     justify-content: center;
     width: 100%;
     padding-top: 0.5rem;
+  }
+
+  /* --- Estilos modernos para la sección de precio Plan Pro --- */
+  .planpro-price-wrapper {
+    position: relative;
+    background: rgba(255,255,255,0.18); /* Igual que .price-section de promo-card */
+    border-radius: 1.2em;
+    box-shadow: 0 4px 24px rgba(16,185,129,0.10);
+    padding: 1.2em 1.5em 1em 1.5em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5em;
+    margin-top: 0.5em;
+    min-width: 180px;
+    max-width: 260px;
+    color: var(--text-inverse);
+  }
+  .planpro-badge {
+    position: absolute;
+    top: -0.9em;
+    right: 1.2em;
+    background: var(--secondary-color);
+    color: #fff;
+    font-size: 0.85em;
+    font-weight: 700;
+    padding: 0.25em 0.9em;
+    border-radius: 1em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    letter-spacing: 0.04em;
+  }
+  .planpro-price-main {
+    display: flex;
+    align-items: baseline;
+    gap: 0.2em;
+  }
+  .planpro-currency {
+    font-size: 1.2em;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-right: 0.1em;
+  }
+  .planpro-amount {
+    font-size: 2.8em;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin-right: 0.15em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+  .planpro-period {
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--success);
+    margin-left: 0.2em;
+    opacity: 0.95;
   }
 </style>

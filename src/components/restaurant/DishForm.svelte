@@ -51,7 +51,6 @@
   $: isEditing = !!dish;
   $: isValid = Object.keys(errors).length === 0 && 
               formData.name.trim().length > 0 && 
-              formData.description.trim().length > 0 &&
               formData.price > 0 &&
               formData.categoryId.length > 0;
   
@@ -64,7 +63,6 @@
      formData.discount !== (dish.discount || 0) ||
      !!imageFile) :
     (formData.name.trim().length > 0 || 
-     formData.description.trim().length > 0 || 
      formData.price > 0 ||
      !!imageFile);
 
@@ -96,9 +94,7 @@
         break;
 
       case 'description':
-        if (!value.trim()) {
-          errors.description = 'La descripción es requerida';
-        } else if (value.trim().length < 10) {
+        if (value.trim().length > 0 && value.trim().length < 10) {
           errors.description = 'La descripción debe tener al menos 10 caracteres';
         } else if (value.trim().length > 1000) {
           errors.description = 'La descripción no puede exceder 1000 caracteres';
@@ -404,7 +400,7 @@
         <div class="form-field">
           <label for="dish-description" class="form-label">
             Descripción
-            <span class="form-required">*</span>
+            <span class="form-optional">(opcional)</span>
           </label>
           <textarea
             id="dish-description"
@@ -415,14 +411,13 @@
             on:blur={() => touched.description = true}
             disabled={isSubmitting}
             rows="4"
-            required
             use:autoResize
           ></textarea>
           {#if getFieldError('description')}
             <p class="form-field-error">{getFieldError('description')}</p>
           {/if}
           <p class="form-field-hint">
-            Mínimo 10 caracteres. Incluye ingredientes principales y características especiales.
+            Opcional. Si se ingresa, mínimo 10 caracteres. Incluye ingredientes principales y características especiales.
           </p>
         </div>
 

@@ -41,6 +41,10 @@ const capitalizarPrimeraLetra = (str: string) => {
 
 <script>
   class CategoryNavigation {
+    navElement: HTMLElement | null;
+    buttons: NodeListOf<HTMLButtonElement>;
+    indicator: HTMLElement | null;
+    currentCategory: { id: string; name: string; index: number } | null;
     constructor() {
       this.navElement = document.querySelector('.category-nav');
       this.buttons = document.querySelectorAll('.category-button');
@@ -52,9 +56,9 @@ const capitalizarPrimeraLetra = (str: string) => {
     
     init() {
       // Configurar eventos de clic
-      this.buttons.forEach(button => {
-        button.addEventListener('click', (e) => {
-          this.handleCategoryClick(e.target);
+      this.buttons.forEach((button: HTMLButtonElement) => {
+        button.addEventListener('click', (e: Event) => {
+          this.handleCategoryClick(e.target as HTMLButtonElement);
         });
       });
       
@@ -67,13 +71,13 @@ const capitalizarPrimeraLetra = (str: string) => {
       this.updateIndicator();
     }
     
-    handleCategoryClick(button) {
+    handleCategoryClick(button: HTMLButtonElement) {
       this.setActiveCategory(button, true);
     }
     
-    setActiveCategory(button, shouldDispatch = true) {
+    setActiveCategory(button: HTMLButtonElement, shouldDispatch: boolean = true) {
       // Remover active de todos los botones
-      this.buttons.forEach(btn => {
+      this.buttons.forEach((btn: HTMLButtonElement) => {
         btn.classList.remove('active');
         btn.setAttribute('aria-selected', 'false');
       });
@@ -83,9 +87,9 @@ const capitalizarPrimeraLetra = (str: string) => {
       button.setAttribute('aria-selected', 'true');
       
       // Obtener datos de la categoría
-      const categoryId = button.getAttribute('data-category-id');
-      const categoryName = button.getAttribute('data-category-name');
-      const categoryIndex = parseInt(button.getAttribute('data-index'));
+      const categoryId = button.getAttribute('data-category-id') ?? '';
+      const categoryName = button.getAttribute('data-category-name') ?? '';
+      const categoryIndex = parseInt(button.getAttribute('data-index') ?? '0');
       
       this.currentCategory = { id: categoryId, name: categoryName, index: categoryIndex };
       
@@ -105,12 +109,12 @@ const capitalizarPrimeraLetra = (str: string) => {
       }
     }
     
-    dispatchCategoryChange(categoryId, categoryName, categoryIndex) {
+    dispatchCategoryChange(categoryId: string, categoryName: string, categoryIndex: number) {
       // Crear evento personalizado
       const event = new CustomEvent('categoryChanged', {
         detail: {
-          categoryId,
-          categoryName,
+          categoryId: categoryId ?? '',
+          categoryName: categoryName ?? '',
           categoryIndex,
           timestamp: Date.now()
         },
@@ -120,12 +124,11 @@ const capitalizarPrimeraLetra = (str: string) => {
       // Disparar el evento
       document.dispatchEvent(event);
       
-      console.log('📂 Category changed:', { categoryId, categoryName, categoryIndex });
     }
     
     updateIndicator() {
-  const activeButton = document.querySelector('.category-button.active');
-  const categoryList = document.querySelector('.category-list');
+  const activeButton = document.querySelector('.category-button.active') as HTMLElement;
+  const categoryList = document.querySelector('.category-list') as HTMLElement;
   
   if (activeButton && this.indicator && categoryList) {
     const buttonRect = activeButton.getBoundingClientRect();
@@ -143,8 +146,8 @@ const capitalizarPrimeraLetra = (str: string) => {
 }
     
     // Método público para cambiar categoría programáticamente
-    selectCategory(categoryId) {
-      const button = document.querySelector(`[data-category-id="${categoryId}"]`);
+    selectCategory(categoryId: string) {
+      const button = document.querySelector(`[data-category-id="${categoryId}"]`) as HTMLButtonElement;
       if (button) {
         this.setActiveCategory(button, true);
       }
@@ -162,7 +165,7 @@ const capitalizarPrimeraLetra = (str: string) => {
   });
   
   // Exponer globalmente para debugging
-  window.CategoryNavigation = CategoryNavigation;
+  (window as any).CategoryNavigation = CategoryNavigation;
 </script>
 
 <style>

@@ -46,6 +46,17 @@
 
   $: showImage = previewUrl || currentImage;
 
+  function onUploaderClick(e) {
+    if (!showImage && !uploading) {
+      fileInput.click();
+    }
+  }
+
+  function onRemoveBtnClick(e) {
+    e.stopPropagation();
+    removeImage();
+  }
+
   onDestroy(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   });
@@ -122,19 +133,20 @@ input[type="file"] {
 <div class="mini-uploader {dragActive ? 'drag' : ''}"
      on:dragover={onDragOver}
      on:dragleave={onDragLeave}
-     on:drop={onDrop}>
+     on:drop={onDrop}
+     on:click={onUploaderClick}>
   <div class="label">{label}</div>
   <div class="mini-thumb">
     {#if showImage}
       <img src={showImage} alt="preview" />
-      <button class="remove-btn" type="button" on:click={removeImage} title="Eliminar">×</button>
+      <button class="remove-btn" type="button" on:click={onRemoveBtnClick} title="Eliminar">×</button>
     {:else}
       <span style="color:var(--text-light);font-size:1.5em;">+</span>
     {/if}
   </div>
   <input type="file" accept="image/*" on:change={onInput} bind:this={fileInput} />
   {#if !showImage}
-    <button class="upload-btn" type="button" on:click={() => fileInput.click()} disabled={uploading}>
+    <button class="upload-btn" type="button" on:click={(e) => { e.stopPropagation(); fileInput.click(); }} disabled={uploading}>
       {uploading ? 'Cargando...' : 'Subir imagen'}
     </button>
   {/if}

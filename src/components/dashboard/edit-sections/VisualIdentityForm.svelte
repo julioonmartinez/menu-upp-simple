@@ -1,8 +1,9 @@
 <!-- src/components/dashboard/edit-sections/VisualIdentityForm.svelte -->
-<script>
+<script  >
   import { createEventDispatcher } from 'svelte';
   import { restaurantStore } from '../../../stores/restaurantStore';
   import ImageUploader from '../../ui/ImageUploader.svelte';
+  import CompactImageCard from '../../ui/CompactImageCard.svelte';
   import ColorPicker from '../../ui/ColorPicker.svelte';
   import LoadingButton from '../../ui/LoadingButton.svelte';
   import ErrorMessage from '../../ui/ErrorMessage.svelte';
@@ -18,15 +19,34 @@
   // Form data reactivo
   let formData = {
     logo: '',
-    imageProfile: '',
-    imageCover: '',
+    profileImage: '',   // antes imageProfile
+    coverImage: '',     // antes imageCover
     image: '',
-    imageText: '',
+    textImage: '',      // antes imageText
     primaryColor: '#3b82f6',
     secondaryColor: '#10b981',
     backgroundColor: '#ffffff',
+    textColor: '#222222',
     fontFamily: 'Inter'
   };
+
+  let lastRestaurantId = null;
+  $: if (restaurant && restaurant.id !== lastRestaurantId) {
+    formData = {
+      logo: restaurant.logo || '',
+      profileImage: restaurant.profileImage || '',
+      coverImage: restaurant.coverImage || '',
+      image: restaurant.image || '',
+      textImage: restaurant.textImage || '',
+      primaryColor: restaurant.primaryColor || '#3b82f6',
+      secondaryColor: restaurant.secondaryColor || '#10b981',
+      backgroundColor: restaurant.backgroundColor || '#ffffff',
+      textColor: restaurant.textColor || '#222222',
+      fontFamily: restaurant.fontFamily || 'Inter'
+    };
+    lastRestaurantId = restaurant.id;
+  }
+
 
   // Estados de upload individuales
   let uploading = {
@@ -50,19 +70,20 @@
   // Fuentes disponibles (importadas desde fontLoader.ts)
 
   // Actualizar formData cuando cambie restaurant
-  $: if (restaurant) {
-    formData = {
-      logo: restaurant.logo || '',
-      imageProfile: restaurant.imageProfile || '',
-      imageCover: restaurant.imageCover || '',
-      image: restaurant.image || '',
-      imageText: restaurant.imageText || '',
-      primaryColor: restaurant.primaryColor || '#3b82f6',
-      secondaryColor: restaurant.secondaryColor || '#10b981',
-      backgroundColor: restaurant.backgroundColor || '#ffffff',
-      fontFamily: restaurant.fontFamily || 'Inter'
-    };
-  }
+  // $: if (restaurant) {
+  //   formData = {
+  //     logo: restaurant.logo || '',
+  //     profileImage: restaurant.profileImage || '',
+  //     coverImage: restaurant.coverImage || '',
+  //     image: restaurant.image || '',
+  //     textImage: restaurant.textImage || '',
+  //     primaryColor: restaurant.primaryColor || '#3b82f6',
+  //     secondaryColor: restaurant.secondaryColor || '#10b981',
+  //     backgroundColor: restaurant.backgroundColor || '#ffffff',
+  //     textColor: restaurant.textColor || '#222222',
+  //     fontFamily: restaurant.fontFamily || 'Inter'
+  //   };
+  // }
 
   async function handleImageUpload(imageType, event) {
     const { file } = event.detail;
@@ -90,15 +111,32 @@
     }
   }
 
-  function handleImageRemove(imageType) {
-    formData[imageType] = '';
-    // Aquí podrías hacer una llamada al backend para eliminar la imagen del servidor
+  async function handleImageRemove(imageType) {
+    if (!restaurantId) return;
+    uploading[imageType] = true;
+    error = null;
+    try {
+      const result = await restaurantStore.deleteRestaurantImage(restaurantId, imageType);
+      if (result.success) {
+        formData[imageType] = '';
+        // Opcional: mostrar mensaje de éxito
+      } else {
+        error = result.error || `Error eliminando ${imageType}`;
+      }
+    } catch (err) {
+      error = err.message || `Error desconocido eliminando ${imageType}`;
+    } finally {
+      uploading[imageType] = false;
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    
-    if (isSubmitting || isUploadingAny) return;
+    console.log('handleSubmit ejecutado');
+    if (isSubmitting || isUploadingAny) {
+      console.log('Bloqueado por isSubmitting o isUploadingAny', { isSubmitting, isUploadingAny });
+      return;
+    }
 
     isSubmitting = true;
     error = null;
@@ -109,31 +147,36 @@
         primaryColor: formData.primaryColor,
         secondaryColor: formData.secondaryColor,
         backgroundColor: formData.backgroundColor,
+        textColor: formData.textColor,
         fontFamily: formData.fontFamily
       };
 
       // Solo incluir imágenes que hayan cambiado
-      ['logo', 'imageProfile', 'imageCover', 'image', 'imageText'].forEach(imageType => {
+      ['logo', 'profileImage', 'coverImage', 'image', 'textImage'].forEach(imageType => {
         if (formData[imageType] !== restaurant?.[imageType]) {
           updateData[imageType] = formData[imageType];
         }
       });
 
+      console.log('Enviando updateData:', updateData);
       const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
+      console.log('Resultado del update:', result);
 
       if (result.success) {
         success = 'Identidad visual actualizada correctamente';
         dispatch('update');
-        
-        // Cerrar modal después de 2 segundos
+        // Refresca el restaurante para ver los cambios
+        await restaurantStore.loadRestaurant(restaurantId, true);
         setTimeout(() => {
           dispatch('close');
         }, 2000);
       } else {
         error = result.error || 'Error actualizando la identidad visual';
+        console.error('Error en update:', error);
       }
     } catch (err) {
       error = err.message || 'Error desconocido';
+      console.error('Error en catch:', err);
     } finally {
       isSubmitting = false;
     }
@@ -160,79 +203,61 @@
       <h3 class="section-title">Imágenes del Restaurante</h3>
       
       <div class="images-grid">
-        <!-- Logo -->
-        <div class="image-field">
-          <ImageUploader
-            label="Logo"
-            currentImage={formData.logo}
-            maxSize={2}
-            width={200}
-            height={200}
-            aspectRatio="1:1"
-            help="Logo cuadrado recomendado"
-            uploading={uploading.logo}
-            on:fileSelected={(e) => handleImageUpload('logo', e)}
-            on:remove={() => handleImageRemove('logo')}
-          />
-        </div>
-
-        <!-- Imagen de perfil -->
-        <div class="image-field">
-          <ImageUploader
-            label="Imagen de Perfil"
-            currentImage={formData.imageProfile}
-            maxSize={3}
-            width={400}
-            height={400}
-            aspectRatio="1:1"
-            help="Imagen principal del restaurante"
-            uploading={uploading.imageProfile}
-            on:fileSelected={(e) => handleImageUpload('imageProfile', e)}
-            on:remove={() => handleImageRemove('imageProfile')}
-          />
-        </div>
-
-        <!-- Imagen de portada -->
-        <div class="image-field full-width">
-          <ImageUploader
-            label="Imagen de Portada"
-            currentImage={formData.imageCover}
-            maxSize={5}
-            width={1200}
-            height={400}
-            aspectRatio="3:1"
-            help="Imagen panorámica para la portada"
-            uploading={uploading.imageCover}
-            on:fileSelected={(e) => handleImageUpload('imageCover', e)}
-            on:remove={() => handleImageRemove('imageCover')}
-          />
-        </div>
-
-        <!-- Imagen general -->
-        <div class="image-field">
-          <ImageUploader
-            label="Imagen General"
-            currentImage={formData.image}
-            maxSize={3}
-            help="Imagen adicional del restaurante"
-            uploading={uploading.image}
-            on:fileSelected={(e) => handleImageUpload('image', e)}
-            on:remove={() => handleImageRemove('image')}
-          />
-        </div>
-
-        <!-- Imagen con texto -->
-        <div class="image-field">
-          <ImageUploader
-            label="Imagen con Texto"
-            currentImage={formData.imageText}
-            maxSize={3}
-            help="Imagen para combinar con texto"
-            uploading={uploading.imageText}
-            on:fileSelected={(e) => handleImageUpload('imageText', e)}
-            on:remove={() => handleImageRemove('imageText')}
-          />
-        </div>
+        <CompactImageCard
+          label="Logo"
+          currentImage={formData.logo}
+          maxSize={2}
+          width={96}
+          height={96}
+          uploading={uploading.logo}
+          error={error}
+          on:fileSelected={(e) => handleImageUpload('logo', e)}
+          on:remove={() => handleImageRemove('logo')}
+        />
+        <CompactImageCard
+        label="Imagen de Perfil"
+        currentImage={formData.profileImage}
+        maxSize={3}
+        width={96}
+        height={96}
+        uploading={uploading.profileImage}
+        error={error}
+        on:fileSelected={(e) => handleImageUpload('profileImage', e)}
+        on:remove={() => handleImageRemove('profileImage')}
+      />
+        <CompactImageCard
+          label="Imagen General"
+          currentImage={formData.image}
+          maxSize={3}
+          width={96}
+          height={96}
+          uploading={uploading.image}
+          error={error}
+          on:fileSelected={(e) => handleImageUpload('image', e)}
+          on:remove={() => handleImageRemove('image')}
+        />
+        <CompactImageCard
+  label="Imagen con Texto"
+  currentImage={formData.textImage}
+  maxSize={3}
+  width={96}
+  height={96}
+  uploading={uploading.textImage}
+  error={error}
+  on:fileSelected={(e) => handleImageUpload('textImage', e)}
+  on:remove={() => handleImageRemove('textImage')}
+/>
+        <CompactImageCard
+        label="Imagen de Portada"
+        currentImage={formData.coverImage}
+        maxSize={5}
+        width={96}
+        height={96}
+        uploading={uploading.coverImage}
+        error={error}
+        on:fileSelected={(e) => handleImageUpload('coverImage', e)}
+        on:remove={() => handleImageRemove('coverImage')}
+      />
       </div>
     </div>
 
@@ -262,6 +287,14 @@
             label="Color de Fondo"
             bind:value={formData.backgroundColor}
             help="Color de fondo de la página"
+          />
+        </div>
+
+        <div class="color-field">
+          <ColorPicker
+            label="Color de Texto"
+            bind:value={formData.textColor}
+            help="Color principal del texto en la página"
           />
         </div>
       </div>
@@ -375,17 +408,26 @@
   /* Grid de imágenes */
   .images-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-2xl);
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xl);
+    align-items: start;
   }
-
-  @media (min-width: 768px) {
+  @media (min-width: 640px) {
     .images-grid {
       grid-template-columns: repeat(2, 1fr);
     }
-
-    .image-field.full-width {
-      grid-column: 1 / -1;
+  }
+  @media (min-width: 1024px) {
+    .images-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .cover-image {
+    grid-column: span 2;
+  }
+  @media (min-width: 1024px) {
+    .cover-image {
+      grid-column: span 2;
     }
   }
 

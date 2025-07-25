@@ -16,7 +16,7 @@ import type { LinkTree } from '../../interfaces';
 
 // Obtener el username de los parámetros de la URL
 const { username } = Astro.params;
-console.log('🔍 Username:', username);
+
 if (!username) {
   return Astro.redirect('/404');
 }
@@ -45,12 +45,7 @@ try {
     return Astro.redirect('/404');
   }
 
-  console.log('🏪 Restaurant Info:', restaurantInfo);
-  console.log('📂 Categories count:', categoriesInfo?.length || 0);
-  console.log('🍽️ Total dishes count:', dishesInfo?.length || 0);
-  
 } catch (error) {
-  console.error('❌ Error fetching restaurant data by username:', error);
   errorMessage = error instanceof Error ? error.message : 'Restaurant not found';
   
   // Si no se encuentra el restaurante, redirigir a 404
@@ -62,7 +57,7 @@ try {
 // Configurar slides del hero con lazy loading
 const slides = restaurantInfo?.heroSlides || [
   {
-    imageUrl: restaurantInfo?.imageCover || '/images/restaurants/default/cover.webp',
+    imageUrl: restaurantInfo?.coverImage || '/images/restaurants/default/cover.webp',
     title: `Bienvenidos a ${restaurantInfo?.name || 'nuestro restaurante'}`,
     subtitle: restaurantInfo?.description || 'Disfruta de la mejor comida tradicional',
     alt: `Imagen principal de ${restaurantInfo?.name || 'nuestro restaurante'}`
@@ -79,7 +74,7 @@ const pageDescription = restaurantInfo
   : 'Menú digital del restaurante';
 
 const canonicalURL = new URL(`/${username}/menu`, Astro.site);
-const ogImage = restaurantInfo?.imageCover || restaurantInfo?.imageProfile || '/default-menu-og.jpg';
+const ogImage = restaurantInfo?.coverImage || restaurantInfo?.profileImage || '/default-menu-og.jpg';
 
 // Verificar que tenemos los datos necesarios
 const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length > 0;
@@ -87,7 +82,7 @@ const hasValidData = restaurantInfo && categoriesInfo && categoriesInfo.length >
 // Colores del tema
 const primaryColor = restaurantInfo?.primaryColor || '#FF4500';
 const secondaryColor = restaurantInfo?.secondaryColor || '#FF6B35';
-const backgroundColor = linksTreeInfo?.backgroundColor || '#FFFFFF';
+const backgroundColor = restaurantInfo?.backgroundColor || linksTreeInfo?.backgroundColor || '#FFFFFF';
 
 // Schema markup específico para menú
 const menuStructuredData = hasValidData ? {
@@ -266,7 +261,7 @@ const menuStructuredData = hasValidData ? {
     id="menu-footer"
     style={`
       --primary-color: ${primaryColor}; 
-      --text-color: ${linksTreeInfo?.textColor || '#333'}; 
+      --text-color: ${restaurantInfo?.textColor || linksTreeInfo?.textColor || '#333'}; 
       opacity: 0; 
       transition: opacity 0.3s ease;
     `}
@@ -841,30 +836,25 @@ const menuStructuredData = hasValidData ? {
     const hasDishes = document.querySelector('#menu-section') !== null;
     
     if (!hasCategories || !hasDishes) {
-      console.log('⚠️ Restaurant has no categories or dishes, showing empty state');
       // Trigger transition immediately for empty restaurants
       setTimeout(() => {
         handleMenuTransition();
       }, 1000);
     } else {
       // Si hay categorías y platillos, esperar a que el componente Svelte esté listo
-      console.log('✅ Restaurant has categories and dishes, waiting for Svelte component');
     }
     
-    console.log('🍽️ Menu page loaded successfully with optimizations');
   });
 
       // Sticky navigation mejorado con Intersection Observer
     document.addEventListener('DOMContentLoaded', () => {
       const categoryNav = document.querySelector('.category-nav-wrapper');
       if (!categoryNav) {
-        console.log('⚠️ Category nav not found, skipping sticky behavior');
         return;
       }
       
       const heroSection = document.querySelector('.hero-section');
       if (!heroSection) {
-        console.log('⚠️ Hero section not found, skipping sticky behavior');
         return;
       }
       
@@ -889,13 +879,13 @@ const menuStructuredData = hasValidData ? {
 
   // Error tracking mejorado
   window.addEventListener('error', (event) => {
-    console.error('Menu page error:', {
-      message: event.message,
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
-      error: event.error
-    });
+    // console.error('Menu page error:', {
+    //   message: event.message,
+    //   filename: event.filename,
+    //   lineno: event.lineno,
+    //   colno: event.colno,
+    //   error: event.error
+    // });
   });
 
   // Performance monitoring
@@ -903,7 +893,7 @@ const menuStructuredData = hasValidData ? {
     const observer = new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => {
         if (entry.entryType === 'measure') {
-          console.log(`Performance: ${entry.name}: ${entry.duration}ms`);
+          // console.log(`Performance: ${entry.name}: ${entry.duration}ms`);
         }
       });
     });

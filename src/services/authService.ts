@@ -102,7 +102,6 @@ class AuthService {
         }
       };
     } catch (error) {
-      console.error('Error en login:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido en el login'
@@ -137,7 +136,6 @@ class AuthService {
         data: user
       };
     } catch (error) {
-      console.error('Error en registro:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido en el registro'
@@ -192,7 +190,6 @@ class AuthService {
         data: user
       };
     } catch (error) {
-      console.error('Error obteniendo usuario actual:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido obteniendo usuario'
@@ -236,7 +233,6 @@ class AuthService {
         data: updatedUser
       };
     } catch (error) {
-      console.error('Error actualizando usuario:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido actualizando usuario'
@@ -265,15 +261,12 @@ class AuthService {
    * Verifica si el usuario está autenticado
    */
   isAuthenticated(): boolean {
-    console.log('🔧 AuthService: isAuthenticated called');
     if (!this.isBrowser()) {
-      console.log('🔧 AuthService: Not in browser, returning false');
       return false;
     }
     
     const token = this.getTokenFromCookie();
     const isAuth = !!token;
-    console.log('🔧 AuthService: Token found?', !!token, 'Is authenticated?', isAuth);
     return isAuth;
   }
 
@@ -281,28 +274,21 @@ class AuthService {
    * Obtiene el token de las cookies
    */
   getTokenFromCookie(): string | null {
-    console.log('🔧 AuthService: getTokenFromCookie called');
     if (!this.isBrowser()) {
-      console.log('🔧 AuthService: Not in browser, returning null');
       return null;
     }
     
     const cookies = document.cookie.split(';');
-    console.log('🔧 AuthService: All cookies:', cookies);
     
     const authCookie = cookies.find(cookie => 
       cookie.trim().startsWith(`${this.TOKEN_COOKIE_NAME}=`)
     );
     
-    console.log('🔧 AuthService: Auth cookie found?', !!authCookie);
-    
     if (authCookie) {
       const token = authCookie.split('=')[1];
-      console.log('🔧 AuthService: Token extracted:', token ? '***' + token.slice(-4) : 'null');
       return token;
     }
     
-    console.log('🔧 AuthService: No auth cookie found, returning null');
     return null;
   }
 

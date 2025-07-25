@@ -199,7 +199,6 @@
 
   // Cargar datos al montar
   onMount(() => {
-    console.log('🔍 CustomDishModal cargado para:', dish.name);
     loadDishData();
   });
 
@@ -208,8 +207,6 @@
     error = null;
     
     try {
-      console.log('🔄 Cargando datos del platillo:', dish.id);
-      
       const [commentsResult, statsResult] = await Promise.allSettled([
         fetchDishRatings(dish.id!, 1, 10, true),
         fetchDishRatingStats(dish.id!)
@@ -217,9 +214,7 @@
       
       if (commentsResult.status === 'fulfilled') {
         commentsData = commentsResult.value;
-        console.log('✅ Comentarios cargados:', commentsData.comments?.length || 0);
       } else {
-        console.warn('⚠️ No se pudieron cargar comentarios:', commentsResult.reason);
         commentsData = {
           comments: [],
           pagination: {
@@ -239,9 +234,7 @@
       
       if (statsResult.status === 'fulfilled') {
         statsData = statsResult.value;
-        console.log('✅ Estadísticas cargadas:', statsData);
       } else {
-        console.warn('⚠️ No se pudieron cargar estadísticas:', statsResult.reason);
         statsData = {
           averageRating: dish.rating || 0,
           totalRatings: dish.reviewsCount || 0,
@@ -253,7 +246,6 @@
       }
       
     } catch (err) {
-      console.error('❌ Error cargando datos del platillo:', err);
       error = err instanceof Error ? err.message : 'Error cargando datos del platillo';
       
       // Datos de fallback seguros
@@ -433,9 +425,7 @@
           <div class="custom-placeholder-gradient"></div>
           <div class="custom-placeholder-content">
             <div class="custom-placeholder-icon">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L13.09 8.26L22 9L17 14L18.18 22L12 18.5L5.82 22L7 14L2 9L10.91 8.26L12 2Z" fill="currentColor"/>
-              </svg>
+              <i class="fa-solid fa-star fa-4x"></i>
             </div>
             <div class="custom-placeholder-text">
               <div class="custom-placeholder-title">{dish.name}</div>

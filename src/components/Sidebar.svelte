@@ -253,7 +253,7 @@
   </nav>
 
   <!-- Botón moderno para cambio de tema -->
-  <div class="theme-switch-modern" in:fly={{ y: 20, duration: 300, delay: 300 }}>
+  <!-- <div class="theme-switch-modern" in:fly={{ y: 20, duration: 300, delay: 300 }}>
     <button
       class="theme-modern-btn"
       on:click={toggleTheme}
@@ -269,7 +269,7 @@
       </span>
     </button>
     <span class="theme-modern-label">{isDark ? 'Oscuro' : 'Claro'}</span>
-  </div>
+  </div> -->
 
   <!-- Sección de Acciones -->
   <!-- <div class="sidebar-actions" in:fly={{ y: 20, duration: 300, delay: 300 }}>

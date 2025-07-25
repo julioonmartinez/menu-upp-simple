@@ -24,15 +24,12 @@ export async function recordView(resourceType: any, resourceId: any) {
     // Evitar registrar la misma vista múltiples veces en la misma sesión
     const cacheKey = `${resourceType}:${resourceId}`;
     if (viewsCache.has(cacheKey)) {
-      console.log(`Vista ya registrada para ${cacheKey}, omitiendo duplicado`);
       return;
     }
     viewsCache.add(cacheKey);
     
     // Obtener el device ID de forma consistente
     const deviceId = getDeviceId();
-    
-    console.log(`Registrando vista para ${resourceType}:${resourceId} con device ID: ${deviceId}`);
     
     // Datos para enviar
     const analyticsData = {
@@ -54,8 +51,6 @@ export async function recordView(resourceType: any, resourceId: any) {
       
       // Enviar con sendBeacon primero (sin headers personalizados)
       const success = navigator.sendBeacon(url, data);
-      console.log(`Analytics via sendBeacon: ${success ? 'exitoso' : 'fallido'}`);
-      
       // Enviar también con fetch para asegurar que el header X-Device-ID llegue
       fetch(url, {
         method: 'POST',
@@ -65,7 +60,7 @@ export async function recordView(resourceType: any, resourceId: any) {
         },
         body: JSON.stringify(analyticsData),
         keepalive: true
-      }).catch(e => console.error('Error en fetch después de sendBeacon:', e));
+      }).catch(() => {/* Ignoramos errores aquí */});
       
       return;
     }
@@ -85,9 +80,8 @@ export async function recordView(resourceType: any, resourceId: any) {
       throw new Error(`Error HTTP: ${response.status}`);
     }
     
-    console.log(`Analytics enviados via fetch: ${response.ok ? 'exitoso' : 'fallido'}`);
   } catch (error) {
-    console.error('Error registrando vista:', error);
+    // error handling
   }
 }
 
@@ -105,13 +99,11 @@ export async function recordLinkClick(linkId: string) {
     const now = Date.now();
     const lastClick = recentClicks.get(linkId) || 0;
     if (now - lastClick < 500) { // Ignorar clics con menos de 500ms de diferencia
-      console.log(`Clic demasiado rápido para ${linkId}, omitiendo duplicado`);
       return;
     }
     recentClicks.set(linkId, now);
     
     const deviceId = getDeviceId();
-    console.log(`Registrando clic para link:${linkId} con device ID: ${deviceId}`);
     
     // Datos para enviar
     const analyticsData = {
@@ -141,8 +133,6 @@ export async function recordLinkClick(linkId: string) {
       // Hay una limitación en sendBeacon que no permite enviar headers personalizados directamente
       // Enviamos sin headers primero e intentamos con fetch después
       const success = navigator.sendBeacon(url, data);
-      console.log(`Analytics de clic enviados via sendBeacon: ${success ? 'exitoso' : 'fallido'}`);
-      
       // Como sendBeacon no permite headers personalizados, hacemos un segundo intento con fetch
       if (success) {
         // Enviar de nuevo con fetch solo para asegurar que el header X-Device-ID llegue
@@ -172,9 +162,8 @@ export async function recordLinkClick(linkId: string) {
       keepalive: true,
     });
     
-    console.log(`Analytics de clic enviados via fetch: ${response.ok ? 'exitoso' : 'fallido'}`);
   } catch (error) {
-    console.error('Error registrando clic de link:', error);
+    // error handling
   }
 }
 
@@ -186,7 +175,6 @@ export function trackDishInteraction(dishId: string, eventType: string) {
   
   try {
     const deviceId = getDeviceId();
-    console.log(`Registrando ${eventType} para plato:${dishId}`);
     
     // Mapeo de eventos internos a endpoints de backend
     const eventEndpointMap: {[key: string]: string} = {
@@ -222,8 +210,6 @@ export function trackDishInteraction(dishId: string, eventType: string) {
       
       const url = `${API_BASE_URL}/analytics/${endpoint}/${resourceId}`;
       const success = navigator.sendBeacon(url, data);
-      console.log(`Analytics de interacción enviados via sendBeacon: ${success ? 'exitoso' : 'fallido'}`);
-      
       // Enviar de nuevo con fetch para asegurar headers
       fetch(url, {
         method: 'POST',
@@ -248,9 +234,9 @@ export function trackDishInteraction(dishId: string, eventType: string) {
       },
       body: JSON.stringify(analyticsData),
       keepalive: true,
-    }).catch(err => console.error(`Error trackingDishInteraction: ${err}`));
+    }).catch(() => {/* Ignoramos errores aquí */});
   } catch (error) {
-    console.error(`Error rastreando ${eventType} del plato:`, error);
+    // error handling
   }
 }
 
@@ -267,8 +253,6 @@ export function trackCategoryInteraction(categoryId: string) {
  */
 export function initDishViewObserver(selector = '.card-wrapper') {
   if (!isBrowser || typeof IntersectionObserver === 'undefined') return;
-  
-  console.log(`Inicializando observador para ${selector}`);
   
   // Configuración del observador
   const observer = new IntersectionObserver((entries) => {
@@ -297,7 +281,6 @@ export function initDishViewObserver(selector = '.card-wrapper') {
     document.querySelectorAll(selector).forEach(element => {
       observer.observe(element);
     });
-    console.log(`Observando ${document.querySelectorAll(selector).length} elementos`);
   }, 300); // Pequeño retraso para asegurarse de que los elementos estén renderizados
   
   return observer;

@@ -4,68 +4,46 @@ import Button from './Button.astro';
 
 const pricingData = [
   {
-    name: 'Gratuito',
+    name: 'Básico',
     price: 0,
-    discount: 0,
+    period: 'MXN / anual',
     popular: true,
     features: [
       'Menú digital básico',
-      'Hasta 80 platillos',
       'Subida manual de información',
-      'Inclusión de links externos',
-      'Código QR básico',
-      'Sin funcionalidad de tienda',
+      '5 restaurantes',
       'Soporte por email',
+      'Publicidad en la plataforma'
     ]
   },
   {
     name: 'Paquete 1',
     price: 999,
     discount: 30,  // Aplicamos un 30% de descuento
+    period: 'MXN / anual',
     popular: false,
     features: [
+      'Nosotros te ayudamos a crear tu menú',
+      'Subimos tu menú a la plataforma',
       'Modo menú simple',
-      'Hasta 120 platillos',
-      'Fotos y descripciones',
-      'Categorización',
-      'Código QR personalizado',
       'Subdominio incluido',
-      'Opción de dominio personalizado',
-      'Sistema de favoritos y rating'
+      'Opción de dominio personalizado', 
+      'Asistencia personalizada',
+      'Soporte por WhatsApp'
     ]
   },
-  // {
-  //   name: 'Paquete 2',
-  //   price: 2499,
-  //   discount: 20,  // Aplicamos un 20% de descuento
-  //   popular: true,
-  //   features: [
-  //     'Todo lo del Paquete 1 más:',
-  //     'Modo tienda completo',
-  //     'Carrito de compras',
-  //     'Múltiples métodos de pago',
-  //     'Compra programada',
-  //     'Sistema de ofertas y descuentos',
-  //     'Opciones de entrega configurables',
-  //     'Registro y perfil de clientes'
-  //   ]
-  // },
-  //   {
-  //     name: 'Paquete 3',
-  //     price: 3499,
-    
-  //     popular: false,
-  //     features: [
-  //       'Todo lo del Paquete 1 y 2 más:',
-  //       'Sistema de estadísticas',
-  //       'Base de datos de compras',
-  //       'Insights impulsados por IA',
-  //       'Recomendaciones personalizadas',
-  //       'Dashboard administrativo avanzado',
-  //       'Soporte prioritario',
-  //       'Actualizaciones premium'
-  //     ]
-  //   }
+  {
+    name: 'Plan Pro',
+    price: 199, // Ahora es mensual
+    period: 'MXN / mensual',
+    popular: false,
+    features: [
+      'Crea hasta 30 restaurantes',
+      'Cada restaurante tiene su propio dominio',
+      'Soporte por WhatsApp',
+      'Estadísticas de visitas',
+    ]
+  },
 ];
 
 ---
@@ -82,7 +60,7 @@ const pricingData = [
         <PricingCard
           name={plan.name}
           price={plan.price}
-          period="MXN / anual"
+          period={plan.period}
           features={plan.features}
           popular={plan.popular}
           index={index}
@@ -136,6 +114,7 @@ const pricingData = [
   gap: var(--space-md);
   max-width: 900px;
   margin: 0 auto;
+  padding: 1rem;
 }
 
 /* Tablets */

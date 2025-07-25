@@ -86,8 +86,6 @@ export async function fetchDishRatings(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/dishes/${dishId}/comments?page=${page}&limit=${limit}&include_anonymous=${includeAnonymous}`;
   
-  console.log('🔍 Fetching dish comments:', { dishId, page, limit, includeAnonymous });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -111,7 +109,6 @@ export async function fetchDishRatings(
       throw new Error('Invalid comments data format');
     }
     
-    console.log('✅ Successfully fetched dish comments:', data.comments.length);
     return data;
     
   } catch (error) {
@@ -130,8 +127,6 @@ export async function createDishRating(
 ): Promise<DishRating> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/dishes/${dishId}/rate`;
-  
-  console.log('⭐ Creating dish rating:', { dishId, rating: ratingData.rating });
   
   try {
     const response = await fetchWithStandardConfig(url, {
@@ -152,7 +147,6 @@ export async function createDishRating(
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created dish rating');
     return data;
     
   } catch (error) {
@@ -171,8 +165,6 @@ export async function createAnonymousDishRating(
 ): Promise<DishRating> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/anonymous/ratings/dish/${dishId}`;
-  
-  console.log('⭐ Creating anonymous dish rating:', { dishId, rating: ratingData.rating, deviceId });
   
   try {
     if (!dishId || !deviceId) {
@@ -213,7 +205,6 @@ export async function createAnonymousDishRating(
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created anonymous dish rating');
     return data;
     
   } catch (error) {
@@ -232,8 +223,6 @@ export async function createAnonymousDishComment(
 ): Promise<DishComment> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/anonymous/dishes/${dishId}/comments`;
-  
-  console.log('💬 Creating anonymous dish comment:', { dishId, deviceId });
   
   try {
     if (!dishId || !deviceId) {
@@ -265,7 +254,6 @@ export async function createAnonymousDishComment(
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created anonymous dish comment');
     return data;
     
   } catch (error) {
@@ -280,8 +268,6 @@ export async function createAnonymousDishComment(
 export async function fetchDishRatingStats(dishId: string): Promise<DishRatingStats> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/dishes/${dishId}/stats`;
-  
-  console.log('📈 Fetching dish rating stats:', { dishId });
   
   try {
     const response = await fetchWithStandardConfig(url, {
@@ -299,7 +285,6 @@ export async function fetchDishRatingStats(dishId: string): Promise<DishRatingSt
     }
     
     const data = await response.json();
-    console.log('✅ Successfully fetched dish rating stats');
     return data;
     
   } catch (error) {
@@ -318,10 +303,6 @@ export async function searchDishes(
 ): Promise<DishSearchResponse> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/dishes/search-advanced?page=${page}&limit=${limit}`;
-  
-  console.log('🔍 Searching dishes with filters:', { filters, page, limit });
-  console.log('📍 Search URL:', url);
-  console.log('📦 Request body:', JSON.stringify(filters, null, 2));
   
   try {
     const response = await fetchWithStandardConfig(url, {
@@ -350,7 +331,6 @@ export async function searchDishes(
       throw new Error('Invalid search results data format');
     }
     
-    console.log('✅ Successfully searched dishes:', data.dishes.length);
     return data;
     
   } catch (error) {
@@ -395,14 +375,6 @@ export async function fetchTopRatedDishes(
   }
   
   const url = `${baseUrl}/dishes/top-rated?${params.toString()}`;
-  
-  console.log('🏆 Fetching top rated dishes:', { 
-    limit, 
-    minRatings, 
-    restaurantId, 
-    categoryId,
-    finalUrl: url 
-  });
   
   try {
     const response = await fetchWithStandardConfig(url, {
@@ -453,14 +425,6 @@ export async function fetchTopRatedDishes(
       return isValid;
     });
     
-    console.log('✅ Successfully fetched top rated dishes:', {
-      totalReceived: data.length,
-      validItems: validatedData.length,
-      filtered: data.length - validatedData.length
-    });
-    console.log(validatedData)
-    
-    
     return validatedData;
     
   } catch (error) {
@@ -488,8 +452,6 @@ export async function fetchMostCommentedDishes(
   
   if (restaurantId) url += `&restaurant_id=${restaurantId}`;
   
-  console.log('💬 Fetching most commented dishes:', { limit, minComments, restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -512,7 +474,6 @@ export async function fetchMostCommentedDishes(
       throw new Error('Invalid most commented dishes data format');
     }
     
-    console.log('✅ Successfully fetched most commented dishes:', data.length);
     return data;
     
   } catch (error) {
@@ -540,7 +501,6 @@ export function getDeviceId(): string {
       deviceId = `device_${timestamp}_${randomPart}_${browserFingerprint}`;
       localStorage.setItem('anonymous_device_id', deviceId);
       localStorage.setItem('device_created_at', new Date().toISOString());
-      console.log('🔑 Generated new device ID');
     }
     
     return deviceId;
@@ -696,7 +656,6 @@ export function clearDishDeviceData(): void {
     localStorage.removeItem('anonymous_device_id');
     localStorage.removeItem('device_created_at');
     localStorage.removeItem('local_dish_ratings');
-    console.log('🧹 Dish device data cleared');
   } catch (error) {
     console.warn('⚠️ Error clearing dish device data:', error);
   }
@@ -706,8 +665,6 @@ export function clearDishDeviceData(): void {
  * Función helper para obtener un platillo con sus estadísticas de valoración
  */
 export async function fetchDishWithRatings(dishId: string): Promise<{ dish: DishWithRatings; stats: DishRatingStats | null }> {
-  console.log('🔍 Fetching dish with ratings:', dishId);
-  
   try {
     const baseUrl = getBaseUrl();
     const dishUrl = `${baseUrl}/dishes/${dishId}`;
@@ -800,12 +757,6 @@ export function debugTopRatedDishesUrl(
   }
   
   const finalUrl = `${baseUrl}/dishes/top-rated?${params.toString()}`;
-  
-  console.log('🔍 Debug URL construcción:', {
-    baseUrl,
-    params: Object.fromEntries(params.entries()),
-    finalUrl
-  });
   
   return finalUrl;
 }

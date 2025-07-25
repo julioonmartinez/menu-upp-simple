@@ -18,7 +18,7 @@ const fontUrl = getFontUrl(selectedFont);
 const cssVariables = {
   '--primary-color': restaurant.primaryColor || linkTree.ctaBackgroundColor || '#FF4500',
   '--secondary-color': restaurant.secondaryColor || '#005F85',
-  '--background-color': linkTree.backgroundColor || '#FFF8F0',
+  '--background-color': restaurant.backgroundColor || linkTree.backgroundColor || '#FFF8F0',
   '--text-color': restaurant.textColor || linkTree.textColor || '#2C2C2C',
   '--links-bg': linkTree.linksBackgroundColor || '#FFFFFF',
   '--links-text': linkTree.linksColor || '#2C2C2C',
@@ -45,13 +45,13 @@ const cssVariables = {
   <meta property="og:title" content={`${restaurant.name} - Menú Digital`}>
   <meta property="og:description" content={restaurant.description || `Descubre el menú digital de ${restaurant.name}`}>
   <meta property="og:url" content={`https://menu-upp.com/${restaurant.username}`}>
-  <meta property="og:image" content={linkTree.coverImage?.url || restaurant.imageCover || '/images/default-og.webp'}>
+  <meta property="og:image" content={linkTree.coverImage?.url || restaurant.coverImage || '/images/default-og.webp'}>
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content={`${restaurant.name} - Menú Digital`}>
   <meta name="twitter:description" content={restaurant.description || `Descubre el menú digital de ${restaurant.name}`}>
-  <meta name="twitter:image" content={ restaurant.logo || linkTree.coverImage?.url || restaurant.imageCover || '/images/default-og.webp'}>
+  <meta name="twitter:image" content={ restaurant.logo || linkTree.coverImage?.url || restaurant.coverImage || '/images/default-og.webp'}>
   
   <!-- Mobile -->
   <meta name="theme-color" content={restaurant.primaryColor || '#FF4500'}>

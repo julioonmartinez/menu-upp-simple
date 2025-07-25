@@ -30,7 +30,7 @@ const {
 // SEO Meta Tags
 const siteTitle = title || `${restaurant?.name} - Menú Digital` || 'Menú Digital'
 const siteDescription = description || restaurant?.description || 'Descubre nuestro delicioso menú digital'
-const siteImage = image || restaurant?.imageCover || restaurant?.imageProfile || '/default-og-image.jpg'
+const siteImage = image || restaurant?.coverImage || restaurant?.profileImage || '/default-og-image.jpg'
 const siteURL = canonicalURL || new URL(Astro.url.pathname, Astro.site)
 
 // Structured Data para SEO
@@ -108,7 +108,7 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     <meta name="apple-mobile-web-app-title" content={restaurant?.name || 'Menú Digital'} />
     
     <!-- Favicons -->
-    <link rel="icon" type="image/svg+xml" href={restaurant.logo || restaurant.imageProfile || '/ico.PNG'} />
+    <link rel="icon" type="image/svg+xml" href={restaurant.logo || restaurant.profileImage || '/ico.PNG'} />
     <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /> -->
@@ -161,10 +161,8 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then(registration => {
-              console.log('✅ Service Worker registered successfully:', registration);
             })
             .catch(registrationError => {
-              console.warn('⚠️ Service Worker registration failed:', registrationError);
               // No mostrar error crítico, solo warning
             });
         });
@@ -417,7 +415,6 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     // Monitor Largest Contentful Paint
     new PerformanceObserver((entryList) => {
       for (const entry of entryList.getEntries()) {
-        console.log('LCP:', entry.startTime);
       }
     }).observe({entryTypes: ['largest-contentful-paint']});
     
@@ -425,7 +422,6 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
     new PerformanceObserver((entryList) => {
       for (const entry of entryList.getEntries()) {
         if (!entry.hadRecentInput) {
-          console.log('CLS:', entry.value);
         }
       }
     }).observe({entryTypes: ['layout-shift']});
@@ -446,7 +442,6 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
   
   // Error boundary for JavaScript errors
   window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
     const errorBoundary = document.getElementById('error-boundary');
     if (errorBoundary) {
       errorBoundary.style.display = 'flex';
@@ -455,15 +450,12 @@ const colorScheme = backgroundColor === '#000000' || backgroundColor?.includes('
   
   // Unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
   });
   
   // Online/offline status
   window.addEventListener('online', () => {
-    console.log('Connection restored');
   });
   
   window.addEventListener('offline', () => {
-    console.log('Connection lost');
   });
 </script>

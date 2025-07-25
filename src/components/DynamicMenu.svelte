@@ -36,22 +36,17 @@
     error = null;
     
     try {
-      console.log(`🔄 Fetching dishes for category: ${categoryId}, retry: ${isRetry}`);
       
       // MÉTODO 1: Intentar endpoint específico de categoría
       let data;
       try {
         data = await fetchDishesByUsernameAndCategory(username, categoryId, 100);
-        console.log('✅ Method 1 successful - specific category endpoint');
       } catch (categoryError) {
-        console.warn('⚠️ Method 1 failed:', categoryError.message);
         
         // MÉTODO 2: Fallback - obtener todos los platos y filtrar
         if (!allDishes || allDishes.length === 0) {
-          console.log('🔄 Loading all dishes for filtering...');
           const allDishesResponse = await fetchDishesByUsername(username, 500);
           allDishes = allDishesResponse.dishes || [];
-          console.log(`📦 Loaded ${allDishes.length} total dishes`);
         }
         
         // Filtrar localmente
@@ -61,7 +56,6 @@
                  dish.category === categoryId;
         });
         
-        console.log(`✅ Method 2 successful - local filtering found ${filteredDishes.length} dishes`);
         data = { dishes: filteredDishes };
       }
       
@@ -77,14 +71,13 @@
         }));
         
         retryCount = 0; // Reset counter on success
-        console.log(`🍽️ Successfully loaded ${dishes.length} dishes for category ${categoryId}`);
         
         // Disparar evento para indicar que el menú está listo
         setTimeout(() => {
           document.dispatchEvent(new CustomEvent('svelteMenuReady'));
         }, 100);
       } else {
-        console.warn('⚠️ Invalid data structure received');
+        
         dishes = [];
         
         // Disparar evento incluso si no hay datos
@@ -94,12 +87,10 @@
       }
       
     } catch (err) {
-      console.error('❌ Error fetching dishes:', err);
       
       // Intentar retry si no hemos excedido el límite
       if (!isRetry && retryCount < maxRetries) {
         retryCount++;
-        console.log(`🔄 Retrying... attempt ${retryCount}/${maxRetries}`);
         
         // Esperar un poco antes del retry
         setTimeout(() => {
@@ -155,7 +146,6 @@
   function handleCategoryChange(event) {
     const { categoryId, categoryName, categoryIndex } = event.detail;
     
-    console.log('🔄 DynamicMenu: Category changed to:', { categoryId, categoryName });
     
     currentCategory = { id: categoryId, name: categoryName, index: categoryIndex };
     fetchDishesByCategory(categoryId);
@@ -193,7 +183,6 @@
       }, 100);
     }
     
-    console.log('🚀 DynamicMenu mounted for username:', username);
   });
 
   onDestroy(() => {

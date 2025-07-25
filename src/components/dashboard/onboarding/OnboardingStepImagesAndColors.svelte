@@ -3,7 +3,7 @@
     import ColorPicker from '../../ui/ColorPicker.svelte';
     import { restaurantStore } from '../../../stores/restaurantStore';
     import { createEventDispatcher } from 'svelte';
-    import MiniImageUploader from '../../ui/MiniImageUploader.svelte';
+    import CompactImageCard from '../../ui/CompactImageCard.svelte';
   
     export let restaurant;
     export let restaurantId;
@@ -11,15 +11,15 @@
     const dispatch = createEventDispatcher();
 
     let formData = {
-      imageProfile: restaurant?.imageProfile || '',
-      imageCover: restaurant?.imageCover || '',
+      profileImage: restaurant?.profileImage || '',
+      coverImage: restaurant?.coverImage || '',
       primaryColor: restaurant?.primaryColor || '#3b82f6',
       backgroundColor: restaurant?.backgroundColor || '#ffffff',
       secondaryColor: restaurant?.secondaryColor || '#f59e42', // Color por defecto
       textColor: restaurant?.textColor || '#222222'
     };
   
-    let uploading = { imageProfile: false, imageCover: false };
+    let uploading = { profileImage: false, coverImage: false };
     let isSubmitting = false;
     let error = null;
 
@@ -51,8 +51,8 @@
       error = null;
       try {
         const updateData = {
-          imageProfile: formData.imageProfile,
-          imageCover: formData.imageCover,
+          profileImage: formData.profileImage,
+          coverImage: formData.coverImage,
           primaryColor: formData.primaryColor,
           backgroundColor: formData.backgroundColor,
           secondaryColor: formData.secondaryColor, // Nuevo campo
@@ -75,8 +75,8 @@
       error = null;
       try {
         const updateData = {
-          imageProfile: formData.imageProfile,
-          imageCover: formData.imageCover,
+          profileImage: formData.profileImage,
+          coverImage: formData.coverImage,
           primaryColor: formData.primaryColor,
           backgroundColor: formData.backgroundColor,
           secondaryColor: formData.secondaryColor,
@@ -100,67 +100,69 @@
     <p class="text-muted text-center mb-xl">Sube tus imágenes y elige los colores que representarán tu marca.</p>
     <div class="flex md:flex-row gap-xl justify-center items-stretch w-full">
       <div class="flex-1 flex flex-col gap-md items-center justify-center bg-bg-tertiary rounded-xl p-lg">
-        <MiniImageUploader
+        <CompactImageCard
           label="Perfil"
-          currentImage={formData.imageProfile}
-          uploading={uploading.imageProfile}
-          on:fileSelected={(e) => handleImageUpload('imageProfile', e)}
-          on:remove={() => handleImageRemove('imageProfile')}
+          currentImage={formData.profileImage}
+          uploading={uploading.profileImage}
+          on:fileSelected={(e) => handleImageUpload('profileImage', e)}
+          on:remove={() => handleImageRemove('profileImage')}
+          width={96}
+          height={96}
         />
       </div>
       <div class="flex-1 flex flex-col gap-md items-center justify-center bg-bg-tertiary rounded-xl p-lg">
-        <MiniImageUploader
+        <CompactImageCard
           label="Banner"
-          currentImage={formData.imageCover}
-          uploading={uploading.imageCover}
-          on:fileSelected={(e) => handleImageUpload('imageCover', e)}
-          on:remove={() => handleImageRemove('imageCover')}
+          currentImage={formData.coverImage}
+          uploading={uploading.coverImage}
+          on:fileSelected={(e) => handleImageUpload('coverImage', e)}
+          on:remove={() => handleImageRemove('coverImage')}
+          width={96}
+          height={96}
         />
       </div>
     </div>
-    <div class="flex flex-col gap-xl mt-2xl w-full">
-      <div class="flex md:flex-row gap-xl w-full">
-        <div class="flex flex-col items-center gap-xs flex-1">
-          <ColorPicker
-            label="Color Primario"
-            bind:value={formData.primaryColor}
-            class="input w-full"
-            open={openPicker === 'primary'}
-            on:open={() => openPicker = 'primary'}
-            on:close={() => openPicker = null}
-            dropdownWidth="320px"
-            modal={true}
-          />
-          <span class="text-xs text-muted mt-xs">Color principal</span>
-        </div>
-        <div class="flex flex-col items-center gap-xs flex-1">
-          <ColorPicker
-            label="Color Secundario"
-            bind:value={formData.secondaryColor}
-            class="input w-full"
-            open={openPicker === 'secondary'}
-            on:open={() => openPicker = 'secondary'}
-            on:close={() => openPicker = null}
-            dropdownWidth="320px"
-            modal={true}
-          />
-          <span class="text-xs text-muted mt-xs">Color secundario</span>
-        </div>
-        <div class="flex flex-col items-center gap-xs flex-1">
-          <ColorPicker
-            label="Color de Texto"
-            bind:value={formData.textColor}
-            class="input w-full"
-            open={openPicker === 'text'}
-            on:open={() => openPicker = 'text'}
-            on:close={() => openPicker = null}
-            dropdownWidth="320px"
-            modal={true}
-          />
-          <span class="text-xs text-muted mt-xs">Color del texto principal</span>
-        </div>
+    <div class="content-colors-pickers">
+      <div>
+        <ColorPicker
+          label="Color Primario"
+          bind:value={formData.primaryColor}
+          class="input w-full"
+          open={openPicker === 'primary'}
+          on:open={() => openPicker = 'primary'}
+          on:close={() => openPicker = null}
+          dropdownWidth="320px"
+          modal={true}
+        />
+        <span class="text-xs text-muted mt-xs">Color principal</span>
       </div>
-      <div class="flex flex-col items-center gap-xs flex-1 w-full">
+      <div>
+        <ColorPicker
+          label="Color Secundario"
+          bind:value={formData.secondaryColor}
+          class="input w-full"
+          open={openPicker === 'secondary'}
+          on:open={() => openPicker = 'secondary'}
+          on:close={() => openPicker = null}
+          dropdownWidth="320px"
+          modal={true}
+        />
+        <span class="text-xs text-muted mt-xs">Color secundario</span>
+      </div>
+      <div>
+        <ColorPicker
+          label="Color de Texto"
+          bind:value={formData.textColor}
+          class="input w-full"
+          open={openPicker === 'text'}
+          on:open={() => openPicker = 'text'}
+          on:close={() => openPicker = null}
+          dropdownWidth="320px"
+          modal={true}
+        />
+        <span class="text-xs text-muted mt-xs">Color del texto principal</span>
+      </div>
+      <div>
         <ColorPicker
           label="Color de Fondo"
           bind:value={formData.backgroundColor}
@@ -193,6 +195,7 @@
 .onboarding-images-colors .flex-1 {
   min-width: 0;
 }
+
 @media (max-width: 768px) {
   .onboarding-images-colors .flex-col.md\:flex-row {
     flex-direction: column !important;
@@ -201,6 +204,34 @@
   .onboarding-images-colors .flex-1 {
     width: 100%;
     min-width: 0;
+  }
+}
+.content-colors-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-xl, 20px);
+  width: 100%;
+}
+.content-colors-pickers > div {
+  flex: 1 1 140px;
+  min-width: 140px;
+  max-width: 320px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+}
+
+@media (min-width: 600px) {
+  .content-colors-pickers > div {
+    min-width: 180px;
+  }
+}
+@media (min-width: 900px) {
+  .content-colors-pickers > div {
+    min-width: 220px;
   }
 }
 </style>

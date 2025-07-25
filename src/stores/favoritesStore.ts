@@ -41,13 +41,11 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
     let dish = currentState.allDishes.find(d => d.id === id);
     
     if (dish) {
-        console.log('Dish found in local state:', dish);
         return dish;
     }
     
     // 2. Si no está en el estado, intentar obtener de la API
     try {
-        console.log('Fetching dish from API:', id);
         const response = await fetch(`${API_BASE_URL}/dishes/${id}`);
         
         if (!response.ok) {
@@ -65,7 +63,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                 try {
                     localStorage.setItem(nameLocalAllDishes, JSON.stringify(newAllDishes));
                 } catch (e) {
-                    console.error('Error saving all dishes in localStorage:', e);
+                    
                 }
             }
             
@@ -77,7 +75,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
         
         return fetchedDish;
     } catch (error) {
-        console.error('Error fetching dish:', error);
+        
         return null;
     }
 };
@@ -107,13 +105,8 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                 allDishes: allDishes
             }));
             
-            console.log('Initialized from localStorage:', { 
-                favoritesCount: favoriteItems.length,
-                ratingsCount: ratingItems.length,
-                allDishesCount: allDishes.length
-            });
         } catch (e) {
-            console.error('Error initializing from localStorage:', e);
+            
         }
     };
 
@@ -124,7 +117,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
         try {
             localStorage.setItem(nameLocalFavorite, JSON.stringify(favoriteItems));
         } catch (e) {
-            console.error('Error saving favorites in localStorage:', e);
+            
         }
     };
 
@@ -135,7 +128,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
         try {
             localStorage.setItem(nameLocalRating, JSON.stringify(ratingItems));
         } catch (e) {
-            console.error('Error saving ratings in localStorage:', e);
+            
         }
     };
 
@@ -146,15 +139,8 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
         try {
             const deviceId = getDeviceId();
             if (!deviceId) {
-                console.error('No device ID available');
                 return;
             }
-            
-            console.log('Syncing with server:', { 
-                dishId: dish.id, 
-                action: isAddingFavorite ? 'add' : 'remove',
-                deviceId: deviceId.substring(0, 8) + '...' // Mostrar solo parte del ID por seguridad
-            });
             
             const endpoint = `${API_BASE_URL}/anonymous/favorites/dish/${dish.id}`;
             const response = await fetch(endpoint, {
@@ -168,12 +154,10 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Error syncing with server:', errorText);
                 return;
             }
             
             const result = await response.json();
-            console.log('Server sync result:', result);
             
             // Actualizar el count total si el servidor lo devuelve
             if (result && typeof result.favorites !== 'undefined') {
@@ -196,7 +180,6 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                     
                     // Y en ratingsDish si existe
                     const updatedRatingsDish = state.ratingsDish.map(d => {
-                        console.log('Updating ratingsDish:', d);
                         if (d.id === dish.id) {
                             return { ...d, favorites: result.favorites };
                         }
@@ -210,7 +193,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                             localStorage.setItem(nameLocalFavorite, JSON.stringify(updatedFavorites));
                             localStorage.setItem(nameLocalRating, JSON.stringify(updatedRatingsDish));
                         } catch (e) {
-                            console.error('Error saving updated dishes in localStorage:', e);
+                            
                         }
                     }
                     
@@ -223,7 +206,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                 });
             }
         } catch (error) {
-            console.error('Network error when syncing with server:', error);
+            
         }
     };
 
@@ -268,7 +251,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                     try {
                         localStorage.setItem(nameLocalAllDishes, JSON.stringify(mergedDishes));
                     } catch (e) {
-                        console.error('Error saving all dishes in localStorage:', e);
+                        
                     }
                 }
                 
@@ -281,13 +264,11 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
         
         // Función para alternar favorito
         toggleFavorite: async (id: string | number) => {
-            console.log('Toggling favorite for dish ID:', id);
             
             // Obtener el plato (primero del store, luego de API si es necesario)
             const dish = await getDishById(id);
             
             if (!dish) {
-                console.error('Cannot toggle favorite: Dish not found with ID:', id);
                 return;
             }
             
@@ -301,7 +282,6 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                 
                 if (indexFav >= 0) {
                     // Quitar de favoritos
-                    console.log('Removing from favorites:', id);
                     newFav = state.favorites.filter(fav => fav.id !== id);
                     eventDetail = { 
                         itemId: id, 
@@ -313,7 +293,6 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                     isAddingFavorite = false;
                 } else {
                     // Añadir a favoritos
-                    console.log('Adding to favorites:', id);
                     // Crear una copia con userFav = true
                     const dishWithFav = { ...dish, userFav: true };
                     newFav = [...state.favorites, dishWithFav];
@@ -370,8 +349,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                     }
                 }).catch(e => console.error('Analytics error:', e));
             } catch (e) {
-                // Error silencioso para no interrumpir la experiencia
-                console.error('Error registering favorite analytics:', e);
+                
             }
         },
         
@@ -383,7 +361,6 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
             const dish = await getDishById(dishId);
             
             if (!dish) {
-                console.error('Cannot set rating: Dish not found with ID:', dishId);
                 return;
             }
             
@@ -445,12 +422,6 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                     const deviceId = getDeviceId();
                     if (!deviceId) return;
                     
-                    console.log('Syncing rating with server:', { 
-                        dishId, 
-                        rating,
-                        deviceId: deviceId.substring(0, 8) + '...' // Mostrar solo parte del ID por seguridad
-                    });
-                    
                     const endpoint = `${API_BASE_URL}/anonymous/ratings/dish/${dishId}`;
                     const response = await fetch(endpoint, {
                         method: 'POST',
@@ -463,12 +434,10 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                     
                     if (!response.ok) {
                         const errorText = await response.text();
-                        console.error('Error syncing rating with server:', errorText);
                         return;
                     }
                     
                     const result = await response.json();
-                    console.log('Server rating sync result:', result);
                     
                     // Actualizar el rating promedio si el servidor lo devuelve
                     if (result && typeof result.rating === 'number' && 
@@ -519,7 +488,7 @@ const getDishById = async (id: string | number): Promise<Dish | null> => {
                         });
                     }
                 } catch (error) {
-                    console.error('Network error when syncing rating:', error);
+                    
                 }
             }
         }

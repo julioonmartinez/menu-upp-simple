@@ -99,7 +99,7 @@ class AuthStore {
         this._user = null;
       }
     } catch (error) {
-      console.error('Error inicializando auth store:', error);
+     
       this._error = error instanceof Error ? error.message : 'Error de inicialización';
       this._user = null;
     } finally {
@@ -196,7 +196,7 @@ class AuthStore {
       this._user = user;
       this._error = null;
     } catch (error) {
-      console.error('Error refrescando usuario:', error);
+     
       // Si hay error, posiblemente el token expiró
       this.logout();
     } finally {

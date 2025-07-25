@@ -50,11 +50,18 @@ const textColor = getSmartContrastColor(backgroundColor);
 // ⭐ ALTERNATIVA SIMPLE (más confiable para legibilidad):
 // const textColor = isLightColor(backgroundColor) ? '#000000' : '#ffffff';
 
-const hasLogo = restaurant?.imageText_data && restaurant.imageText_data.url !== '';
+const hasLogo = restaurant?.textImage_data && restaurant.textImage_data.url !== '';
 
-console.log('backgroundColor:', backgroundColor);
-console.log('isLight:', isLightColor(backgroundColor));
-console.log('textColor generated:', textColor);
+const getInitials = (name: string) => {
+  if (!name) return '';
+  const words = name.trim().split(' ');
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+};
+
+const MAX_NAME_LENGTH = 18;
+
+
 ---
 
 <header style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor}; --bg-color: ${backgroundColor}; --text-color: ${textColor}`}>
@@ -71,10 +78,17 @@ console.log('textColor generated:', textColor);
                 <div class="logo-icon">
                   <i class="fa-solid fa-utensils"></i>
                 </div>
-                <div class="logo-text">
-                  <h1 class="restaurant-name">{restaurant.name}</h1>
-                  <span class="restaurant-subtitle">Menú Digital</span>
-                </div>
+                {restaurant.name && restaurant.name.length <= MAX_NAME_LENGTH ? (
+                  <div class="logo-text">
+                    <h1 class="restaurant-name">{restaurant.name}</h1>
+                    <span class="restaurant-subtitle">Menú Digital</span>
+                  </div>
+                ) : (
+                  <div class="logo-text">
+                    <h1 class="restaurant-name initials">{getInitials(restaurant?.name || '')}</h1>
+                    <span class="restaurant-subtitle">Menú Digital</span>
+                  </div>
+                )}
               </div>
             )}
           </a>
@@ -201,6 +215,18 @@ console.log('textColor generated:', textColor);
   color: var(--text-color);
   line-height: 1.1; /* Reducido de 1.2 */
   letter-spacing: -0.025em;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.restaurant-name.initials {
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  max-width: 40px;
+  text-align: center;
 }
 
 .restaurant-subtitle {

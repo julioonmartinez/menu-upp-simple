@@ -30,17 +30,12 @@
 
     //Función para verificar si hay platillos guardados
     function checkSavedItems(){
-      console.log('che2')
       try {
         const savedItemsStr = localStorage.getItem('favoriteItems');
-        console.log(savedItemsStr, 'str')
 
         const savedItems = savedItemsStr ? JSON.parse(savedItemsStr) : [];
-        console.log('saved', savedItems)
         hasSavedItems = savedItems && savedItems.length > 0;
-        console.log(hasSavedItems)
       } catch(erro){
-        console.error('Error al verificar platillos guardados:', erro);
         hasSavedItems = false;
       }
     
@@ -48,13 +43,11 @@
     
     // Función para verificar si hay platillos calificados
     function checkRatedDishes() {
-      console.log('che')
       try {
         const savedRatingsStr = localStorage.getItem('dishRatingsList');
         const savedRatings = savedRatingsStr ? JSON.parse(savedRatingsStr) : [];
         hasRatedDishes = savedRatings && savedRatings.length > 0;
       } catch (error) {
-        console.error('Error al verificar platos calificados:', error);
         hasRatedDishes = false;
       }
     }

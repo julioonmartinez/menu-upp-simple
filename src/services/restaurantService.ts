@@ -97,9 +97,9 @@ export interface RestaurantCreateWithImagesRequest extends RestaurantCreateReque
   images?: {
     image?: File;
     logo?: File;
-    imageProfile?: File;
-    imageCover?: File;
-    imageText?: File;
+    profileImage?: File; // <-- CAMBIO
+    coverImage?: File;   // <-- CAMBIO
+    textImage?: File;    // <-- CAMBIO
     qrCode?: File;
     heroSlides?: File[];
   };
@@ -445,9 +445,9 @@ class RestaurantService {
     images?: {
       image?: File;
       logo?: File;
-      imageProfile?: File;
-      imageCover?: File;
-      imageText?: File;
+      profileImage?: File; // <-- CAMBIO
+      coverImage?: File;   // <-- CAMBIO
+      textImage?: File;    // <-- CAMBIO
       qrCode?: File;
       heroSlides?: File[];
     }
@@ -501,15 +501,14 @@ class RestaurantService {
 
       formData.append('restaurant_data', JSON.stringify(completeRestaurantData));
 
-      // Agregar imágenes si existen
       if (images) {
         if (images.image) formData.append('image', images.image);
         if (images.logo) formData.append('logo', images.logo);
-        if (images.imageProfile) formData.append('image_profile', images.imageProfile);
-        if (images.imageCover) formData.append('image_cover', images.imageCover);
-        if (images.imageText) formData.append('image_text', images.imageText);
+        if (images.profileImage) formData.append('profile_image', images.profileImage); // <-- CAMBIO
+        if (images.coverImage) formData.append('cover_image', images.coverImage);       // <-- CAMBIO
+        if (images.textImage) formData.append('text_image', images.textImage);          // <-- CAMBIO
         if (images.qrCode) formData.append('qr_code', images.qrCode);
-        
+      
         // Hero slides
         if (images.heroSlides && images.heroSlides.length > 0) {
           if (images.heroSlides.length > 5) {
@@ -518,8 +517,7 @@ class RestaurantService {
               error: 'Máximo 5 imágenes permitidas para el hero slider'
             };
           }
-          
-          images.heroSlides.forEach((file, index) => {
+          images.heroSlides.forEach((file) => {
             formData.append('hero_slides', file);
           });
         }
@@ -730,6 +728,40 @@ class RestaurantService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido subiendo imagen'
+      };
+    }
+  }
+
+  /**
+   * Elimina una imagen de un restaurante
+   */
+  async deleteRestaurantImage(
+    restaurantId: string,
+    imageType: 'image' | 'logo' | 'imageProfile' | 'imageCover' | 'imageText' | 'qrCode'
+  ): Promise<ApiResult<ImageUploadResponse>> {
+    try {
+      const isAuthenticated = await this.checkAuthentication();
+      if (!isAuthenticated) {
+        return { success: false, error: 'Debes estar autenticado para eliminar imágenes' };
+      }
+
+      const params = new URLSearchParams({ image_type: imageType });
+      const response = await this.makeAuthenticatedRequest(
+        `/restaurants/${restaurantId}/image?${params}`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        return { success: false, error: errorData.detail || 'Error eliminando imagen' };
+      }
+
+      const data: ImageUploadResponse = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido eliminando imagen'
       };
     }
   }

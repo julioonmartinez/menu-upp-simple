@@ -3,7 +3,7 @@
   import { useHeroSlides } from '../../../stores/heroSlidesStore';
   import { heroSlidesService } from '../../../services/heroSlidesService';
   import ConfirmationModal from '../../ui/ConfirmationModal.svelte';
-  import ImageUploader from '../../ui/ImageUploader.svelte';
+  import CompactImageCard from '../../ui/CompactImageCard.svelte';
   import { toastStore } from '../../../stores/toastStore';
   export let restaurantId: string;
 
@@ -371,25 +371,35 @@
                       </div>
                     </div>
                     <div class="form-row">
-                      <div class="form-group">
-                        <ImageUploader
+                      <div class="form-group image-card-center">
+                        <CompactImageCard
                           label="Nueva imagen (opcional)"
-                          id={`edit-image-${slide.position}`}
                           accept="image/jpeg,image/jpg,image/png,image/webp"
                           currentImage={editingSlide.imagePreview || editingSlide.originalImage}
                           on:fileSelected={(e) => {
                             editingSlide.image = e.detail.file;
-                            editingSlide.imagePreview = e.detail.preview;
-                            editSlideImageError[slide.position] = '';
+                            if (e.detail.file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                editingSlide.imagePreview = ev.target?.result;
+                                editSlideImageError[slide.position] = '';
+                                editingSlides = editingSlides;
+                              };
+                              reader.readAsDataURL(e.detail.file);
+                            } else {
+                              editingSlide.imagePreview = null;
+                              editingSlides = editingSlides;
+                            }
+                          }}
+                          on:remove={() => {
+                            editingSlide.image = null;
+                            editingSlide.imagePreview = null;
                             editingSlides = editingSlides;
                           }}
-                          on:error={(e) => {
-                            editSlideImageError[slide.position] = e.detail.message;
-                            toastStore.error(e.detail.message);
-                          }}
-                          on:dimensionWarning={(e) => toastStore.info(e.detail.message)}
                           error={editSlideImageError[slide.position]}
                           uploading={$isUpdating}
+                          width={180}
+                          height={100}
                         />
                       </div>
                     </div>
@@ -520,37 +530,36 @@
                 </div>
               </div>
               <div class="form-row">
-                <div class="form-group">
-                  <ImageUploader
+                <div class="form-group image-card-center">
+                  <CompactImageCard
                     label="Imagen *"
-                    id="new-image"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
-                    required
+                    required={true}
+                    currentImage={newSlideImagePreview}
                     on:fileSelected={(e) => {
                       newSlideImage = e.detail.file;
-                      newSlideImagePreview = e.detail.preview;
-                      newSlideImageError = '';
+                      if (e.detail.file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          newSlideImagePreview = ev.target?.result as string;
+                          newSlideImageError = '';
+                        };
+                        reader.readAsDataURL(e.detail.file);
+                      } else {
+                        newSlideImagePreview = null;
+                      }
                     }}
-                    on:error={(e) => {
-                      newSlideImageError = e.detail.message;
-                      toastStore.error(e.detail.message);
+                    on:remove={() => {
+                      newSlideImage = null;
+                      newSlideImagePreview = null;
                     }}
-                    on:dimensionWarning={(e) => toastStore.info(e.detail.message)}
                     error={newSlideImageError}
                     uploading={$isAdding}
+                    width={180}
+                    height={100}
                   />
                 </div>
               </div>
-              {#if newSlideImagePreview}
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Vista previa</label>
-                    <div class="image-preview">
-                      <img src={newSlideImagePreview} alt="Preview" />
-                    </div>
-                  </div>
-                </div>
-              {/if}
               <div class="form-actions">
                 <button 
                   class="btn btn-primary"
@@ -926,6 +935,11 @@
 .no-slides-container p:first-child {
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
+}
+.image-card-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 @media (max-width: 768px) {
   .onboarding-hero-slides-form {

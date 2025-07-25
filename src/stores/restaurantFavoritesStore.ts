@@ -416,7 +416,7 @@ class RestaurantFavoritesStore {
         }));
       }
     } catch (error) {
-      console.error('Error verificando múltiples favoritos:', error);
+      // console.error('Error verificando múltiples favoritos:', error);
     }
   }
 

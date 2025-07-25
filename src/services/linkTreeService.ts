@@ -153,7 +153,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
 
     // Leer el body una sola vez
     const responseData = await response.json();
-    console.log( 'resposnedar', responseData)
 
     if (!response.ok) {
       // Distinguir entre diferentes tipos de error
@@ -198,7 +197,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
     };
     
   } catch (error) {
-    console.error('Error obteniendo LinkTree del restaurante:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error de red obteniendo LinkTree',
@@ -235,7 +233,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkTreeDates(data)
       };
     } catch (error) {
-      console.error('Error obteniendo LinkTree por username:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido obteniendo LinkTree'
@@ -272,7 +269,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkTreeDates(data)
       };
     } catch (error) {
-      console.error('Error obteniendo LinkTree por slug:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido obteniendo LinkTree'
@@ -312,7 +308,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkTreeDates(data)
       };
     } catch (error) {
-      console.error('Error obteniendo LinkTree:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido obteniendo LinkTree'
@@ -353,7 +348,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
 
       if (!response.ok) {
         const errorData: ApiError = await response.json();
-        console.error('Error del servidor:', errorData);
         return {
           success: false,
           error: errorData.detail || 'Error creando LinkTree'
@@ -366,7 +360,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkTreeDates(data)
       };
     } catch (error) {
-      console.error('Error creando LinkTree:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido creando LinkTree'
@@ -413,7 +406,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkTreeDates(data)
       };
     } catch (error) {
-      console.error('Error actualizando LinkTree:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido actualizando LinkTree'
@@ -453,7 +445,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data
       };
     } catch (error) {
-      console.error('Error eliminando LinkTree:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido eliminando LinkTree'
@@ -527,7 +518,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data
       };
     } catch (error) {
-      console.error('Error subiendo imagen:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido subiendo imagen'
@@ -566,7 +556,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: data.map(link => this.formatLinkDates(link))
       };
     } catch (error) {
-      console.error('Error obteniendo enlaces:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido obteniendo enlaces'
@@ -619,7 +608,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkDates(data)
       };
     } catch (error) {
-      console.error('Error creando enlace:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido creando enlace'
@@ -670,7 +658,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data: this.formatLinkDates(data)
       };
     } catch (error) {
-      console.error('Error actualizando enlace:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido actualizando enlace'
@@ -713,7 +700,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data
       };
     } catch (error) {
-      console.error('Error eliminando enlace:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido eliminando enlace'
@@ -750,7 +736,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data
       };
     } catch (error) {
-      console.error('Error registrando clic:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido registrando clic'
@@ -792,7 +777,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
         data
       };
     } catch (error) {
-      console.error('Error obteniendo analíticas:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido obteniendo analíticas'
@@ -810,7 +794,6 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
       const { authService } = await import('./authService.ts');
       return authService.isAuthenticated();
     } catch (error) {
-      console.error('Error verificando autenticación:', error);
       return false;
     }
   }

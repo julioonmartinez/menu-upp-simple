@@ -156,7 +156,6 @@ class HeroSlidesStore {
 
     // Reaccionar a cambios de autenticación
     authStore.isAuthenticated.subscribe(isAuthenticated => {
-      console.log('🔧 Auth state changed in heroSlidesStore:', isAuthenticated);
       this.store.update(state => ({
         ...state,
         isAuthenticated
@@ -164,7 +163,6 @@ class HeroSlidesStore {
 
       // Si el usuario se desautentica, limpiar datos
       if (!isAuthenticated) {
-        console.log('🔧 User logged out, clearing data');
         this.clearData();
       }
     });
@@ -396,13 +394,8 @@ class HeroSlidesStore {
     slideData: HeroSlideUpdateRequest,
     imageFile?: File
   ): Promise<UpdateHeroSlideResult> {
-    console.log('🔧 updateHeroSlide called with:', { restaurantId, slidePosition, slideData, imageFile });
-    
     const currentState = this.getCurrentState();
-    console.log('🔧 Current auth state:', currentState.isAuthenticated);
-    
     if (!currentState.isAuthenticated) {
-      console.error('❌ User not authenticated');
       return {
         success: false,
         error: 'Debes estar autenticado para actualizar hero slides'
@@ -413,10 +406,7 @@ class HeroSlidesStore {
     this.clearUpdateError();
 
     try {
-      console.log('🔧 Calling heroSlidesService.updateHeroSlide...');
       const result = await heroSlidesService.updateHeroSlide(restaurantId, slidePosition, slideData, imageFile);
-
-      console.log('🔧 Service result:', result);
 
       if (result.success && result.data) {
         // Actualizar cache local
@@ -447,7 +437,6 @@ class HeroSlidesStore {
         };
       }
     } catch (error) {
-      console.error('❌ Error in updateHeroSlide:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido actualizando hero slide';
       this.setUpdating(false);
       this.setUpdateError(errorMessage);
@@ -551,7 +540,6 @@ class HeroSlidesStore {
             slides: result.data.slides
           };
         } else {
-          console.error('Datos de slides inválidos recibidos del servidor:', result.data);
           this.setReordering(false);
           this.setReorderError('Datos de slides inválidos recibidos del servidor');
           
@@ -571,7 +559,6 @@ class HeroSlidesStore {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido reordenando hero slides';
-      console.error('Error en reorderHeroSlides:', error);
       this.setReordering(false);
       this.setReorderError(errorMessage);
       
@@ -796,16 +783,11 @@ class HeroSlidesStore {
    */
   getSlidesOrderedByPosition(): Readable<HeroSlideResponse[]> {
     return derived(this.store, $state => {
-      console.log('🔧 getSlidesOrderedByPosition called, state.slides:', $state.slides);
-      
       // Asegurar que slides sea un array válido
       if (!$state.slides || !Array.isArray($state.slides)) {
-        console.warn('🔧 slides is not a valid array, returning empty array');
         return [];
       }
-      
       const orderedSlides = [...$state.slides].sort((a, b) => a.position - b.position);
-      console.log('🔧 Ordered slides:', orderedSlides);
       return orderedSlides;
     });
   }

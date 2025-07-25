@@ -276,7 +276,7 @@
           <button
             type="button"
             class="password-toggle"
-            onclick={togglePasswordVisibility()!}
+            onclick={togglePasswordVisibility}
             disabled={isFormDisabled()}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >

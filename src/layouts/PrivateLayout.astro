@@ -252,10 +252,10 @@ const {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
           .then(registration => {
-            console.log('✅ Service Worker registered successfully:', registration);
+           
           })
           .catch(registrationError => {
-            console.warn('⚠️ Service Worker registration failed:', registrationError);
+           
             // No mostrar error crítico, solo warning
           });
       });

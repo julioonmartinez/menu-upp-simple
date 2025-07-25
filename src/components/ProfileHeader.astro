@@ -11,9 +11,9 @@ const { restaurant, linkTree } = Astro.props;
 
 <div class="profile-header">
   <div class="cover-image">
-    {(linkTree.coverImage?.url || restaurant.imageCover) ? (
+    {( restaurant.coverImage || linkTree.coverImage?.url ) ? (
       <img 
-        src={linkTree.coverImage?.url || restaurant.imageCover  } 
+        src={ restaurant.coverImage || linkTree.coverImage?.url  } 
         alt={`${restaurant.name} cover`}
         class="cover-img"
       />
@@ -28,9 +28,9 @@ const { restaurant, linkTree } = Astro.props;
   
   <div class="profile-content">
     <div class="profile-image-container">
-      {(linkTree.profileImage?.url || restaurant.imageProfile) ? (
+      {(linkTree.profileImage?.url || restaurant.profileImage ) ? (
         <img 
-          src={linkTree.profileImage?.url || restaurant.imageProfile} 
+          src={ restaurant.profileImage  || linkTree.profileImage?.url } 
           alt={`${restaurant.name} logo`}
           class="profile-image"
         />
@@ -57,10 +57,10 @@ const { restaurant, linkTree } = Astro.props;
         </div>
       )}
     </div>
-    {restaurant.imageText_data ? (
+    {restaurant.textImage ? (
   <div class="content-image-text" >
     <img 
-      src={restaurant.imageText_data.url} 
+      src={restaurant.textImage } 
       alt={`Logo de ${linkTree.title || restaurant.name}`} 
       height="80"
       width="240"

@@ -240,7 +240,6 @@
   function isOptionSelected(optionId: string | number) {
     return selectedOptions.some(opt => (opt.id || opt.name) === optionId);
   }
-  console.log( 'item', item)
 </script>
 
 {#if mounted}

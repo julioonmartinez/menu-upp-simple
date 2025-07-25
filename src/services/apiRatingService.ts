@@ -94,8 +94,6 @@ export async function fetchRestaurantRatings(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/ratings?page=${page}&limit=${limit}&include_anonymous=${includeAnonymous}`;
   
-  console.log('🔍 Fetching restaurant ratings:', { restaurantId, page, limit, includeAnonymous });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -103,27 +101,18 @@ export async function fetchRestaurantRatings(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching restaurant ratings: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.ratings)) {
-      console.error('❌ Invalid ratings data structure:', data);
       throw new Error('Invalid ratings data format');
     }
     
-    console.log('✅ Successfully fetched restaurant ratings:', data.ratings.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant ratings:', error);
     throw error;
   }
 }
@@ -139,8 +128,6 @@ export async function createRestaurantRating(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/ratings`;
   
-  console.log('⭐ Creating restaurant rating:', { restaurantId, rating: ratingData.rating });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'POST',
@@ -151,20 +138,13 @@ export async function createRestaurantRating(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error creating rating:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error creating rating: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created restaurant rating');
     return data;
     
   } catch (error) {
-    console.error('❌ Error creating restaurant rating:', error);
     throw error;
   }
 }
@@ -179,8 +159,6 @@ export async function createAnonymousRestaurantRating(
 ): Promise<RestaurantRating> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/anonymous/restaurants/${restaurantId}/rate`;
-  
-  console.log('⭐ Creating anonymous restaurant rating:', { restaurantId, rating: ratingData.rating, deviceId });
   
   try {
     // Validación adicional para Svelte
@@ -204,11 +182,6 @@ export async function createAnonymousRestaurantRating(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error creating anonymous rating:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       
       // Manejo específico de errores para mejor UX
       if (response.status === 429) {
@@ -223,11 +196,9 @@ export async function createAnonymousRestaurantRating(
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created anonymous restaurant rating');
     return data;
     
   } catch (error) {
-    console.error('❌ Error creating anonymous restaurant rating:', error);
     throw error;
   }
 }
@@ -243,8 +214,6 @@ export async function updateRestaurantRating(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/ratings/${ratingId}`;
   
-  console.log('✏️ Updating restaurant rating:', { ratingId, updates: ratingData });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'PUT',
@@ -255,20 +224,13 @@ export async function updateRestaurantRating(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error updating rating:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error updating rating: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully updated restaurant rating');
     return data;
     
   } catch (error) {
-    console.error('❌ Error updating restaurant rating:', error);
     throw error;
   }
 }
@@ -283,8 +245,6 @@ export async function deleteRestaurantRating(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/ratings/${ratingId}`;
   
-  console.log('🗑️ Deleting restaurant rating:', { ratingId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'DELETE',
@@ -294,20 +254,13 @@ export async function deleteRestaurantRating(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error deleting rating:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error deleting rating: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully deleted restaurant rating');
     return data;
     
   } catch (error) {
-    console.error('❌ Error deleting restaurant rating:', error);
     throw error;
   }
 }
@@ -319,8 +272,6 @@ export async function fetchRestaurantRatingStats(restaurantId: string): Promise<
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/rating-stats`;
   
-  console.log('📈 Fetching restaurant rating stats:', { restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 8000,
@@ -328,20 +279,13 @@ export async function fetchRestaurantRatingStats(restaurantId: string): Promise<
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching rating stats:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching rating stats: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully fetched restaurant rating stats');
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant rating stats:', error);
     throw error;
   }
 }
@@ -357,8 +301,6 @@ export async function searchRestaurants(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/search?page=${page}&limit=${limit}`;
   
-  console.log('🔍 Searching restaurants with filters:', { filters, page, limit });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'POST',
@@ -369,26 +311,18 @@ export async function searchRestaurants(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error searching restaurants:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error searching restaurants: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.restaurants)) {
-      console.error('❌ Invalid search results data structure:', data);
       throw new Error('Invalid search results data format');
     }
     
-    console.log('✅ Successfully searched restaurants:', data.restaurants.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error searching restaurants:', error);
     throw error;
   }
 }
@@ -403,8 +337,6 @@ export async function fetchTopRatedRestaurants(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/top-rated?limit=${limit}&min_reviews=${minReviews}`;
   
-  console.log('🏆 Fetching top rated restaurants:', { limit, minReviews } , );
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -412,11 +344,6 @@ export async function fetchTopRatedRestaurants(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching top rated restaurants:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching top rated restaurants: ${response.status} ${errorText}`);
     }
     
@@ -424,15 +351,12 @@ export async function fetchTopRatedRestaurants(
     
     
     if (!Array.isArray(data)) {
-      console.error('❌ Invalid top rated restaurants data structure:', data);
       throw new Error('Invalid top rated restaurants data format');
     }
     
-    console.log('✅ Successfully fetched top rated restaurants:', data);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching top rated restaurants:', error);
     throw error;
   }
 }
@@ -444,8 +368,6 @@ export async function fetchFeaturedRestaurants(limit: number = 6): Promise<Featu
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/featured?limit=${limit}`;
   
-  console.log('⭐ Fetching featured restaurants:', { limit });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -453,26 +375,18 @@ export async function fetchFeaturedRestaurants(limit: number = 6): Promise<Featu
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching featured restaurants:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching featured restaurants: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.featured_restaurants)) {
-      console.error('❌ Invalid featured restaurants data structure:', data);
       throw new Error('Invalid featured restaurants data format');
     }
     
-    console.log('✅ Successfully fetched featured restaurants:', data.featured_restaurants.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching featured restaurants:', error);
     throw error;
   }
 }
@@ -499,12 +413,10 @@ export function getDeviceId(): string {
       deviceId = `device_${timestamp}_${randomPart}_${browserFingerprint}`;
       localStorage.setItem('anonymous_device_id', deviceId);
       localStorage.setItem('device_created_at', new Date().toISOString());
-      console.log('🔑 Generated new device ID');
     }
     
     return deviceId;
   } catch (error) {
-    console.warn('⚠️ Error accessing localStorage, using session device ID:', error);
     // Fallback para navegadores que no soportan localStorage
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -580,7 +492,6 @@ export async function canUserRateRestaurant(
     return { canRate: true };
     
   } catch (error) {
-    console.warn('⚠️ Error checking if user can rate:', error);
     // Si hay error, permitir intento (el backend validará)
     return { canRate: true };
   }
@@ -610,7 +521,6 @@ export function getLocalRatings(): LocalRating[] {
     const stored = localStorage.getItem('local_ratings');
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.warn('⚠️ Error reading local ratings:', error);
     return [];
   }
 }
@@ -636,7 +546,6 @@ export function saveLocalRating(rating: LocalRating): void {
     
     localStorage.setItem('local_ratings', JSON.stringify(recentRatings));
   } catch (error) {
-    console.warn('⚠️ Error saving local rating:', error);
   }
 }
 
@@ -671,9 +580,7 @@ export function clearDeviceData(): void {
     localStorage.removeItem('anonymous_device_id');
     localStorage.removeItem('device_created_at');
     localStorage.removeItem('local_ratings');
-    console.log('🧹 Device data cleared');
   } catch (error) {
-    console.warn('⚠️ Error clearing device data:', error);
   }
 }
 
@@ -681,8 +588,6 @@ export function clearDeviceData(): void {
  * Función helper para obtener un restaurante con sus estadísticas de valoración
  */
 export async function fetchRestaurantWithRatings(username: string) {
-  console.log('🔍 Fetching restaurant with ratings:', username);
-  
   try {
     const [restaurantResult] = await Promise.allSettled([
       fetchRestaurantByUsername(username),
@@ -706,7 +611,6 @@ export async function fetchRestaurantWithRatings(username: string) {
         stats
       };
     } catch (statsError) {
-      console.warn('⚠️ Could not fetch rating stats:', statsError);
       return {
         restaurant,
         stats: null
@@ -714,7 +618,6 @@ export async function fetchRestaurantWithRatings(username: string) {
     }
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant with ratings:', error);
     throw error;
   }
 }
@@ -770,8 +673,6 @@ export async function fetchRestaurantComments(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/comments?page=${page}&limit=${limit}&include_anonymous=${includeAnonymous}`;
   
-  console.log('💬 Fetching restaurant comments:', { restaurantId, page, limit, includeAnonymous });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -779,27 +680,18 @@ export async function fetchRestaurantComments(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching restaurant comments: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.comments)) {
-      console.error('❌ Invalid comments data structure:', data);
       throw new Error('Invalid comments data format');
     }
     
-    console.log('✅ Successfully fetched restaurant comments:', data.comments.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant comments:', error);
     throw error;
   }
 }
@@ -815,8 +707,6 @@ export async function createRestaurantComment(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/comments`;
   
-  console.log('💬 Creating restaurant comment:', { restaurantId, hasRating: !!commentData.rating });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'POST',
@@ -827,20 +717,13 @@ export async function createRestaurantComment(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error creating comment:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error creating comment: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created restaurant comment');
     return data;
     
   } catch (error) {
-    console.error('❌ Error creating restaurant comment:', error);
     throw error;
   }
 }
@@ -855,8 +738,6 @@ export async function createAnonymousRestaurantComment(
 ): Promise<RestaurantComment> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/anonymous/restaurants/${restaurantId}/comments`;
-  
-  console.log('💬 Creating anonymous restaurant comment:', { restaurantId, hasRating: !!commentData.rating, deviceId });
   
   try {
     // Validación adicional para Svelte
@@ -881,11 +762,6 @@ export async function createAnonymousRestaurantComment(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error creating anonymous comment:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       
       // Manejo específico de errores para mejor UX
       if (response.status === 429) {
@@ -898,11 +774,9 @@ export async function createAnonymousRestaurantComment(
     }
     
     const data = await response.json();
-    console.log('✅ Successfully created anonymous restaurant comment');
     return data;
     
   } catch (error) {
-    console.error('❌ Error creating anonymous restaurant comment:', error);
     throw error;
   }
 }
@@ -923,8 +797,6 @@ export async function fetchUserRestaurantFavorites(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurant-favorites/?page=${page}&limit=${limit}`;
   
-  console.log('❤️ Fetching user restaurant favorites:', { page, limit });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       headers: getAuthHeaders(token),
@@ -933,26 +805,18 @@ export async function fetchUserRestaurantFavorites(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching user favorites:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching user favorites: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.restaurants)) {
-      console.error('❌ Invalid favorites data structure:', data);
       throw new Error('Invalid favorites data format');
     }
     
-    console.log('✅ Successfully fetched user restaurant favorites:', data.restaurants.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching user restaurant favorites:', error);
     throw error;
   }
 }
@@ -967,8 +831,6 @@ export async function toggleRestaurantFavorite(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/favorite`;
   
-  console.log('❤️ Toggling restaurant favorite:', { restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'POST',
@@ -978,20 +840,13 @@ export async function toggleRestaurantFavorite(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error toggling favorite:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error toggling favorite: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully toggled restaurant favorite:', data.action);
     return data;
     
   } catch (error) {
-    console.error('❌ Error toggling restaurant favorite:', error);
     throw error;
   }
 }
@@ -1006,8 +861,6 @@ export async function addRestaurantToFavorites(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurant-favorites/restaurant/${restaurantId}`;
   
-  console.log('➕ Adding restaurant to favorites:', { restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'POST',
@@ -1017,20 +870,13 @@ export async function addRestaurantToFavorites(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error adding to favorites:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error adding to favorites: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully added restaurant to favorites');
     return data;
     
   } catch (error) {
-    console.error('❌ Error adding restaurant to favorites:', error);
     throw error;
   }
 }
@@ -1045,8 +891,6 @@ export async function removeRestaurantFromFavorites(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurant-favorites/restaurant/${restaurantId}`;
   
-  console.log('➖ Removing restaurant from favorites:', { restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       method: 'DELETE',
@@ -1056,20 +900,13 @@ export async function removeRestaurantFromFavorites(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error removing from favorites:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error removing from favorites: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully removed restaurant from favorites');
     return data;
     
   } catch (error) {
-    console.error('❌ Error removing restaurant from favorites:', error);
     throw error;
   }
 }
@@ -1084,8 +921,6 @@ export async function checkRestaurantFavoriteStatus(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/favorite-status`;
   
-  console.log('🔍 Checking restaurant favorite status:', { restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       headers: getAuthHeaders(token),
@@ -1094,20 +929,13 @@ export async function checkRestaurantFavoriteStatus(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error checking favorite status:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error checking favorite status: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully checked restaurant favorite status:', data.isFavorite);
     return data;
     
   } catch (error) {
-    console.error('❌ Error checking restaurant favorite status:', error);
     throw error;
   }
 }
@@ -1119,8 +947,6 @@ export async function getUserFavoritesCount(token: string): Promise<{ userId: st
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurant-favorites/count`;
   
-  console.log('📊 Getting user favorites count');
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       headers: getAuthHeaders(token),
@@ -1129,20 +955,13 @@ export async function getUserFavoritesCount(token: string): Promise<{ userId: st
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error getting favorites count:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error getting favorites count: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully got user favorites count:', data.totalFavoriteRestaurants);
     return data;
     
   } catch (error) {
-    console.error('❌ Error getting user favorites count:', error);
     throw error;
   }
 }
@@ -1164,8 +983,6 @@ export async function fetchAnonymousRestaurantFavorites(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurant-favorites/anonymous?page=${page}&limit=${limit}`;
   
-  console.log('❤️ Fetching anonymous restaurant favorites:', { deviceId, page, limit });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       headers: getAnonymousHeaders(deviceId),
@@ -1174,26 +991,18 @@ export async function fetchAnonymousRestaurantFavorites(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching anonymous favorites:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching anonymous favorites: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.restaurants)) {
-      console.error('❌ Invalid anonymous favorites data structure:', data);
       throw new Error('Invalid anonymous favorites data format');
     }
     
-    console.log('✅ Successfully fetched anonymous restaurant favorites:', data.restaurants.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching anonymous restaurant favorites:', error);
     throw error;
   }
 }
@@ -1209,8 +1018,6 @@ export async function toggleAnonymousRestaurantFavorite(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/favorite-anonymous?action=${action}`;
   
-  console.log('❤️ Toggling anonymous restaurant favorite:', { restaurantId, deviceId, action });
-  
   try {
     // Validación adicional
     if (!restaurantId || !deviceId) {
@@ -1225,11 +1032,6 @@ export async function toggleAnonymousRestaurantFavorite(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error toggling anonymous favorite:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error toggling anonymous favorite: ${response.status} ${errorText}`);
     }
     
@@ -1246,11 +1048,9 @@ export async function toggleAnonymousRestaurantFavorite(
       removeLocalRestaurantFavorite(restaurantId, deviceId);
     }
     
-    console.log('✅ Successfully toggled anonymous restaurant favorite:', data.action);
     return data;
     
   } catch (error) {
-    console.error('❌ Error toggling anonymous restaurant favorite:', error);
     throw error;
   }
 }
@@ -1265,8 +1065,6 @@ export async function checkAnonymousRestaurantFavoriteStatus(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/favorite-status-anonymous`;
   
-  console.log('🔍 Checking anonymous restaurant favorite status:', { restaurantId, deviceId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       headers: getAnonymousHeaders(deviceId),
@@ -1275,20 +1073,13 @@ export async function checkAnonymousRestaurantFavoriteStatus(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error checking anonymous favorite status:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error checking anonymous favorite status: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully checked anonymous restaurant favorite status:', data.isFavorite);
     return data;
     
   } catch (error) {
-    console.error('❌ Error checking anonymous restaurant favorite status:', error);
     throw error;
   }
 }
@@ -1304,8 +1095,6 @@ export async function fetchCombinedAnonymousFavorites(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/anonymous/favorites/combined?limit_dishes=${limitDishes}&limit_restaurants=${limitRestaurants}`;
   
-  console.log('🔗 Fetching combined anonymous favorites:', { deviceId, limitDishes, limitRestaurants });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       headers: getAnonymousHeaders(deviceId),
@@ -1314,26 +1103,18 @@ export async function fetchCombinedAnonymousFavorites(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching combined favorites:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching combined favorites: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.dishes) || !Array.isArray(data.restaurants)) {
-      console.error('❌ Invalid combined favorites data structure:', data);
       throw new Error('Invalid combined favorites data format');
     }
     
-    console.log('✅ Successfully fetched combined anonymous favorites:', data.counts);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching combined anonymous favorites:', error);
     throw error;
   }
 }
@@ -1353,8 +1134,6 @@ export async function fetchPopularRestaurantsByFavorites(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/popular/by-favorites?limit=${limit}`;
   
-  console.log('🏆 Fetching popular restaurants by favorites:', { limit });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 10000,
@@ -1362,26 +1141,18 @@ export async function fetchPopularRestaurantsByFavorites(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching popular restaurants:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching popular restaurants: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.popular_restaurants)) {
-      console.error('❌ Invalid popular restaurants data structure:', data);
       throw new Error('Invalid popular restaurants data format');
     }
     
-    console.log('✅ Successfully fetched popular restaurants by favorites:', data.popular_restaurants.length);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching popular restaurants by favorites:', error);
     throw error;
   }
 }
@@ -1393,8 +1164,6 @@ export async function fetchRestaurantFavoritesStats(): Promise<FavoritesStatsRes
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurant-favorites/stats`;
   
-  console.log('📊 Fetching restaurant favorites stats');
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 8000,
@@ -1402,20 +1171,13 @@ export async function fetchRestaurantFavoritesStats(): Promise<FavoritesStatsRes
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching favorites stats:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching favorites stats: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully fetched restaurant favorites stats');
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant favorites stats:', error);
     throw error;
   }
 }
@@ -1429,8 +1191,6 @@ export async function fetchRestaurantFavoritesCount(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/restaurants/${restaurantId}/favorites-count`;
   
-  console.log('📊 Fetching restaurant favorites count:', { restaurantId });
-  
   try {
     const response = await fetchWithStandardConfig(url, {
       timeout: 5000,
@@ -1438,20 +1198,13 @@ export async function fetchRestaurantFavoritesCount(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error fetching favorites count:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching favorites count: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
-    console.log('✅ Successfully fetched restaurant favorites count:', data.favoritesCount);
     return data;
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant favorites count:', error);
     throw error;
   }
 }
@@ -1481,7 +1234,6 @@ export function getLocalRestaurantFavorites(): LocalRestaurantFavorite[] {
     const stored = localStorage.getItem('local_restaurant_favorites');
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.warn('⚠️ Error reading local restaurant favorites:', error);
     return [];
   }
 }
@@ -1506,9 +1258,7 @@ export function saveLocalRestaurantFavorite(favorite: LocalRestaurantFavorite): 
     const recentFavorites = filteredFavorites.slice(-100);
     
     localStorage.setItem('local_restaurant_favorites', JSON.stringify(recentFavorites));
-    console.log('💾 Saved local restaurant favorite');
   } catch (error) {
-    console.warn('⚠️ Error saving local restaurant favorite:', error);
   }
 }
 
@@ -1525,9 +1275,7 @@ export function removeLocalRestaurantFavorite(restaurantId: string, deviceId: st
     );
     
     localStorage.setItem('local_restaurant_favorites', JSON.stringify(filteredFavorites));
-    console.log('💾 Removed local restaurant favorite');
   } catch (error) {
-    console.warn('⚠️ Error removing local restaurant favorite:', error);
   }
 }
 
@@ -1561,9 +1309,7 @@ export function clearLocalRestaurantFavorites(): void {
   
   try {
     localStorage.removeItem('local_restaurant_favorites');
-    console.log('🧹 Local restaurant favorites cleared');
   } catch (error) {
-    console.warn('⚠️ Error clearing local restaurant favorites:', error);
   }
 }
 
@@ -1581,8 +1327,6 @@ export async function fetchRestaurantWithFavoriteStatus(
   token?: string,
   deviceId?: string
 ): Promise<Restaurant & { userFav: boolean; favoritesCount: number }> {
-  console.log('🔍 Fetching restaurant with favorite status:', { restaurantId, hasToken: !!token, hasDeviceId: !!deviceId });
-  
   try {
     // Obtener restaurante y estado de favorito en paralelo
     const [restaurantResult, statusResult, countResult] = await Promise.allSettled([
@@ -1610,7 +1354,6 @@ export async function fetchRestaurantWithFavoriteStatus(
     };
     
   } catch (error) {
-    console.error('❌ Error fetching restaurant with favorite status:', error);
     throw error;
   }
 }
@@ -1623,8 +1366,6 @@ export async function checkMultipleRestaurantFavorites(
   token?: string,
   deviceId?: string
 ): Promise<Record<string, boolean>> {
-  console.log('🔍 Checking multiple restaurant favorites:', { count: restaurantIds.length });
-  
   if (!token && !deviceId) {
     // Sin autenticación, devolver todos como false
     return restaurantIds.reduce((acc, id) => {
@@ -1660,7 +1401,6 @@ export async function checkMultipleRestaurantFavorites(
     }, {} as Record<string, boolean>);
     
   } catch (error) {
-    console.error('❌ Error checking multiple restaurant favorites:', error);
     // En caso de error, devolver todos como false
     return restaurantIds.reduce((acc, id) => {
       acc[id] = false;
@@ -1676,13 +1416,10 @@ export async function syncLocalRestaurantFavoritesToServer(
   token: string,
   deviceId: string
 ): Promise<{ synced: number; errors: number }> {
-  console.log('🔄 Syncing local restaurant favorites to server');
-  
   try {
     const localFavorites = getLocalRestaurantFavorites().filter(f => f.deviceId === deviceId);
     
     if (localFavorites.length === 0) {
-      console.log('📭 No local favorites to sync');
       return { synced: 0, errors: 0 };
     }
     
@@ -1695,7 +1432,6 @@ export async function syncLocalRestaurantFavoritesToServer(
         await addRestaurantToFavorites(favorite.restaurantId, token);
         syncedCount++;
       } catch (error) {
-        console.warn(`⚠️ Error syncing favorite ${favorite.restaurantId}:`, error);
         errorCount++;
       }
     }
@@ -1705,11 +1441,9 @@ export async function syncLocalRestaurantFavoritesToServer(
       clearLocalRestaurantFavorites();
     }
     
-    console.log(`✅ Sync completed: ${syncedCount} synced, ${errorCount} errors`);
     return { synced: syncedCount, errors: errorCount };
     
   } catch (error) {
-    console.error('❌ Error syncing local favorites to server:', error);
     return { synced: 0, errors: 1 };
   }
 }

@@ -60,8 +60,6 @@ export async function fetchDishesByUsernameAndCategory(
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/dishes/restaurant-username/${username}/category/${categoryId}?limit=${limit}`;
   
-  console.log('🔍 Fetching dishes by category:', { username, categoryId, url });
-  
   try {
     // USAR LA CONFIGURACIÓN ESTÁNDAR
     const response = await fetchWithStandardConfig(url, {
@@ -70,30 +68,19 @@ export async function fetchDishesByUsernameAndCategory(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-        errorBody: errorText
-      });
       throw new Error(`Error fetching dishes by category: ${response.status} ${errorText}`);
     }
     
     const data = await response.json();
     
     if (!data || !Array.isArray(data.dishes)) {
-      console.error('❌ Invalid data structure:', data);
       throw new Error('Invalid dishes data format');
     }
     
-    console.log('✅ Successfully fetched dishes by category:', data.dishes.length);
     return data;
     
   } catch (error) {
-    console.error('❌ CORS/Network error fetching dishes by category:', error);
-    
     // FALLBACK: Intentar obtener todos los platos y filtrar localmente
-    console.log('🔄 Trying fallback: fetch all dishes and filter locally');
     try {
       const allDishesResponse = await fetchDishesByUsername(username, 500);
       const filteredDishes = allDishesResponse.dishes.filter(dish => 
@@ -102,11 +89,9 @@ export async function fetchDishesByUsernameAndCategory(
         (dish as any).category === categoryId
       );
       
-      console.log('✅ Fallback successful, filtered dishes:', filteredDishes.length);
       return { dishes: filteredDishes };
       
     } catch (fallbackError) {
-      console.error('❌ Fallback also failed:', fallbackError);
       throw new Error(`Failed to fetch dishes for category ${categoryId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -116,8 +101,6 @@ export async function fetchDishesByUsernameAndCategory(
 export async function fetchDishesByUsername(username: string, limit: number = 100): Promise<{ dishes: Dish[] }> {
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/dishes/restaurant-username/${username}?limit=${limit}`;
-  
-  console.log('🔍 Fetching all dishes for username:', username);
   
   try {
     const response = await fetchWithStandardConfig(url);
@@ -129,13 +112,11 @@ export async function fetchDishesByUsername(username: string, limit: number = 10
     const data = await response.json();
     
     if (!data || !Array.isArray(data.dishes)) {
-      console.error('❌ Invalid dishes data structure:', data);
       throw new Error('Invalid dishes data format - expected { dishes: Dish[] }');
     }
     
     return data;
   } catch (error) {
-    console.error('❌ Error fetching dishes by username:', error);
     throw error;
   }
 }
@@ -177,19 +158,14 @@ export async function fetchCategoriesByUsername(username: string): Promise<Categ
   const baseUrl = getBaseUrl();
   const url = `${baseUrl}/categories/restaurant-username/${username}`;
   
-  console.log('🔍 Fetching categories for username:', username);
-  
   try {
     const response = await fetchWithStandardConfig(url);
     
     if (!response.ok) {
-      console.warn(`⚠️ Endpoint categories/restaurant-username/${username} falló, intentando fallback...`);
-      
       // Primero obtener el restaurant para conseguir el ID
       const restaurant = await fetchRestaurantByUsername(username);
       if (restaurant && restaurant.id) {
         // Aquí implementarías fetchCategoriesById si existe
-        console.warn('❌ No hay fallback disponible para categorías por ID');
         throw new Error(`Error fetching categories: ${response.status} ${response.statusText}`);
       }
       
@@ -198,7 +174,6 @@ export async function fetchCategoriesByUsername(username: string): Promise<Categ
     
     return await response.json();
   } catch (error) {
-    console.error('❌ Error fetching categories:', error);
     throw error;
   }
 }
@@ -216,8 +191,6 @@ const shouldUseMockData = (): boolean => {
 };
 
 export async function fetchAllRestaurantDataByUsername(username: string) {
-  console.log(`🚀 Iniciando carga de datos para restaurante: ${username}`);
-  
   try {
     const [restaurantResult, categoriesResult, dishesResult] = await Promise.allSettled([
       fetchRestaurantByUsername(username),
@@ -242,11 +215,11 @@ export async function fetchAllRestaurantDataByUsername(username: string) {
     }
     
     if (categoriesResult.status === 'rejected') {
-      console.warn('⚠️ No se pudieron cargar las categorías:', categoriesResult.reason);
+      // console.warn('⚠️ No se pudieron cargar las categorías:', categoriesResult.reason);
     }
     
     if (dishesResult.status === 'rejected') {
-      console.warn('⚠️ No se pudieron cargar los platillos:', dishesResult.reason);
+      // console.warn('⚠️ No se pudieron cargar los platillos:', dishesResult.reason);
     }
     
     return {
@@ -255,7 +228,6 @@ export async function fetchAllRestaurantDataByUsername(username: string) {
       dishes
     };
   } catch (error) {
-    console.error('❌ Error crítico en fetchAllRestaurantDataByUsername:', error);
     throw error;
   }
 }

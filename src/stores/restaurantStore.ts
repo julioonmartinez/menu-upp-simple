@@ -722,6 +722,57 @@ class RestaurantStore {
   }
 
   /**
+   * Elimina una imagen de un restaurante
+   */
+  async deleteRestaurantImage(
+    restaurantId: string,
+    imageType: 'image' | 'logo' | 'imageProfile' | 'imageCover' | 'imageText' | 'qrCode'
+  ): Promise<UploadImageResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return { success: false, error: 'Debes estar autenticado para eliminar imágenes' };
+    }
+
+    this.setUploadingImage(true);
+    this.clearImageError();
+
+    try {
+      const result = await restaurantService.deleteRestaurantImage(restaurantId, imageType);
+
+      if (result.success && result.data) {
+        // Actualizar el restaurante en el store (eliminar la imagen)
+        this.store.update(state => {
+          const updateRestaurantInArray = (restaurants: Restaurant[]) =>
+            restaurants.map(r =>
+              r.id === restaurantId ? { ...r, ...result.data! } : r
+            );
+
+          return {
+            ...state,
+            userRestaurants: updateRestaurantInArray(state.userRestaurants),
+            allRestaurants: updateRestaurantInArray(state.allRestaurants),
+            currentRestaurant: state.currentRestaurant?.id === restaurantId
+              ? { ...state.currentRestaurant, ...result.data! }
+              : state.currentRestaurant,
+            isUploadingImage: false,
+            imageError: null
+          };
+        });
+
+        return { success: true, restaurant: result.data };
+      } else {
+        this.setUploadingImage(false);
+        this.setImageError(result.error || 'Error eliminando imagen');
+        return { success: false, error: result.error || 'Error eliminando imagen' };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido eliminando imagen';
+      this.setUploadingImage(false);
+      this.setImageError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
    * Métodos de utilidad privados
    */
   private setLoadingAll(isLoading: boolean): void {
@@ -985,6 +1036,7 @@ export function useRestaurants() {
     deleteRestaurant: restaurantStore.deleteRestaurant.bind(restaurantStore),
     checkUsernameAvailability: restaurantStore.checkUsernameAvailability.bind(restaurantStore),
     uploadRestaurantImage: restaurantStore.uploadRestaurantImage.bind(restaurantStore),
+    deleteRestaurantImage: restaurantStore.deleteRestaurantImage.bind(restaurantStore),
     clearCache: restaurantStore.clearCache.bind(restaurantStore),
     clearAllErrors: restaurantStore.clearAllErrors.bind(restaurantStore),
     

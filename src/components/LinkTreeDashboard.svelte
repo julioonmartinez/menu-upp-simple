@@ -31,9 +31,8 @@
   const dispatch = createEventDispatcher();
 
   // Svelte 5 state
-  let showShareModal = $state(false);
+  // Eliminado showShareModal
   let showEditModal = $state(false);
-  let activeTab = $state('overview');
   let loadResult = $state<ApiResult<LinkTree | null> | null>(null);
   let isInitialLoading = $state(true);
   let linkTree: LinkTree | null = $state(null);
@@ -76,19 +75,6 @@
 
   // Estado de la aplicación - SIMPLIFICADO
   let appState = $derived.by(() => {
-    console.log('🔄 Calculating appState:', {
-      isInitialLoading,
-      isLoadingData,
-      loadResult: loadResult ? {
-        success: loadResult.success,
-        hasData: !!loadResult.data,
-        hasRestaurant: !!loadResult.restaurant,
-        errorType: loadResult.errorType
-      } : null,
-      currentLinkTree: !!currentLinkTree,
-      currentRestaurant: !!currentRestaurant
-    });
-
     // Si estamos en carga inicial o cargando datos
     if (isInitialLoading || isLoadingData) {
       return 'loading';
@@ -124,14 +110,11 @@
   // Estados derivados para el LinkTree
   let publicUrl = $derived(currentLinkTree ? getLinkTreePublicUrl(currentLinkTree) : '');
   let safeLinks = $derived(currentLinkTree && Array.isArray(currentLinkTree.links) ? currentLinkTree.links : []);
-  let activeLinks = $derived(currentLinkTree ? getActiveLinks(safeLinks) : []);
-  let linksByType = $derived(currentLinkTree ? groupLinksByType(safeLinks) : {});
   let totalLinks = $derived(safeLinks.length);
-  let activeLinkCount = $derived(activeLinks.length);
+  let activeLinkCount = $derived(currentLinkTree ? getActiveLinks(safeLinks).length : 0);
 
   // onMount
   onMount(async () => {
-    console.log('🚀 Component mounted, loading data...');
     await loadAllData();
   });
 
@@ -141,26 +124,22 @@
       isInitialLoading = true;
       
       // 1. Cargar restaurante
-      console.log('📍 Loading restaurant:', restaurantId);
       await loadRestaurantData();
       
       // 2. Cargar LinkTree solo si no viene como prop
       if (!linkTree) {
-        console.log('🔗 Loading LinkTree for restaurant:', restaurantId);
         await loadLinkTreeData();
       }
       
       // 3. Cargar analytics si tenemos LinkTree
       if (currentLinkTree) {
-        console.log('📊 Loading analytics for LinkTree:', currentLinkTree.id);
         await loadAnalyticsData();
       }
       
     } catch (error) {
-      console.error('❌ Error loading data:', error);
+      // error handling
     } finally {
       isInitialLoading = false;
-      console.log('✅ Initial loading complete');
     }
   }
 
@@ -168,9 +147,8 @@
   async function loadRestaurantData() {
     try {
       await loadRestaurant(restaurantId);
-      console.log('✅ Restaurant loaded:', $currentRestaurantStore?.name);
     } catch (err) {
-      console.error('❌ Error loading restaurant:', err);
+      // error handling
     }
   }
 
@@ -178,18 +156,10 @@
     try {
       const result = await loadLinkTreeByRestaurant(restaurantId);
       loadResult = result;
-      console.log('📊 LinkTree load result:', {
-        success: result.success,
-        hasData: !!result.data,
-        hasRestaurant: !!result.restaurant,
-        errorType: result.errorType,
-        result: result.data
-      });
      if(result.data){
        linkTree = result.data
      }
     } catch (err) {
-      console.error('❌ Error loading LinkTree:', err);
       loadResult = {
         success: false,
         error: err instanceof Error ? err.message : 'Error desconocido',
@@ -202,9 +172,8 @@
     if (!currentLinkTree?.id) return;
     try {
       await loadAnalytics(currentLinkTree.id);
-      console.log('📈 Analytics loaded');
     } catch (err) {
-      console.error('❌ Error loading analytics:', err);
+      // error handling
     }
   }
 
@@ -222,8 +191,6 @@
 
   // Manejar éxito del formulario de LinkTree
   async function handleLinkTreeSuccess(updatedLinkTree: LinkTree) {
-    console.log('✅ LinkTree updated successfully:', updatedLinkTree);
-    
     // Actualizar el estado local
     linkTree = updatedLinkTree;
     
@@ -245,7 +212,7 @@
 
   // Manejar subida de imágenes
   function handleImageUpload(event: CustomEvent ) {
-    console.log('Image upload:', event.detail);
+    // Eliminado log de subida de imagen
   }
 
   async function handleCreateLinkTree() {
@@ -263,11 +230,9 @@
         isPublic: true
       };
       
-      console.log('🆕 Creating LinkTree:', linkTreeData);
       const result = await createLinkTree(linkTreeData);
       
       if (result.success && result.linkTree) {
-        console.log('✅ LinkTree created successfully');
         // Actualizar el estado local
         linkTree = result.linkTree;
         await loadLinkTreeData();
@@ -278,29 +243,11 @@
         toastStore.error(result.error || 'No se pudo crear el LinkTree');
       }
     } catch (err) {
-      console.error('❌ Error creating LinkTree:', err);
       toastStore.error('Error creando LinkTree');
     }
   }
 
-  function handleShare() {
-    showShareModal = true;
-  }
-
-  async function copyToClipboard(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      toastStore.success('¡Enlace copiado al portapapeles!');
-    } catch (err) {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      toastStore.success('¡Enlace copiado al portapapeles!');
-    }
-  }
+  // Eliminada lógica de compartir/copyToClipboard
 
   let analyticsSummary = $derived.by(() => {
     if (!currentAnalytics) return null;
@@ -429,11 +376,6 @@
         </div>
         
         <div class="flex gap-xs flex-shrink-0">
-          <button class="btn btn-secondary" on:click={handleShare}>
-            <i class="icon-share"></i>
-            Compartir
-          </button>
-          
           <button class="btn btn-primary" on:click={handleEditLinkTree}>
             <i class="icon-edit"></i>
             Editar
@@ -442,206 +384,18 @@
       </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="dashboard-tabs">
-      <button 
-        class="tab"
-        class:active={activeTab === 'overview'}
-        on:click={() => activeTab = 'overview'}
-      >
-        <i class="icon-bar-chart"></i>
-        Resumen
-      </button>
-      
-      <button 
-        class="tab"
-        class:active={activeTab === 'links'}
-        on:click={() => activeTab = 'links'}
-      >
-        <i class="icon-link"></i>
-        Enlaces
-      </button>
-      
-      <button 
-        class="tab"
-        class:active={activeTab === 'analytics'}
-        on:click={() => activeTab = 'analytics'}
-      >
-        <i class="icon-trending-up"></i>
-        Analíticas
-      </button>
-    </div>
-
-    <!-- Tab Content -->
+    <!-- Solo sección de Enlaces -->
     <div class="tab-content">
-      {#if activeTab === 'overview'}
-        <!-- Overview Tab -->
-        <div class="p-2xl">
-          <!-- Quick Stats -->
-          <div class="stats-overview">
-            <div class="stat-card visits">
-              <div class="stat-icon">
-                <i class="icon-eye"></i>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">{currentLinkTree?.analytics?.totalVisits || 0}</div>
-                <div class="stat-label">Visitas Totales</div>
-                {#if analyticsSummary}
-                  <div class="stat-change" class:positive={(analyticsSummary.viewsChange || 0) > 0} class:negative={(analyticsSummary.viewsChange || 0) < 0}>
-                    {(analyticsSummary.viewsChange || 0) > 0 ? '+' : ''}{analyticsSummary.viewsChange.toFixed(1)}% vs ayer
-                  </div>
-                {/if}
-              </div>
-            </div>
-            
-            <div class="stat-card clicks">
-              <div class="stat-icon">
-                <i class="icon-mouse-pointer"></i>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">{currentLinkTree?.analytics?.totalClicks || 0}</div>
-                <div class="stat-label">Clics Totales</div>
-                {#if analyticsSummary}
-                  <div class="stat-change" class:positive={analyticsSummary.clicksChange > 0} class:negative={analyticsSummary.clicksChange < 0}>
-                    {analyticsSummary.clicksChange > 0 ? '+' : ''}{analyticsSummary.clicksChange.toFixed(1)}% vs ayer
-                  </div>
-                {/if}
-              </div>
-            </div>
-            
-            <div class="stat-card visitors">
-              <div class="stat-icon">
-                <i class="icon-users"></i>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">{currentLinkTree?.analytics?.uniqueVisitors || 0}</div>
-                <div class="stat-label">Visitantes Únicos</div>
-              </div>
-            </div>
-            
-            <div class="stat-card links">
-              <div class="stat-icon">
-                <i class="icon-link"></i>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">{activeLinkCount}</div>
-                <div class="stat-label">Enlaces Activos</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Activity -->
-          <div class="popular-links-section">
-            <h3 class="text-lg font-semibold mb-lg text-primary">Enlaces Populares</h3>
-            {#if (currentAnalytics?.clicks.byLink.length || 0) > 0}
-              <div class="popular-links">
-                {#each (currentAnalytics?.clicks.byLink || []).slice(0, 5) as linkStat}
-                  <div class="popular-link">
-                    <div class="link-info">
-                      <div class="link-name">{linkStat.linkTitle}</div>
-                      <div class="click-count">{formatClickCount(linkStat.count)} clics</div>
-                    </div>
-                    <div class="click-bar">
-                      <div 
-                        class="click-fill" 
-                        style="width: {(linkStat.count / Math.max(...(currentAnalytics?.clicks.byLink || []).map((l: any) => l.count))) * 100}%"
-                      ></div>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            {:else}
-              <div class="no-data">
-                <p class="text-muted">No hay datos de clics disponibles aún.</p>
-              </div>
-            {/if}
-          </div>
-        </div>
-      
-      {:else if activeTab === 'links'}
-        <!-- Links Tab -->
-        <div class="">
-          <LinkManager 
-            linkTreeId={currentLinkTree?.id!}
-            links={safeLinks.slice() }
-            editable={true}
-            showAnalytics={true}
-            restaurantUsername={currentRestaurant?.username || ''}
-            on:linkCreated={handleLinkChanged}
-            on:linkUpdated={handleLinkChanged}
-            on:linkDeleted={handleLinkChanged}
-          />
-        </div>
-      
-      {:else if activeTab === 'analytics'}
-        <!-- Analytics Tab -->
-        <div class="p-2xl">
-          {#if isLoadingAnalytics}
-            <div class="loading-state">
-              <div class="animate-spin" style="width: 32px; height: 32px; border: 3px solid var(--bg-accent); border-top: 3px solid var(--primary-color); border-radius: 50%; margin-bottom: var(--spacing-md);"></div>
-              <p class="text-muted">Cargando analíticas...</p>
-            </div>
-          {:else if currentAnalytics}
-            <div class="analytics-content">
-              <div class="chart-section">
-                <h3 class="text-lg font-semibold mb-md text-primary">Visitas por Día</h3>
-                <div class="chart-container">
-                  {#if currentAnalytics?.views.daily && currentAnalytics.views.daily.length > 0}
-                    <div class="simple-chart">
-                      {#each currentAnalytics.views.daily.slice(-7) as day}
-                        <div class="chart-bar">
-                          <div 
-                            class="bar-fill" 
-                            style="height: {(day.count / Math.max(...currentAnalytics.views.daily.map((d: any) => d.count))) * 100}%"
-                          ></div>
-                          <div class="bar-label">{new Date(day.date).toLocaleDateString('es', { weekday: 'short' })}</div>
-                          <div class="bar-value">{day.count}</div>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="no-data">
-                      <p class="text-muted">No hay datos de visitas disponibles.</p>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-
-              <!-- Clicks Chart -->
-              <div class="chart-section">
-                <h3 class="text-lg font-semibold mb-md text-primary">Clics por Día</h3>
-                <div class="chart-container">
-                  {#if currentAnalytics?.clicks.daily && currentAnalytics.clicks.daily.length > 0}
-                    <div class="simple-chart">
-                      {#each currentAnalytics.clicks.daily.slice(-7) as day}
-                        <div class="chart-bar">
-                          <div 
-                            class="bar-fill" 
-                            style="height: {(day.count / Math.max(...currentAnalytics.clicks.daily.map((d: any) => d.count))) * 100}%"
-                          ></div>
-                          <div class="bar-label">{new Date(day.date).toLocaleDateString('es', { weekday: 'short' })}</div>
-                          <div class="bar-value">{day.count}</div>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="no-data">
-                      <p class="text-muted">No hay datos de clics disponibles.</p>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            </div>
-          {:else}
-            <div class="no-data">
-              <p class="text-muted mb-md">No se pudieron cargar las analíticas.</p>
-              <button class="btn btn-primary" on:click={loadAnalyticsData}>
-                Reintentar
-              </button>
-            </div>
-          {/if}
-        </div>
-      {/if}
+      <LinkManager 
+        linkTreeId={currentLinkTree?.id!}
+        links={safeLinks.slice() }
+        editable={true}
+        showAnalytics={true}
+        restaurantUsername={currentRestaurant?.username || ''}
+        on:linkCreated={handleLinkChanged}
+        on:linkUpdated={handleLinkChanged}
+        on:linkDeleted={handleLinkChanged}
+      />
     </div>
 
   <!-- Estado inesperado -->
@@ -683,67 +437,7 @@
   />
 </GlobalModal>
 
-<!-- Share Modal -->
-{#if showShareModal}
-  <div class="modal-overlay" on:click={() => showShareModal = false}>
-    <div class="modal" on:click|stopPropagation>
-      <div class="modal-header">
-        <h3 class="text-lg font-semibold m-0 text-primary">Compartir LinkTree</h3>
-        <button class="modal-close" on:click={() => showShareModal = false}>
-          <i class="icon-x"></i>
-        </button>
-      </div>
-      
-      <div class="modal-content">
-        <div class="share-section">
-          <label class="block font-medium text-primary mb-xs">URL Pública</label>
-          <div class="url-input">
-            <input type="text" value={publicUrl} readonly class="input" />
-            <button class="btn btn-primary" on:click={() => copyToClipboard(publicUrl)}>
-              <i class="icon-copy"></i>
-              Copiar
-            </button>
-          </div>
-          {#if currentRestaurant}
-            <p class="url-info">Tu LinkTree está disponible en: <strong>/{currentRestaurant.username}</strong></p>
-          {/if}
-        </div>
-        
-        <div class="share-buttons">
-          <a 
-            href="https://twitter.com/intent/tweet?url={encodeURIComponent(publicUrl)}&text={encodeURIComponent('Visita mi Menú')}"
-            target="_blank"
-            rel="noopener"
-            class="share-btn twitter"
-          >
-            <i class="icon-twitter"></i>debus
-            Twitter
-          </a>
-          
-          <a 
-            href="https://www.facebook.com/sharer/sharer.php?u={encodeURIComponent(publicUrl)}"
-            target="_blank"
-            rel="noopener"
-            class="share-btn facebook"
-          >
-            <i class="icon-facebook"></i>
-            Facebook
-          </a>
-          
-          <a 
-            href="https://wa.me/?text={encodeURIComponent(`Visita mi LinkTree: ${publicUrl}`)}"
-            target="_blank"
-            rel="noopener"
-            class="share-btn whatsapp"
-          >
-            <i class="icon-message-circle"></i>
-            WhatsApp
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-{/if}
+<!-- Eliminado Share Modal -->
 
 <style>
   /* ========================================

@@ -92,20 +92,14 @@ class AuthStore {
    * Inicializa el store verificando si hay un usuario autenticado
    */
   async init(): Promise<void> {
-    console.log('🔧 AuthStore: Starting init...');
     this.setLoading(true);
     this.clearError();
     
     try {
-      console.log('🔧 AuthStore: Checking if window exists and user is authenticated...');
       if (typeof window !== 'undefined' && authService.isAuthenticated()) {
-        console.log('🔧 AuthStore: User appears to be authenticated, getting current user...');
         const result = await authService.getCurrentUser();
         
-        console.log('🔧 AuthStore: getCurrentUser result:', result);
-        
         if (result.success && result.data) {
-          console.log('🔧 AuthStore: User data retrieved successfully, updating store...');
           this.store.update(state => ({
             ...state,
             user: result.data!,
@@ -114,31 +108,25 @@ class AuthStore {
             error: null,
             isInitialized: true
           }));
-          console.log('🔧 AuthStore: Store updated with authenticated user');
         } else {
-          console.log('🔧 AuthStore: Failed to get user data, setting to initial state');
           this.store.update(state => ({
             ...initialState,
             isInitialized: true
           }));
         }
       } else {
-        console.log('🔧 AuthStore: No window or user not authenticated, setting to initial state');
         this.store.update(state => ({
           ...initialState,
           isInitialized: true
         }));
       }
     } catch (error) {
-      console.error('❌ AuthStore: Error inicializando auth store:', error);
       this.store.update(state => ({
         ...initialState,
         error: error instanceof Error ? error.message : 'Error inicializando autenticación',
         isInitialized: true
       }));
     }
-    
-    console.log('🔧 AuthStore: Init completed');
   }
 
   /**

@@ -95,9 +95,7 @@ function createDishRatingStore() {
             initialized: true
           }));
           
-          console.log('🔑 Dish rating store initialized with device ID:', deviceId.substring(0, 10) + '...');
         } catch (error) {
-          console.error('❌ Error initializing dish rating store:', error);
           update(state => ({ ...state, initialized: true }));
         }
       }
