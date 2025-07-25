@@ -24,6 +24,7 @@
   let isSubmitting = false;
   let error = null;
   let success = null;
+  let isClosing = false;
 
   // Reactive statements
   $: isUpdating = $restaurantStore.isUpdating;
@@ -117,13 +118,14 @@
       if (result.success) {
         success = 'Características del restaurante actualizadas correctamente';
         dispatch('update');
-        
-        // Cerrar modal después de 2 segundos
+        isClosing = true;
         setTimeout(() => {
+          isClosing = false;
           dispatch('close');
         }, 2000);
       } else {
         error = result.error || 'Error actualizando las características';
+        isSubmitting = false;
       }
     } catch (err) {
       error = err.message || 'Error desconocido';
@@ -136,9 +138,6 @@
     formData[field] = event.detail.tags;
     error = null; // Limpiar errores al hacer cambios
   }
-
-  // Contar total de características
-  $: totalFeatures = formData.cuisineType.length + formData.features.length + formData.paymentMethods.length;
 </script>
 
 <div class="features-form w-full container">
@@ -154,23 +153,6 @@
       <SuccessMessage message={success} />
     </div>
   {/if}
-
-  <!-- Resumen de características -->
-  <div class="features-summary rounded-xl p-2xl mb-2xl text-inverse" style="background: var(--primary-gradient-bold);">
-    <div class="summary-content flex flex-col gap-xs">
-      <span class="summary-icon text-2xl">⭐</span>
-      <span class="summary-text text-lg font-semibold">
-        {totalFeatures} característica{totalFeatures !== 1 ? 's' : ''} configurada{totalFeatures !== 1 ? 's' : ''}
-      </span>
-      <div class="summary-details flex items-center gap-xs text-sm opacity-90">
-        <span class="detail-item bg-glass px-sm py-xs rounded">{formData.cuisineType.length} cocina{formData.cuisineType.length !== 1 ? 's' : ''}</span>
-        <span class="detail-separator">•</span>
-        <span class="detail-item bg-glass px-sm py-xs rounded">{formData.features.length} servicio{formData.features.length !== 1 ? 's' : ''}</span>
-        <span class="detail-separator">•</span>
-        <span class="detail-item bg-glass px-sm py-xs rounded">{formData.paymentMethods.length} pago{formData.paymentMethods.length !== 1 ? 's' : ''}</span>
-      </div>
-    </div>
-  </div>
 
   <form on:submit={handleSubmit} class="form flex flex-col gap-3xl">
     <!-- Tipos de Cocina -->
@@ -315,15 +297,15 @@
         type="button"
         on:click={() => dispatch('close')}
         class="btn btn-secondary"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isClosing}
       >
         Cancelar
       </button>
       
       <LoadingButton
         type="submit"
-        loading={isSubmitting || isUpdating}
-        disabled={formData.cuisineType.length === 0 || formData.paymentMethods.length === 0}
+        loading={isSubmitting || isUpdating || isClosing}
+        disabled={formData.cuisineType.length === 0 || formData.paymentMethods.length === 0 || isClosing}
         class="btn btn-primary"
       >
         Guardar Características

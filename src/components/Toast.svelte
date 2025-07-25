@@ -101,34 +101,34 @@
     switch (type) {
       case 'success':
         return {
-          icon: '✅',
+          iconClass: 'fas fa-check-circle',
           iconBg: '#10b981',
           bgGradient: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
           borderColor: '#a7f3d0',
           textColor: '#065f46',
           progressColor: '#10b981',
-          emoji: '🎉'
+          ariaLabel: 'Éxito'
         };
       case 'error':
         return {
-          icon: '❌',
+          iconClass: 'fas fa-times-circle',
           iconBg: '#ef4444',
           bgGradient: 'linear-gradient(135deg, #fef2f2, #fecaca)',
           borderColor: '#fca5a5',
           textColor: '#991b1b',
           progressColor: '#ef4444',
-          emoji: '⚠️'
+          ariaLabel: 'Error'
         };
       case 'info':
       default:
         return {
-          icon: 'ℹ️',
+          iconClass: 'fas fa-info-circle',
           iconBg: '#3b82f6',
           bgGradient: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
           borderColor: '#93c5fd',
           textColor: '#1e40af',
           progressColor: '#3b82f6',
-          emoji: '💡'
+          ariaLabel: 'Información'
         };
     }
   }
@@ -165,8 +165,10 @@
         class:mobile={isMobile}
         style="background-color: {config.iconBg};"
         in:scale={{ duration: 500, delay: 150, easing: backOut }}
+        aria-label={config.ariaLabel}
+        title={config.ariaLabel}
       >
-        <span class="icon-emoji">{isMobile ? config.emoji : config.icon}</span>
+        <i class={config.iconClass} aria-hidden="true"></i>
       </div>
 
       <!-- Contenido del mensaje compacto -->

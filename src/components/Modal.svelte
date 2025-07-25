@@ -174,12 +174,12 @@
   
   .modal-content.size-large {
     max-width: 900px;
-    max-height: 90vh;
+    max-height: 80dvh ;
   }
   
   .modal-content.size-full {
     max-width: 95vw;
-    max-height: 95vh;
+    max-height: 80dvh;
   }
   
   /* Header */
@@ -344,7 +344,7 @@
   @media (max-width: 768px) {
     .modal-content {
       border-radius: 16px 16px 0 0;
-      max-height: 95vh;
+      max-height: 80dvh;
     }
     
     .modal-header {

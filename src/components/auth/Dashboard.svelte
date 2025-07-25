@@ -66,16 +66,16 @@
             <span class="uppercase font-bold tracking-wider text-base">¡Promoción Especial!</span>
           </div>
           <h2 class="text-2xl font-extrabold leading-tight mb-xs">¿Quieres tu menú digital sin complicaciones?</h2>
-          <div class="price-section flex flex-col items-center justify-center gap-xs p-xl mb-md mt-xs bg-opacity-20 rounded-2xl shadow-md border border-white/30 max-w-xs mx-auto relative overflow-visible">
+          <div class="price-section flex flex-col items-center justify-center gap-xs p-md mb-md mt-xs bg-opacity-20 rounded-2xl shadow-md border border-white/30 max-w-xs mx-auto relative overflow-visible">
             <div class="ribbon-discount">-30%</div>
             <div class="flex items-center gap-sm mb-xs">
-              <span class="text-xl font-semibold text-inverse line-through opacity-60">$999</span>
+              <span style="font-size: 1.25rem; font-weight: 600; opacity: 0.6;">de <span style="text-decoration: line-through;">$999</span> a</span>
             </div>
             <div class="flex items-baseline gap-xs">
               <span class="text-4xl font-black text-accent">$699</span>
               <span class="text-base font-semibold text-success">MXN</span>
             </div>
-            <div class="text-xs text-inverse opacity-80 mt-xs mb-sm">¡Precio final, todo incluido!</div>
+            <div class="text-xs opacity-80 mt-xs mb-sm">¡Precio final, todo incluido!</div>
           </div>
           <!-- Lista de beneficios mejorada -->
           <ul class="list-disc improved-benefits-list pl-2xl text-base mb-md opacity-90">
@@ -278,6 +278,7 @@
     transition: box-shadow 0.2s;
     position: relative;
     overflow: visible;
+    padding: 0.5rem 0.3rem;
   }
   .price-section:hover {
     box-shadow: 0 8px 32px rgba(255,107,53,0.10), 0 2px 8px rgba(16,185,129,0.10);
@@ -303,7 +304,7 @@
   }
   @media (max-width: 600px) {
     .price-section {
-      padding: 1.25rem 0.5rem;
+      /* padding: 1.25rem 0.5rem; */
       max-width: 100%;
     }
     .ribbon-discount {
@@ -539,7 +540,7 @@
   gap: 1rem;
 }
 .promo-card .price-section, .plan-pro-card .price-section {
-  padding: 1.5rem 1rem;
+  /* padding: 1.5rem 1rem; */
   max-width: 220px;
   background: rgba(255,255,255,0.18);
   border-radius: 1rem;
@@ -692,8 +693,9 @@
   .planpro-price-wrapper {
     position: relative;
     background: rgba(255,255,255,0.18); /* Igual que .price-section de promo-card */
+    border: 1px solid var(--bg-accent);
     border-radius: 1.2em;
-    box-shadow: 0 4px 24px rgba(16,185,129,0.10);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     padding: 1.2em 1.5em 1em 1.5em;
     display: flex;
     flex-direction: column;
@@ -737,6 +739,7 @@
     letter-spacing: -0.03em;
     margin-right: 0.15em;
     text-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    color: var(--primary-color);
   }
   .planpro-period {
     font-size: 1em;

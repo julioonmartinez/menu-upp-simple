@@ -130,7 +130,7 @@
         {/if}
       {/if}
     </div>
-    <div class="wizard-footer px-2xl py-xl flex items-center justify-end gap-lg bg-white border-t border-accent rounded-b-xl flex-shrink-0 sticky bottom-0 z-10">
+    <div class="wizard-footer px-sm py-sm flex items-center justify-end gap-lg bg-white border-t border-accent rounded-b-xl flex-shrink-0 sticky bottom-0 z-10">
       {#if step > 1}
         <button class="btn btn-secondary" on:click={prevStep}>Atrás</button>
       {/if}
@@ -147,13 +147,14 @@
   .wizard-container {
     background: var(--bg-secondary);
     width: 100vw;
-    height: 100vh;
-    min-height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
     padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
   .wizard-card {
-    height: 100vh;
-    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -164,7 +165,7 @@
       border-radius: 0;
       max-width: 100vw;
       width: 100vw;
-      height: 100vh;
+      height: 100dvh;
     }
   }
   .wizard-progress-bar-container {
@@ -183,15 +184,16 @@
     border-bottom: 1px solid var(--bg-accent);
     background: var(--bg-primary);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    position: static;
+    position: sticky;
     top: 0;
   }
   .wizard-footer {
     border-top: 1px solid var(--bg-accent);
     background: var(--bg-primary);
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-    position: static;
+    position: sticky;
     bottom: 0;
+    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0));
   }
   .wizard-content {
     min-height: 340px;

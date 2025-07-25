@@ -18,6 +18,7 @@
   } from '../../services/index.ts';
   import type { Category } from '../../interfaces/category.ts';
   import type { Dish } from '../../interfaces/dish.ts';
+  import { toastStore } from '../../stores/toastStore.ts';
 
   export let idRestaurant : string | null = null; 
   
@@ -71,6 +72,10 @@
   let showConfirmModal = false;
   let confirmAction: 'deleteCategory' | 'deleteDish' | null = null;
   let itemToDelete: { id: string; name: string; type: 'category' | 'dish' } | null = null;
+
+  // Estado para el modal informativo
+  let showInfoModal = false;
+  let infoModalMessage = '';
 
   // Estado para manejar errores de imágenes
   let imageErrors = new Set();
@@ -156,9 +161,13 @@
       if (result.success) {
         closeModal();
         await loadInitialData();
+        toastStore.success(editingCategory ? 'Categoría actualizada correctamente' : 'Categoría creada correctamente');
+      } else if (result.error) {
+        toastStore.error(result.error);
       }
     } catch (error) {
       console.error('Error con categoría:', error);
+      toastStore.error('Error al guardar la categoría');
     }
   }
 
@@ -179,16 +188,28 @@
       if (result.success) {
         closeModal();
         await loadInitialData();
+        toastStore.success(editingDish ? 'Platillo actualizado correctamente' : 'Platillo creado correctamente');
+      } else if (result.error) {
+        toastStore.error(result.error);
       }
     } catch (error) {
       console.error('Error con platillo:', error);
+      toastStore.error('Error al guardar el platillo');
     }
   }
 
   async function handleDeleteCategory(categoryId: string) {
     const category = $allCategories.find(c => c.id === categoryId);
     if (!category) return;
-    
+
+    // Verifica si la categoría tiene platillos
+    const dishesInCategory = getDishesForCategory(categoryId);
+    if (dishesInCategory.length > 0) {
+      infoModalMessage = 'Debes borrar primero todos los platillos de la categoría antes de poder eliminarla.';
+      showInfoModal = true;
+      return;
+    }
+
     itemToDelete = { id: categoryId, name: category.name, type: 'category' };
     confirmAction = 'deleteCategory';
     showConfirmModal = true;
@@ -217,9 +238,13 @@
 
       if (result?.success) {
         await loadInitialData();
+        toastStore.success(itemToDelete.type === 'category' ? 'Categoría eliminada correctamente' : 'Platillo eliminado correctamente');
+      } else if (result?.error) {
+        toastStore.error(result.error);
       }
     } catch (error) {
       console.error('Error eliminando elemento:', error);
+      toastStore.error('Error al eliminar el elemento');
     } finally {
       showConfirmModal = false;
       confirmAction = null;
@@ -737,6 +762,22 @@
     loadingText="Eliminando..."
     on:confirm={executeDelete}
     on:cancel={cancelDelete}
+  />
+{/if}
+
+<!-- Info Modal para categorías con platillos -->
+{#if showInfoModal}
+  <ConfirmationModal
+    isOpen={true}
+    title="No se puede eliminar la categoría"
+    message={infoModalMessage}
+    confirmText="Entendido"
+    cancelText=""
+    type="info"
+    icon="ℹ️"
+    loading={false}
+    on:confirm={() => (showInfoModal = false)}
+    on:cancel={() => (showInfoModal = false)}
   />
 {/if}
 

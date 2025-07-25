@@ -30,7 +30,7 @@ const urlOG = 'https://res.cloudinary.com/dsyudnkjh/image/upload/v1750307287/men
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
-  <meta property="og:url" content="https://menu-upp.com" />
+  <meta property="og:url" content="https://menuupp.com" />
   <meta property="og:image" content={urlOG} />
   
   <!-- Twitter Card -->
@@ -40,7 +40,7 @@ const urlOG = 'https://res.cloudinary.com/dsyudnkjh/image/upload/v1750307287/men
   <meta name="twitter:image" content={urlOG} />
   
   <!-- Mobile -->
-  <meta name="theme-color" content="#FF4500" />
+  <meta name="theme-color" content="#FFFFFF" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   
@@ -75,7 +75,7 @@ const urlOG = 'https://res.cloudinary.com/dsyudnkjh/image/upload/v1750307287/men
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
           e.preventDefault();
-          const target = document.querySelector(this.getAttribute('href'));
+          const target = document.querySelector((this as HTMLAnchorElement).getAttribute('href') || '');
           if (target) {
             target.scrollIntoView({
               behavior: 'smooth',

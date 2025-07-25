@@ -13,7 +13,7 @@
   export let confirmText = 'Confirmar';
   export let cancelText = 'Cancelar';
   export let type = 'danger'; // 'danger', 'warning', 'info'
-  export let icon = '⚠️';
+  export let icon = 'fa-solid fa-triangle-exclamation'; // Por defecto warning
   export let loading = false;
   export let loadingText = 'Procesando...';
   
@@ -60,7 +60,7 @@
     switch (type) {
       case 'danger':
         return {
-          icon: '🗑️',
+          icon: 'fa-solid fa-trash',
           iconBg: '#ef4444',
           bgGradient: 'linear-gradient(135deg, #fef2f2, #fecaca)',
           borderColor: '#fca5a5',
@@ -70,7 +70,7 @@
         };
       case 'warning':
         return {
-          icon: '⚠️',
+          icon: 'fa-solid fa-triangle-exclamation',
           iconBg: '#f59e0b',
           bgGradient: 'linear-gradient(135deg, #fffbeb, #fed7aa)',
           borderColor: '#fdba74',
@@ -81,7 +81,7 @@
       case 'info':
       default:
         return {
-          icon: 'ℹ️',
+          icon: 'fa-solid fa-circle-info',
           iconBg: '#3b82f6',
           bgGradient: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
           borderColor: '#93c5fd',
@@ -120,7 +120,7 @@
         style="background-color: {config.iconBg};"
         in:scale={{ duration: 400, delay: 100, easing: backOut }}
       >
-        <span class="icon-emoji">{config.icon}</span>
+        <i class={`icon-fa ${icon || config.icon}`}></i>
       </div>
       
       <!-- Contenido -->
@@ -135,13 +135,15 @@
       
       <!-- Acciones -->
       <div class="confirmation-actions" in:fly={{ y: 15, duration: 300, delay: 300 }}>
-        <button
-          class="confirmation-btn cancel-btn"
-          on:click={handleCancel}
-          disabled={loading}
-        >
-          {cancelText}
-        </button>
+        {#if cancelText}
+          <button
+            class="confirmation-btn cancel-btn"
+            on:click={handleCancel}
+            disabled={loading}
+          >
+            {cancelText}
+          </button>
+        {/if}
         <button
           class="confirmation-btn confirm-btn"
           style="
@@ -198,9 +200,13 @@
     margin: 0 auto 1.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-  
-  .icon-emoji {
-    font-size: 1.5rem;
+  .icon-fa {
+    font-size: 2rem;
+    color: white;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .confirmation-content {

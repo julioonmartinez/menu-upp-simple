@@ -1,8 +1,7 @@
 ---
 import type { LinkTree } from '../interfaces';
 import type { Restaurant, SocialLinks } from '../interfaces/restaurant';
-// import type { LinkTree } from '../interfaces/restaurant';
-// import type { SocialLinks } from "../interfaces/socialLinks";
+import QRCodeDynamic from '../components/ui/QRCodeDynamic.svelte';
 // Componente Adaptativo Modal/BottomSheet para Astro 5
 export interface Props {
   restaurant: Restaurant,
@@ -14,6 +13,7 @@ const {
   restaurant,
   linkTree
 } = Astro.props;
+const qrUrl = `https://www.menuupp.com/${restaurant.username}`;
 console.log('Restaurant data:', restaurant);
 
 // Valores por defecto seguros
@@ -159,7 +159,7 @@ function getInitials(name: string) {
     <div class="modal-body">
       <div class="qr-section">
         <div class="qr-container">
-          <img src={restaurant.qrCode_data?.url} alt="Código QR para visitar nuestro menú online." class="qr-image">
+          <QRCodeDynamic url={qrUrl} client:load />
         </div>
         <p class="qr-instructions">Escanea para visitar nuestro menú.</p>
       </div>

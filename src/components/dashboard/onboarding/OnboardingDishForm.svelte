@@ -1,8 +1,10 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { dishService } from '../../../services/index.ts';
+  import { toastStore } from '../../../stores/toastStore.ts';
   export let restaurantId: string;
   export let categories: any[] = [];
+  import './OnboardingDishForm.css';
 
   const dispatch = createEventDispatcher();
 
@@ -24,16 +26,20 @@
     errors = {};
     if (!formData.name.trim()) {
       errors.name = 'El nombre es requerido';
+      toastStore.error('El nombre es requerido');
     }
     if (!formData.price || isNaN(Number(formData.price))) {
       errors.price = 'El precio es requerido y debe ser un número';
+      toastStore.error('El precio es requerido');
     }
     if (!formData.categoryId) {
       errors.categoryId = 'Selecciona una categoría';
+      toastStore.error('Selecciona una categoría');
     }
     // Descripción es opcional, solo validar si existe y es muy larga
     if (formData.description && formData.description.length > 500) {
       errors.description = 'La descripción no puede exceder 500 caracteres';
+      toastStore.error('La descripción no puede exceder 500 caracteres');
     }
     return Object.keys(errors).length === 0;
   }
@@ -94,6 +100,7 @@
 
   // Exponer método save() para el wizard
   export async function save() {
+    console.log('save');
     touched = { name: true, price: true, categoryId: true };
     if (!validate()) {
       return false;
@@ -115,10 +122,14 @@
         return true;
       } else {
         error = result.error || 'Error desconocido';
+        toastStore.error(error);
+        console.log(result);
         return false;
       }
     } catch (e: any) {
+      console.log(e);
       error = e?.message || 'Error desconocido';
+      toastStore.error(error || 'Error desconocido');
       return false;
     } finally {
       isSubmitting = false;
@@ -227,74 +238,8 @@
       />
     </div>
   </div>
-  {#if error}
-    <div class="error-state mt-lg">{error}</div>
-  {/if}
   {#if isSubmitting}
     <div class="text-center text-muted mt-lg animate-pulse">Guardando...</div>
   {/if}
 </div>
 
-<style>
-.onboarding-dish-form {
-  padding: 0;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding-bottom: 100px;
-}
-.form-field-error {
-  font-size: var(--font-xs);
-  color: var(--error);
-  margin: 0;
-}
-.image-dropzone {
-  border: 2px dashed var(--primary-color);
-  border-radius: var(--radius-xl, 0.75rem);
-  padding: 2rem 1rem;
-  text-align: center;
-  background: var(--bg-tertiary, #fafbfc);
-  transition: border-color 0.2s, background 0.2s;
-  position: relative;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.image-dropzone.active {
-  border-color: var(--primary-dark);
-  background: var(--bg-accent, #f0f4ff);
-}
-.image-dropzone-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-muted);
-}
-.image-hint {
-  font-size: var(--font-xs, 0.75rem);
-  color: var(--text-light);
-}
-.image-preview {
-  max-width: 100%;
-  max-height: 160px;
-  border-radius: var(--radius-lg, 0.5rem);
-  margin-bottom: 0.5rem;
-  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.07));
-}
-.remove-image-btn {
-  background: var(--error, #ef4444);
-  color: var(--text-inverse, #fff);
-  border: none;
-  border-radius: var(--radius-md, 0.375rem);
-  padding: 0.25rem 0.75rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  margin-top: 0.25rem;
-  transition: background 0.2s;
-}
-.remove-image-btn:hover {
-  background: var(--error-light, #b91c1c);
-}
-</style> 

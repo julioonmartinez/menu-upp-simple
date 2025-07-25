@@ -1,5 +1,7 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import './OnboardingStepQRCode.css';
+  import { toastStore } from '../../../stores/toastStore';
 
   export let restaurant;
   export let restaurantId;
@@ -20,6 +22,7 @@
   function copyUrl() {
     if (publicUrl) {
       navigator.clipboard.writeText(publicUrl);
+      toastStore.success('¡Enlace copiado al portapapeles!');
     }
   }
 
@@ -72,44 +75,3 @@
   </div> -->
 </div>
 
-<style>
-  .onboarding-final-step {
-    text-align: center;
-    max-width: 500px;
-    margin: 0 auto;
-  }
-  .qr-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-  .qr-image {
-    width: 220px;
-    height: 220px;
-    border-radius: 16px;
-    border: 1px solid #eee;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    background: #fff;
-  }
-  .qr-actions {
-    margin-top: 0.5rem;
-  }
-  .public-url-section {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    align-items: center;
-    margin-top: 2rem;
-    flex-wrap: wrap;
-  }
-  .public-url {
-    width: 300px;
-    max-width: 100%;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    font-size: 1rem;
-  }
-</style> 

@@ -4,6 +4,7 @@
     import { restaurantStore } from '../../../stores/restaurantStore';
     import { createEventDispatcher } from 'svelte';
     import CompactImageCard from '../../ui/CompactImageCard.svelte';
+    import { toastStore } from '../../../stores/toastStore';
   
     export let restaurant;
     export let restaurantId;
@@ -35,6 +36,9 @@
           formData[type] = result.restaurant[type];
         } else {
           error = result.error;
+          if (error) {
+            toastStore.error(error);
+          }
         }
       } finally {
         uploading[type] = false;
@@ -63,6 +67,9 @@
           dispatch('next');
         } else {
           error = result.error;
+          if (error) {
+            toastStore.error(error);
+          }
         }
       } finally {
         isSubmitting = false;
@@ -87,6 +94,9 @@
           return true;
         } else {
           error = result.error;
+          if (error) {
+            toastStore.error(error);
+          }
           return false;
         }
       } finally {
@@ -176,9 +186,6 @@
         <span class="text-xs text-muted mt-xs">Color de fondo del menú</span>
       </div>
     </div>
-    {#if error}
-      <div class="error-state mt-2xl">{error}</div>
-    {/if}
     {#if isSubmitting}
       <div class="text-center text-muted mt-lg animate-pulse">Guardando...</div>
     {/if}

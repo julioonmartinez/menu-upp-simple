@@ -61,6 +61,7 @@
   let isSubmitting = false;
   let error = null;
   let success = null;
+  let isClosing = false;
 
   // Reactive statements
   $: isUpdating = $restaurantStore.isUpdating;
@@ -165,14 +166,16 @@
       if (result.success) {
         success = 'Identidad visual actualizada correctamente';
         dispatch('update');
-        // Refresca el restaurante para ver los cambios
+        isClosing = true;
         await restaurantStore.loadRestaurant(restaurantId, true);
         setTimeout(() => {
+          isClosing = false;
           dispatch('close');
         }, 2000);
       } else {
         error = result.error || 'Error actualizando la identidad visual';
         console.error('Error en update:', error);
+        isSubmitting = false;
       }
     } catch (err) {
       error = err.message || 'Error desconocido';
@@ -356,15 +359,15 @@
         type="button"
         on:click={() => dispatch('close')}
         class="cancel-button"
-        disabled={isSubmitting || isUploadingAny}
+        disabled={isSubmitting || isUploadingAny || isClosing}
       >
         Cancelar
       </button>
       
       <LoadingButton
         type="submit"
-        loading={isSubmitting || isUpdating}
-        disabled={isUploadingAny}
+        loading={isSubmitting || isUpdating || isClosing}
+        disabled={isUploadingAny || isClosing}
         variant="primary"
         size="md"
       >

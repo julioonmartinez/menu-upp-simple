@@ -31,6 +31,7 @@
   let isSubmitting = false;
   let error = null;
   let success = null;
+  let isClosing = false;
 
   // Reactive statements
   $: isUpdating = $restaurantStore.isUpdating;
@@ -239,13 +240,14 @@
       if (result.success) {
         success = 'Enlaces de redes sociales actualizados correctamente';
         dispatch('update');
-        
-        // Cerrar modal después de 2 segundos
+        isClosing = true;
         setTimeout(() => {
+          isClosing = false;
           dispatch('close');
         }, 2000);
       } else {
         error = result.error || 'Error actualizando las redes sociales';
+        isSubmitting = false;
       }
     } catch (err) {
       error = err.message || 'Error desconocido';
@@ -376,14 +378,15 @@
         type="button"
         on:click={() => dispatch('close')}
         class="cancel-button"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isClosing}
       >
         Cancelar
       </button>
       
       <LoadingButton
         type="submit"
-        loading={isSubmitting || isUpdating}
+        loading={isSubmitting || isUpdating || isClosing}
+        disabled={isClosing}
         variant="primary"
         size="md"
       >

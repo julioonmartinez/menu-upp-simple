@@ -374,6 +374,14 @@ button:focus-visible {
 .mt-7xl { margin-top: var(--spacing-7xl); }
 .mt-8xl { margin-top: var(--spacing-8xl); }
 
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
+.mb-2xl { margin-bottom: var(--spacing-2xl); }
+.mb-3xl { margin-bottom: var(--spacing-3xl); }
+.mb-4xl { margin-bottom: var(--spacing-4xl); }
+
 /* Typography utilities mejoradas */
 .text-xs { font-size: var(--font-xs); }
 .text-sm { font-size: var(--font-sm); }
@@ -1750,6 +1758,17 @@ select.input {
   .empty-state {
     background: var(--bg-primary);
     border: 1px solid var(--bg-accent);
+  }
+}
+
+/* --- Fix iOS zoom on form fields --- */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select,
+  .input,
+  .form-textarea {
+    font-size: 16px !important;
   }
 }
 

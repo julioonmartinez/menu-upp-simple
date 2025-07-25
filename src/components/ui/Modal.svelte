@@ -171,7 +171,7 @@
   .modal-md { max-width: 32rem; width: 100%; }
   .modal-lg { max-width: 48rem; width: 100%; }
   .modal-xl { max-width: 64rem; width: 100%; }
-  .modal-full { max-width: 95vw; width: 100%; max-height: 95vh; }
+  .modal-full { max-width: 95vw; width: 100%; max-height: 80dvh; }
   .modal-header { border-bottom: 1px solid var(--bg-accent); }
   .modal-close-icon { width: 1.5rem; height: 1.5rem; }
   .modal-content { 
@@ -193,7 +193,7 @@
   .animate-slide-up { animation: slideUp 0.2s cubic-bezier(0.4,0,0.2,1) both; }
   @media (max-width: 640px) {
     .modal-overlay { padding: var(--spacing-sm); }
-    .modal-container { max-height: 95vh; }
+    .modal-container { max-height: 80dvh; }
     .modal-sm, .modal-md, .modal-lg, .modal-xl { max-width: 100%; }
     .modal-header { padding: var(--spacing-lg) var(--spacing-lg) 0 var(--spacing-lg); }
     .modal-content { padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg); }

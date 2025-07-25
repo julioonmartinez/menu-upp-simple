@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { categoryService } from '../../../services/index.ts';
+  import { toastStore } from '../../../stores/toastStore';
   export let restaurantId: string;
   export let initialCategory: any = null;
 
@@ -32,7 +33,7 @@
 
   function handleInput(field: string, event: Event) {
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-    formData[field] = target.value;
+    formData[field as keyof typeof formData] = target.value;
     touched[field] = true;
     formData = { ...formData };
     touched = { ...touched };
@@ -42,6 +43,11 @@
   export async function save() {
     touched = { name: true, description: true };
     if (!validate()) {
+      // Muestra el primer error encontrado
+      const firstError = Object.values(errors)[0];
+      if (firstError) {
+        toastStore.error(firstError);
+      }
       return false;
     }
     isSubmitting = true;
@@ -53,14 +59,18 @@
         restaurantId
       });
       if (result.success) {
-        dispatch('created', { category: result.category });
+        dispatch('created', { category: (result as any).category });
         return true;
       } else {
-        error = result.error;
+        error = result.error ?? null;
+        if (error) {
+          toastStore.error(error);
+        }
         return false;
       }
-    } catch (e) {
-      error = e.message || 'Error desconocido';
+    } catch (e: any) {
+      error = e?.message || 'Error desconocido';
+      toastStore.error(error || 'Error desconocido');
       return false;
     } finally {
       isSubmitting = false;
@@ -101,9 +111,6 @@
       <p class="form-field-error">{errors.description}</p>
     {/if}
   </div>
-  {#if error}
-    <div class="error-state mt-lg">{error}</div>
-  {/if}
   {#if isSubmitting}
     <div class="text-center text-muted mt-lg animate-pulse">Guardando...</div>
   {/if}

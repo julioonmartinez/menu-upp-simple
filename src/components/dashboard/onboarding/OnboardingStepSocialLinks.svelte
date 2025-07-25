@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   import { restaurantStore } from '../../../stores/restaurantStore';
+  import { toastStore } from '../../../stores/toastStore';
   export let restaurant;
   export let restaurantId;
   const dispatch = createEventDispatcher();
@@ -29,10 +30,14 @@
         return true;
       } else {
         error = result.error;
+        if (error) {
+          toastStore.error(error);
+        }
         return false;
       }
     } catch (e) {
-      error = e.message || 'Error desconocido';
+      error = e?.message || 'Error desconocido';
+      toastStore.error(error);
       return false;
     } finally {
       isSubmitting = false;
@@ -56,9 +61,6 @@
       <label class="font-medium text-secondary" for="whatsapp">WhatsApp</label>
       <input id="whatsapp" class="input" type="tel" placeholder="Ej: 521234567890" bind:value={formData.whatsapp} />
     </div>
-    {#if error}
-      <div class="error-state mt-lg">{error}</div>
-    {/if}
     {#if isSubmitting}
       <div class="text-center text-muted mt-lg animate-pulse">Guardando...</div>
     {/if}

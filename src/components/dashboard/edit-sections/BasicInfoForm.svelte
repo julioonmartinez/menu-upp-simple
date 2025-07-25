@@ -52,6 +52,7 @@
   let isCheckingUsername = false;
   let usernameError = null;
   let usernameSuccess = null;
+  let isClosing = false;
 
   // Reactive statements
   $: isUpdating = $restaurantStore.isUpdating;
@@ -110,16 +111,18 @@
       if (result.success) {
         success = 'Información básica actualizada correctamente';
         dispatch('update');
+        isClosing = true;
+        setTimeout(() => {
+          isClosing = false;
+          dispatch('close');
+        }, 2000);
         
         console.log('✅ Actualización exitosa');
         
-        // Cerrar modal después de 2 segundos
-        setTimeout(() => {
-          dispatch('close');
-        }, 2000);
       } else {
         error = result.error || 'Error actualizando la información';
         console.error('❌ Error en la actualización:', error);
+        isSubmitting = false;
       }
     } catch (err) {
       error = err.message || 'Error desconocido';
@@ -348,15 +351,15 @@
         type="button"
         on:click={() => dispatch('close')}
         class="btn btn-secondary"
-        disabled={isSubmitting || isUpdating}
+        disabled={isSubmitting || isUpdating || isClosing}
       >
         Cancelar
       </button>
       
       <LoadingButton
         type="submit"
-        loading={isSubmitting || isUpdating}
-        disabled={!formData.name || !formData.username || !!usernameError}
+        loading={isSubmitting || isUpdating || isClosing}
+        disabled={!formData.name || !formData.username || !!usernameError || isClosing}
         class="btn btn-primary"
       >
         Guardar Cambios
