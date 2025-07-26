@@ -3,7 +3,7 @@
   export let message = '';
 </script>
 
-<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-xs">
   <div class="flex items-start">
     <div class="flex-shrink-0">
       <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
