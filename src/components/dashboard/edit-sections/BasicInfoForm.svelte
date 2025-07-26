@@ -7,6 +7,7 @@
   import LoadingButton from '../../ui/LoadingButton.svelte';
   import ErrorMessage from '../../ui/ErrorMessage.svelte';
   import SuccessMessage from '../../ui/SuccessMessage.svelte';
+  import WarningMessage from '../../ui/WarningMessage.svelte';
 
   export let restaurant;
   export let restaurantId;
@@ -57,6 +58,7 @@
   // Reactive statements
   $: isUpdating = $restaurantStore.isUpdating;
   $: updateError = $restaurantStore.updateError;
+  $: isChangingUsername = restaurant?.username && formData.username !== restaurant.username;
 
   let usernameCheckTimeout;
 
@@ -242,12 +244,20 @@
             bind:value={formData.username}
             on:input={handleUsernameInput}
             required
-            placeholder="ej: mi-restaurante"
-            help={`Tu URL será: tudominio.com/restaurant/${formData.username || 'username'}`}
+            placeholder="ej: tacos-el-chato"
+            help={`Tu URL será: menuupp.com/${formData.username || 'username'}`}
             loading={isCheckingUsername}
             error={usernameError}
             success={usernameSuccess}
           />
+          
+          {#if isChangingUsername}
+            <div class="warning-container mt-md">
+              <WarningMessage 
+                message="⚠️ Al cambiar tu username, los códigos QR generados anteriormente ya no funcionarán. Si ya imprimiste códigos QR, necesitarás generar nuevos con el nuevo username." 
+              />
+            </div>
+          {/if}
         </div>
 
         <div class="form-field full-width col-span-full">
