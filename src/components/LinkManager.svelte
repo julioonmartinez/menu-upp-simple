@@ -19,6 +19,7 @@
   import { useLinkTrees } from '../stores/linkTreeStore.ts';
   import { toastStore } from '../stores/toastStore.ts';
   import { getIconClass } from '../utils/iconUtils.ts';
+  import { getIconColor } from '../utils/colorUtils.ts';
   import LinkItem from './LinkItem.svelte';
   import IconPicker from './ui/IconPicker.svelte';
   import InputField from './ui/InputField.svelte';
@@ -351,6 +352,12 @@
     return LINK_TYPE_ICONS[link.type] || 'fa-solid fa-link';
   }
 
+  // Get icon color based on background color
+  function getLinkIconColor(link: Link): string {
+    const backgroundColor = link.customColor || '#3b82f6';
+    return getIconColor(backgroundColor);
+  }
+
   // Handle menu link toggle
   function handleMenuLinkToggle() {
     if (isMenuLink) {
@@ -445,7 +452,7 @@
             </div>
 
             <div class="link-icon flex-shrink-0" style="background-color: {link.customColor || '#3b82f6'}">
-              <i class="{getLinkIconClass(link)} text-inverse"></i>
+              <i class="{getLinkIconClass(link)}" style="color: {getLinkIconColor(link)}"></i>
             </div>
 
             <div class="link-details flex-1 min-w-0">
