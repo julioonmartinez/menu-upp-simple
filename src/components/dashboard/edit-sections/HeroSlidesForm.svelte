@@ -425,9 +425,9 @@
             </div>
             
             <div class="slide-info">
-              <h3>{slide.title}</h3>
-              <p>{slide.subtitle}</p>
-              <span class="position-badge">Posición {slide.position}</span>
+              <h3 title={slide.title}>{slide.title}</h3>
+              <p title={slide.subtitle}>{slide.subtitle}</p>
+              <span class="position-badge">Posición {slide.position + 1}</span>
             </div>
             
             <div class="accordion-actions">
@@ -773,11 +773,11 @@
   .hero-slides-form {
     max-width: 800px;
     margin: 0 auto;
-    padding: var(--spacing-2xl);
+    /* padding: var(--spacing-2xl); */
     font-family: inherit;
     background: var(--bg-primary);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-md);
+    /* box-shadow: var(--shadow-md); */
   }
 
   .hero-slides-form .form-header h2 {
@@ -823,7 +823,8 @@
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     transition: background-color var(--transition-fast);
-    
+    gap: var(--spacing-md);
+    min-height: 80px;
   }
   .hero-slides-form .accordion-header:hover {
     background-color: var(--bg-tertiary);
@@ -837,16 +838,28 @@
   .hero-slides-form .drag-handle:active {
     cursor: grabbing;
   }
+  .hero-slides-form .slide-preview {
+    flex-shrink: 0;
+  }
   .hero-slides-form .slide-preview img {
     width: 60px;
     height: 40px;
     object-fit: cover;
     border-radius: var(--radius-sm);
   }
+  .hero-slides-form .slide-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
   .hero-slides-form .slide-info h3 {
     color: var(--text-primary);
     font-size: var(--font-lg);
     font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 0 4px 0;
   }
   .hero-slides-form .slide-info p {
     color: var(--text-muted);
@@ -854,6 +867,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin: 0 0 8px 0;
   }
   .hero-slides-form .position-badge {
     background: var(--bg-accent);
@@ -865,6 +879,7 @@
   }
   .hero-slides-form .accordion-actions {
     margin-left: auto;
+    flex-shrink: 0;
   }
   .hero-slides-form .btn-toggle {
     background: none;
@@ -1057,14 +1072,22 @@
   /* Responsive */
   @media (max-width: 768px) {
     .hero-slides-form {
-      padding: var(--spacing-lg);
+      /* padding: var(--spacing-lg); */
     }
     .hero-slides-form .accordion-header {
       padding: var(--spacing-md);
+      gap: var(--spacing-sm);
+      min-height: 70px;
     }
     .hero-slides-form .slide-preview img {
       width: 50px;
       height: 35px;
+    }
+    .hero-slides-form .slide-info h3 {
+      font-size: var(--font-base);
+    }
+    .hero-slides-form .slide-info p {
+      font-size: var(--font-sm);
     }
     .hero-slides-form .accordion-content {
       padding: var(--spacing-md);
