@@ -6,6 +6,7 @@ export interface Category {
   name: string;
   description?: string;
   restaurantId?: string;
+  order?: number;
 }
 
 // ✅ Modelo para crear categorías

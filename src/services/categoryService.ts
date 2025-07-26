@@ -19,18 +19,27 @@ export interface Category {
   name: string;
   description?: string;
   restaurantId?: string;
+  order?: number;
 }
 
 export interface CategoryCreateRequest {
   name: string;
   description?: string;
   restaurantId?: string;
+  order?: number;
 }
 
 export interface CategoryUpdateRequest {
   name?: string;
   description?: string;
+  order?: number;
 }
+
+export interface CategoryReorderRequest {
+  id: string;
+  order: number;
+}
+
 
 export type CategoryResponse = Category;
 
@@ -302,6 +311,156 @@ class CategoryService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido eliminando categoría'
+      };
+    }
+  }
+
+  /**
+   * Reordena una categoría específica (requiere autenticación)
+   */
+  async reorderCategory(
+    categoryId: string, 
+    newOrder: number
+  ): Promise<ApiResult<CategoryResponse>> {
+    try {
+      const isAuthenticated = await this.checkAuthentication();
+      
+      if (!isAuthenticated) {
+        return {
+          success: false,
+          error: 'Debes estar autenticado para reordenar categorías'
+        };
+      }
+
+      // Validar que el nuevo orden sea positivo
+      if (newOrder < 1) {
+        return {
+          success: false,
+          error: 'El orden debe ser un número positivo'
+        };
+      }
+
+      const response = await this.makeAuthenticatedRequest(`/categories/${categoryId}/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ new_order: newOrder })
+      });
+
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        return {
+          success: false,
+          error: errorData.detail || 'Error reordenando categoría'
+        };
+      }
+
+      const data: CategoryResponse = await response.json();
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      console.error('Error reordenando categoría:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido reordenando categoría'
+      };
+    }
+  }
+
+  /**
+   * Reordena múltiples categorías a la vez (requiere autenticación)
+   */
+  async reorderMultipleCategories(
+    categoryOrders: CategoryReorderRequest[]
+  ): Promise<ApiResult<{ message: string; categories: CategoryResponse[] }>> {
+    try {
+      const isAuthenticated = await this.checkAuthentication();
+      
+      if (!isAuthenticated) {
+        return {
+          success: false,
+          error: 'Debes estar autenticado para reordenar categorías'
+        };
+      }
+
+      // Validar que hay al menos una categoría para reordenar
+      if (!categoryOrders || categoryOrders.length === 0) {
+        return {
+          success: false,
+          error: 'Se requiere al menos una categoría para reordenar'
+        };
+      }
+
+      // Validar que todos los elementos tengan id y order
+      for (const item of categoryOrders) {
+        if (!item.id || item.order === undefined || item.order < 1) {
+          return {
+            success: false,
+            error: 'Cada elemento debe tener un ID válido y un orden positivo'
+          };
+        }
+      }
+
+      const response = await this.makeAuthenticatedRequest('/categories/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(categoryOrders)
+      });
+
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        return {
+          success: false,
+          error: errorData.detail || 'Error reordenando categorías'
+        };
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      console.error('Error reordenando categorías:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido reordenando categorías'
+      };
+    }
+  }
+
+  /**
+   * Reordena categorías después de drag & drop
+   */
+  async reorderAfterDragDrop(
+    categories: Category[],
+    sourceIndex: number,
+    destinationIndex: number
+  ): Promise<ApiResult<{ message: string; categories: CategoryResponse[] }>> {
+    try {
+      // Crear una copia del array y mover el elemento
+      const reorderedCategories = [...categories];
+      const [movedItem] = reorderedCategories.splice(sourceIndex, 1);
+      reorderedCategories.splice(destinationIndex, 0, movedItem);
+
+      // Preparar datos para el endpoint de reordenamiento masivo
+      const categoryOrders: CategoryReorderRequest[] = reorderedCategories.map((category, index) => ({
+        id: category.id!,
+        order: index + 1
+      }));
+
+      // Llamar al endpoint de reordenamiento masivo
+      return await this.reorderMultipleCategories(categoryOrders);
+    } catch (error) {
+      console.error('Error en reordenamiento después de drag & drop:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido en reordenamiento'
       };
     }
   }

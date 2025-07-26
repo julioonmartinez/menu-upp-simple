@@ -7,7 +7,8 @@ import {
   type CategoryCreateRequest,
   type CategoryUpdateRequest,
   type CategoryResponse,
-  type Category
+  type Category,
+  type CategoryReorderRequest
 } from '../services/categoryService.ts';
 import { authStore } from './authStore.ts';
 
@@ -26,12 +27,14 @@ export interface CategoriesState {
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
+  isReordering: boolean;
   
   // Errores
   error: string | null;
   createError: string | null;
   updateError: string | null;
   deleteError: string | null;
+  reorderError: string | null;
   
   // Cache metadata
   lastUpdated: {
@@ -70,6 +73,26 @@ export interface DeleteCategoryResult {
   error?: string;
 }
 
+export interface ReorderCategoryResult {
+  success: boolean;
+  category?: CategoryResponse;
+  error?: string;
+}
+
+export interface ReorderMultipleCategoriesResult {
+  success: boolean;
+  message?: string;
+  categories?: CategoryResponse[];
+  error?: string;
+}
+
+export interface ReorderAfterDragDropResult {
+  success: boolean;
+  message?: string;
+  categories?: CategoryResponse[];
+  error?: string;
+}
+
 /**
  * Estado inicial del store
  */
@@ -84,10 +107,12 @@ const initialState: CategoriesState = {
   isCreating: false,
   isUpdating: false,
   isDeleting: false,
+  isReordering: false,
   error: null,
   createError: null,
   updateError: null,
   deleteError: null,
+  reorderError: null,
   lastUpdated: {
     all: null,
     current: null,
@@ -113,10 +138,12 @@ class CategoryStore {
   public readonly isCreating: Readable<boolean>;
   public readonly isUpdating: Readable<boolean>;
   public readonly isDeleting: Readable<boolean>;
+  public readonly isReordering: Readable<boolean>;
   public readonly error: Readable<string | null>;
   public readonly createError: Readable<string | null>;
   public readonly updateError: Readable<string | null>;
   public readonly deleteError: Readable<string | null>;
+  public readonly reorderError: Readable<string | null>;
   public readonly allCategories: Readable<Category[]>;
   public readonly currentCategory: Readable<Category | null>;
   public readonly isAuthenticated: Readable<boolean>;
@@ -133,10 +160,12 @@ class CategoryStore {
     this.isCreating = derived(this.store, $state => $state.isCreating);
     this.isUpdating = derived(this.store, $state => $state.isUpdating);
     this.isDeleting = derived(this.store, $state => $state.isDeleting);
+    this.isReordering = derived(this.store, $state => $state.isReordering);
     this.error = derived(this.store, $state => $state.error);
     this.createError = derived(this.store, $state => $state.createError);
     this.updateError = derived(this.store, $state => $state.updateError);
     this.deleteError = derived(this.store, $state => $state.deleteError);
+    this.reorderError = derived(this.store, $state => $state.reorderError);
     this.allCategories = derived(this.store, $state => $state.allCategories);
     this.currentCategory = derived(this.store, $state => $state.currentCategory);
     this.isAuthenticated = derived(this.store, $state => $state.isAuthenticated);
@@ -532,6 +561,288 @@ class CategoryStore {
   }
 
   /**
+   * Reordena una categoría específica
+   */
+  async reorderCategory(
+    categoryId: string, 
+    newOrder: number
+  ): Promise<ReorderCategoryResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return {
+        success: false,
+        error: 'Debes estar autenticado para reordenar categorías'
+      };
+    }
+
+    this.setReordering(true);
+    this.clearReorderError();
+
+    try {
+      const result = await categoryService.reorderCategory(categoryId, newOrder);
+
+      if (result.success && result.data) {
+        // Actualizar cache local
+        this.store.update(state => {
+          const updateCategoryInArray = (categories: Category[]) =>
+            categories.map(c => c.id === categoryId ? result.data! : c);
+
+          return {
+            ...state,
+            allCategories: updateCategoryInArray(state.allCategories),
+            currentCategory: state.currentCategory?.id === categoryId ? result.data! : state.currentCategory,
+            isReordering: false,
+            reorderError: null,
+            lastUpdated: {
+              ...state.lastUpdated,
+              all: new Date(),
+              current: new Date()
+            }
+          };
+        });
+
+        // Actualizar cache por restaurante si aplica
+        if (result.data.restaurantId) {
+          this.updateRestaurantCache(result.data.restaurantId, result.data, 'update');
+        }
+
+        return {
+          success: true,
+          category: result.data
+        };
+      } else {
+        this.setReordering(false);
+        this.setReorderError(result.error || 'Error reordenando categoría');
+        
+        return {
+          success: false,
+          error: result.error || 'Error reordenando categoría'
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido reordenando categoría';
+      this.setReordering(false);
+      this.setReorderError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Reordena múltiples categorías a la vez
+   */
+  async reorderMultipleCategories(
+    categoryOrders: CategoryReorderRequest[]
+  ): Promise<ReorderMultipleCategoriesResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return {
+        success: false,
+        error: 'Debes estar autenticado para reordenar categorías'
+      };
+    }
+
+    this.setReordering(true);
+    this.clearReorderError();
+
+    try {
+      const result = await categoryService.reorderMultipleCategories(categoryOrders);
+
+      if (result.success && result.data) {
+        // Actualizar cache local con las categorías reordenadas
+        this.store.update(state => {
+          const updatedCategories = [...state.allCategories];
+          
+          // Actualizar cada categoría con su nuevo orden
+          result.data!.categories.forEach(updatedCategory => {
+            const index = updatedCategories.findIndex(c => c.id === updatedCategory.id);
+            if (index !== -1) {
+              updatedCategories[index] = updatedCategory;
+            }
+          });
+
+          return {
+            ...state,
+            allCategories: updatedCategories,
+            isReordering: false,
+            reorderError: null,
+            lastUpdated: {
+              ...state.lastUpdated,
+              all: new Date()
+            }
+          };
+        });
+
+        // Actualizar cache por restaurante para todas las categorías afectadas
+        result.data!.categories.forEach(category => {
+          if (category.restaurantId) {
+            this.updateRestaurantCache(category.restaurantId, category, 'update');
+          }
+        });
+
+        return {
+          success: true,
+          message: result.data!.message,
+          categories: result.data!.categories
+        };
+      } else {
+        this.setReordering(false);
+        this.setReorderError(result.error || 'Error reordenando categorías');
+        
+        return {
+          success: false,
+          error: result.error || 'Error reordenando categorías'
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido reordenando categorías';
+      this.setReordering(false);
+      this.setReorderError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Reordena categorías después de drag & drop
+   */
+  async reorderAfterDragDrop(
+    categories: Category[],
+    sourceIndex: number,
+    destinationIndex: number
+  ): Promise<ReorderAfterDragDropResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return {
+        success: false,
+        error: 'Debes estar autenticado para reordenar categorías'
+      };
+    }
+
+    this.setReordering(true);
+    this.clearReorderError();
+
+    try {
+      const result = await categoryService.reorderAfterDragDrop(categories, sourceIndex, destinationIndex);
+
+      if (result.success && result.data) {
+        // Actualizar cache local con las categorías reordenadas
+        this.store.update(state => {
+          const updatedCategories = [...state.allCategories];
+          
+          // Actualizar cada categoría con su nuevo orden
+          result.data!.categories.forEach(updatedCategory => {
+            const index = updatedCategories.findIndex(c => c.id === updatedCategory.id);
+            if (index !== -1) {
+              updatedCategories[index] = updatedCategory;
+            }
+          });
+
+          return {
+            ...state,
+            allCategories: updatedCategories,
+            isReordering: false,
+            reorderError: null,
+            lastUpdated: {
+              ...state.lastUpdated,
+              all: new Date()
+            }
+          };
+        });
+
+        // Actualizar cache por restaurante para todas las categorías afectadas
+        result.data!.categories.forEach(category => {
+          if (category.restaurantId) {
+            this.updateRestaurantCache(category.restaurantId, category, 'update');
+          }
+        });
+
+        return {
+          success: true,
+          message: result.data!.message,
+          categories: result.data!.categories
+        };
+      } else {
+        this.setReordering(false);
+        this.setReorderError(result.error || 'Error reordenando categorías');
+        
+        return {
+          success: false,
+          error: result.error || 'Error reordenando categorías'
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido reordenando categorías';
+      this.setReordering(false);
+      this.setReorderError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Obtiene categorías ordenadas por el campo order
+   */
+  getCategoriesSortedByOrder(restaurantId?: string): Category[] {
+    const currentState = this.getCurrentState();
+    let categories = currentState.allCategories;
+
+    // Filtrar por restaurante si se especifica
+    if (restaurantId) {
+      categories = categories.filter(c => c.restaurantId === restaurantId);
+    }
+
+    // Ordenar por el campo order
+    return categories.sort((a, b) => {
+      const orderA = a.order || 0;
+      const orderB = b.order || 0;
+      return orderA - orderB;
+    });
+  }
+
+  /**
+   * Actualiza el orden de una categoría en el cache local (optimistic update)
+   */
+  updateCategoryOrderOptimistically(categoryId: string, newOrder: number): void {
+    this.store.update(state => {
+      const updateCategoryInArray = (categories: Category[]) =>
+        categories.map(c => c.id === categoryId ? { ...c, order: newOrder } : c);
+
+      return {
+        ...state,
+        allCategories: updateCategoryInArray(state.allCategories),
+        currentCategory: state.currentCategory?.id === categoryId 
+          ? { ...state.currentCategory, order: newOrder }
+          : state.currentCategory
+      };
+    });
+  }
+
+  /**
+   * Revierte el orden de una categoría en el cache local (en caso de error)
+   */
+  revertCategoryOrderOptimistically(categoryId: string, originalOrder: number): void {
+    this.store.update(state => {
+      const updateCategoryInArray = (categories: Category[]) =>
+        categories.map(c => c.id === categoryId ? { ...c, order: originalOrder } : c);
+
+      return {
+        ...state,
+        allCategories: updateCategoryInArray(state.allCategories),
+        currentCategory: state.currentCategory?.id === categoryId 
+          ? { ...state.currentCategory, order: originalOrder }
+          : state.currentCategory
+      };
+    });
+  }
+
+  /**
    * Actualiza el cache por restaurante
    */
   private updateRestaurantCache(restaurantId: string, category: Category, action: 'add' | 'update' | 'remove'): void {
@@ -638,6 +949,10 @@ class CategoryStore {
     this.store.update(state => ({ ...state, isDeleting }));
   }
 
+  private setReordering(isReordering: boolean): void {
+    this.store.update(state => ({ ...state, isReordering }));
+  }
+
   private setCurrentCategory(category: Category | null): void {
     this.store.update(state => ({ 
       ...state, 
@@ -665,6 +980,10 @@ class CategoryStore {
     this.store.update(state => ({ ...state, deleteError: error }));
   }
 
+  private setReorderError(error: string | null): void {
+    this.store.update(state => ({ ...state, reorderError: error }));
+  }
+
   private clearError(): void {
     this.setError(null);
   }
@@ -679,6 +998,10 @@ class CategoryStore {
 
   private clearDeleteError(): void {
     this.setDeleteError(null);
+  }
+
+  private clearReorderError(): void {
+    this.setReorderError(null);
   }
 
   /**
@@ -717,7 +1040,8 @@ class CategoryStore {
       error: null,
       createError: null,
       updateError: null,
-      deleteError: null
+      deleteError: null,
+      reorderError: null
     }));
   }
 
@@ -815,7 +1139,9 @@ export const categoriesLoadingByRestaurant = categoryStore.isLoadingByRestaurant
 export const categoriesCreating = categoryStore.isCreating;
 export const categoriesUpdating = categoryStore.isUpdating;
 export const categoriesDeleting = categoryStore.isDeleting;
+export const categoriesReordering = categoryStore.isReordering;
 export const categoriesError = categoryStore.error;
+export const categoriesReorderError = categoryStore.reorderError;
 export const categoriesCreateError = categoryStore.createError;
 export const categoriesUpdateError = categoryStore.updateError;
 export const categoriesDeleteError = categoryStore.deleteError;
@@ -838,12 +1164,14 @@ export function useCategories() {
     isCreating: state.isCreating,
     isUpdating: state.isUpdating,
     isDeleting: state.isDeleting,
+    isReordering: state.isReordering,
     
     // Errores
     error: state.error,
     createError: state.createError,
     updateError: state.updateError,
     deleteError: state.deleteError,
+    reorderError: state.reorderError,
     
     // Datos
     allCategories: state.allCategories,
@@ -858,6 +1186,12 @@ export function useCategories() {
     createCategory: categoryStore.createCategory.bind(categoryStore),
     updateCategory: categoryStore.updateCategory.bind(categoryStore),
     deleteCategory: categoryStore.deleteCategory.bind(categoryStore),
+    reorderCategory: categoryStore.reorderCategory.bind(categoryStore),
+    reorderMultipleCategories: categoryStore.reorderMultipleCategories.bind(categoryStore),
+    reorderAfterDragDrop: categoryStore.reorderAfterDragDrop.bind(categoryStore),
+    getCategoriesSortedByOrder: categoryStore.getCategoriesSortedByOrder.bind(categoryStore),
+    updateCategoryOrderOptimistically: categoryStore.updateCategoryOrderOptimistically.bind(categoryStore),
+    revertCategoryOrderOptimistically: categoryStore.revertCategoryOrderOptimistically.bind(categoryStore),
     searchCategories: categoryStore.searchCategories.bind(categoryStore),
     getCategoriesGroupedByRestaurant: categoryStore.getCategoriesGroupedByRestaurant.bind(categoryStore),
     isNameUnique: categoryStore.isNameUnique.bind(categoryStore),

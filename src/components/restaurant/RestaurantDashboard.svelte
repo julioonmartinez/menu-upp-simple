@@ -35,14 +35,20 @@
     isCreating: isCreatingCategory,
     isUpdating: isUpdatingCategory,
     isDeleting: isDeletingCategory,
+    isReordering: isReorderingCategories,
     error: categoryError,
     createError: categoryCreateError,
     updateError: categoryUpdateError,
     deleteError: categoryDeleteError,
+    reorderError: categoryReorderError,
     loadAllCategories,
     createCategory,
     updateCategory,
     deleteCategory,
+    reorderAfterDragDrop,
+    getCategoriesSortedByOrder,
+    updateCategoryOrderOptimistically,
+    revertCategoryOrderOptimistically,
     clearAllErrors: clearCategoryErrors
   } = useCategories();
 
@@ -84,6 +90,13 @@
   // Estado para categorías expandibles
   let expandedCategories: string[] = [];
 
+  // Estado para drag & drop
+  let draggedCategory: Category | null = null;
+  let draggedOverCategory: Category | null = null;
+  let isDragging = false;
+  let dragStartIndex = -1;
+  let originalCategories: Category[] = [];
+
   // Cargar restaurante cuando cambia idRestaurant
   $: if (idRestaurant) {
     loading = true;
@@ -109,9 +122,28 @@
   }
 
   // Computed
-  $: hasCategories = Array.isArray($allCategories) && $allCategories.length > 0;
+  $: hasCategories = Array.isArray(displayCategories) && displayCategories.length > 0;
   $: hasDishes = Array.isArray($allDishes) && $allDishes.length > 0;
   $: isLoading = loading || isLoadingCategories || isLoadingDishes;
+  
+  // Categorías ordenadas por el campo order
+  $: sortedCategories = $allCategories
+    .filter(c => !restaurant?.id || c.restaurantId === restaurant.id)
+    .sort((a, b) => {
+      const orderA = a.order || 0;
+      const orderB = b.order || 0;
+      return orderA - orderB;
+    });
+  
+  // Fallback: si no hay categorías ordenadas pero sí hay categorías, usar las originales
+  $: displayCategories = sortedCategories.length > 0 ? sortedCategories : $allCategories.filter(c => !restaurant?.id || c.restaurantId === restaurant.id);
+  
+  // Debug logging
+  $: console.log('Debug - allCategories:', $allCategories);
+  $: console.log('Debug - restaurant.id:', restaurant?.id);
+  $: console.log('Debug - sortedCategories:', sortedCategories);
+  $: console.log('Debug - displayCategories:', displayCategories);
+  $: console.log('Debug - hasCategories:', hasCategories);
 
   // Methods
   async function loadInitialData() {
@@ -333,6 +365,158 @@
     expandedCategories = [];
     console.log('All categories collapsed');
   }
+
+  // Drag & Drop Functions
+  function handleDragStart(event: DragEvent, category: Category, index: number) {
+    if (!event.dataTransfer) return;
+    
+    draggedCategory = category;
+    dragStartIndex = index;
+    originalCategories = [...sortedCategories];
+    isDragging = true;
+    
+    // Guardar el orden original para poder revertir si hay error
+    const originalOrder = category.order || 0;
+    
+    // Configurar el drag data
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', category.id || '');
+    
+    // Agregar clase visual
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.add('dragging');
+    }
+    
+    console.log('Drag started:', category.name, 'from index:', index);
+  }
+
+  function handleDragOver(event: DragEvent, category: Category) {
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = 'move';
+    
+    if (draggedCategory && draggedCategory.id !== category.id) {
+      draggedOverCategory = category;
+    }
+  }
+
+  function handleDragEnter(event: DragEvent, category: Category) {
+    event.preventDefault();
+    if (draggedCategory && draggedCategory.id !== category.id) {
+      draggedOverCategory = category;
+    }
+  }
+
+  function handleDragLeave(event: DragEvent) {
+    event.preventDefault();
+    // Solo limpiar si no estamos sobre el mismo elemento
+    const target = event.target as HTMLElement;
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    
+    if (!target.contains(relatedTarget)) {
+      draggedOverCategory = null;
+    }
+  }
+
+  async function handleDrop(event: DragEvent, targetCategory: Category, targetIndex: number) {
+    event.preventDefault();
+    
+    if (!draggedCategory || !event.dataTransfer) return;
+    
+    const draggedIndex = dragStartIndex;
+    
+    // Limpiar estado visual
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.remove('dragging');
+    }
+    
+    // Verificar que realmente se movió
+    if (draggedIndex === targetIndex) {
+      console.log('No movement detected');
+      resetDragState();
+      return;
+    }
+    
+    console.log('Drop detected:', {
+      dragged: draggedCategory.name,
+      target: targetCategory.name,
+      fromIndex: draggedIndex,
+      toIndex: targetIndex
+    });
+    
+    try {
+      // Actualización optimista
+      const optimisticCategories = [...originalCategories];
+      const [movedItem] = optimisticCategories.splice(draggedIndex, 1);
+      optimisticCategories.splice(targetIndex, 0, movedItem);
+      
+      // Actualizar órdenes optimistamente
+      optimisticCategories.forEach((cat, index) => {
+        updateCategoryOrderOptimistically(cat.id!, index + 1);
+      });
+      
+      // Llamar al servicio de reordenamiento
+      const result = await reorderAfterDragDrop(originalCategories, draggedIndex, targetIndex);
+      
+      if (result.success) {
+        toastStore.success('Categorías reordenadas correctamente');
+        console.log('Reorder successful:', result.message);
+      } else {
+        // Revertir cambios optimistas en caso de error
+        originalCategories.forEach((cat, index) => {
+          revertCategoryOrderOptimistically(cat.id!, cat.order || index + 1);
+        });
+        
+        toastStore.error(result.error || 'Error al reordenar categorías');
+        console.error('Reorder failed:', result.error);
+      }
+    } catch (error) {
+      // Revertir cambios optimistas en caso de excepción
+      originalCategories.forEach((cat, index) => {
+        revertCategoryOrderOptimistically(cat.id!, cat.order || index + 1);
+      });
+      
+      console.error('Error during reorder:', error);
+      toastStore.error('Error inesperado al reordenar categorías');
+    } finally {
+      resetDragState();
+    }
+  }
+
+  function handleDragEnd(event: DragEvent) {
+    event.preventDefault();
+    
+    // Limpiar clases visuales
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.remove('dragging');
+    }
+    
+    resetDragState();
+  }
+
+  function resetDragState() {
+    draggedCategory = null;
+    draggedOverCategory = null;
+    isDragging = false;
+    dragStartIndex = -1;
+    originalCategories = [];
+  }
+
+  function getDragClasses(category: Category): string {
+    let classes = 'category-card';
+    
+    if (draggedCategory?.id === category.id) {
+      classes += ' dragging';
+    }
+    
+    if (draggedOverCategory?.id === category.id && draggedCategory?.id !== category.id) {
+      classes += ' drag-over';
+    }
+    
+    return classes;
+  }
 </script>
 
 <div class="restaurant-dashboard">
@@ -384,7 +568,7 @@
     </div>
 
     <!-- Error Display -->
-    {#if categoryError || dishError}
+    {#if categoryError || dishError || categoryReorderError}
       <div class="error-container">
         <div class="error-content">
           <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -393,7 +577,7 @@
           <div class="error-text">
             <p class="error-title">Error en el sistema</p>
             <p class="error-message">
-              {categoryError || dishError}
+              {categoryError || dishError || categoryReorderError}
             </p>
           </div>
         </div>
@@ -407,6 +591,9 @@
           <h2 class="section-title">Gestión del Menú</h2>
           <p class="section-subtitle">
             Organiza tu menú creando categorías y agregando platillos
+            {#if hasCategories}
+              <br><span class="drag-hint">💡 Arrastra las categorías para reordenarlas</span>
+            {/if}
           </p>
         </div>
         
@@ -455,7 +642,24 @@
               </button>
             </div>
           {/if}
-        </div>
+          
+          <!-- Botón de recarga para debugging -->
+          <button
+            type="button"
+            class="btn-secondary btn-sm"
+            on:click={() => {
+              console.log('Reloading data...');
+              loadInitialData();
+            }}
+            disabled={isLoading}
+            title="Recargar datos"
+          >
+            <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Recargar
+          </button>
+        </div>  
       </div>
 
       <!-- Categories and Dishes -->
@@ -488,22 +692,41 @@
         </div>
       
       {:else}
-        <!-- Categories Grid -->
+        <!-- Categories Grid with Drag & Drop -->
         <div class="categories-grid">
-          {#each $allCategories as category}
-            <div class="category-card">
+          {#each displayCategories as category, index}
+            <div 
+              class={getDragClasses(category)}
+              draggable="true"
+              on:dragstart={(e) => handleDragStart(e, category, index)}
+              on:dragover={(e) => handleDragOver(e, category)}
+              on:dragenter={(e) => handleDragEnter(e, category)}
+              on:dragleave={handleDragLeave}
+              on:drop={(e) => handleDrop(e, category, index)}
+              on:dragend={handleDragEnd}
+            >
               <div class="category-header">
                 <div class="category-info" on:click={() => {
                   console.log('Category info clicked:', category.id);
                   toggleCategory(category.id!);
                 }}>
                   <div class="category-title-row">
-                    <h3 class="category-name">
-                      {category.name}
-                      <span class="click-indicator">👆</span>
-                    </h3>
+                    <div class="category-title-with-drag">
+                      <div class="drag-handle" title="Arrastra para reordenar">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                        </svg>
+                      </div>
+                      <h3 class="category-name">
+                        {category.name}
+                        <span class="click-indicator">👆</span>
+                      </h3>
+                    </div>
                     <div class="category-stats">
                       <span class="dish-count">{getDishesForCategory(category.id!).length} platillos</span>
+                      {#if category.order !== undefined}
+                        <span class="order-indicator">#{category.order}</span>
+                      {/if}
                     </div>
                   </div>
                   {#if category.description}
@@ -1077,6 +1300,31 @@
     border-color: var(--primary-color);
   }
 
+  /* Drag & Drop Styles */
+  .category-card.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    position: relative;
+  }
+
+  .category-card.drag-over {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color);
+    transform: scale(1.02);
+  }
+
+  .category-card.dragging .drag-handle {
+    cursor: grabbing;
+  }
+
+  .drag-hint {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
   .category-header {
     display: flex;
     justify-content: space-between;
@@ -1110,6 +1358,22 @@
     margin-bottom: var(--spacing-xs);
   }
 
+  .category-title-with-drag {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  .drag-handle {
+    cursor: grab;
+    opacity: 0.5;
+    transition: opacity var(--transition-normal);
+  }
+
+  .category-info:hover .drag-handle {
+    opacity: 1;
+  }
+
   .category-name {
     font-size: var(--font-base);
     font-weight: var(--weight-semibold);
@@ -1134,6 +1398,15 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+  }
+
+  .order-indicator {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-medium);
   }
 
   .dish-count {
@@ -1905,6 +2178,23 @@
 
     .dish-image img {
       transform: none;
+    }
+
+    /* Mejorar drag & drop en dispositivos táctiles */
+    .category-card {
+      touch-action: pan-y;
+    }
+
+    .drag-handle {
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .category-card.dragging {
+      transform: rotate(1deg) scale(1.05);
     }
   }
 
