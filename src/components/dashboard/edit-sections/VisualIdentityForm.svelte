@@ -401,6 +401,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-xl);
     align-items: start;
+    justify-items: center;
   }
   @media (min-width: 640px) {
     .images-grid {
