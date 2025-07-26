@@ -1,6 +1,6 @@
 <!-- src/components/LinkManager.svelte -->
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import type { 
     Link, 
     LinkCreateData, 
@@ -52,11 +52,14 @@
     isCreatingLink,
     isUpdatingLink,
     isDeletingLink,
+    isReorderingLinks,
     linkError,
+    reorderError,
     loadLinks,
     createLink,
     updateLink,
-    deleteLink
+    deleteLink,
+    reorderLinks
   } = useLinkTrees();
 
   // Local state
@@ -68,6 +71,17 @@
   let linkToDelete: Link | null = null;
   let draggedLink: Link | null = null;
   let dropTarget: number | null = null;
+  let originalOrder: string[] = [];
+  
+  // Estado optimista para reordenamiento
+  let optimisticLinks: Link[] = [];
+  let isOptimisticUpdate = false;
+  let lastOptimisticOrder: string[] = [];
+  
+  // Estado de progreso para reordenamiento
+  let isReorderingInProgress = false;
+  let reorderProgress = 0;
+  let reorderProgressInterval: number | null = null;
 
   // Form state
   let linkForm = {
@@ -87,11 +101,19 @@
 
   // Reactive statements
   $: isLoading = isLoadingLinks;
-  $: error = linkError;
+  $: error = linkError || reorderError;
+  
+  // Use optimistic links when available, otherwise use store links, fallback to prop links
+  $: displayLinks = isOptimisticUpdate && optimisticLinks.length > 0 
+    ? optimisticLinks 
+    : $currentLinks && $currentLinks.length > 0 
+      ? $currentLinks 
+      : links || [];
+  $: console.log('displayLinks updated:', displayLinks?.length || 0, displayLinks?.map(l => ({ id: l.id, title: l.title, order: l.order })) || []);
 
   // Initialize
-  async function initializeLinks() {
-    if (!links.length) {
+  async function initializeLinks(forceReload = false) {
+    if (!displayLinks?.length || forceReload) {
       await loadLinks(linkTreeId);
     }
   }
@@ -125,7 +147,7 @@
     try {
       const result = await createLink(linkTreeId, {
         ...linkForm,
-        order: sortLinksByOrder(links).length
+        order: sortLinksByOrder(displayLinks || []).length
       });
 
       if (result.success && result.link) {
@@ -137,7 +159,7 @@
         resetForm();
         showCreateForm = false;
         
-        await initializeLinks();
+        await initializeLinks(true);
       } else {
         // Toast de error
         toastStore.error(result.error || 'No se pudo crear el enlace');
@@ -185,7 +207,7 @@
         editingLink = null;
         showEditForm = false;
         
-        await initializeLinks();
+        await initializeLinks(true);
       } else {
         // Toast de error
         toastStore.error(result.error || 'No se pudo actualizar el enlace');
@@ -218,7 +240,7 @@
         // Toast de éxito
         toastStore.success('Enlace eliminado correctamente');
         
-        await initializeLinks();
+        await initializeLinks(true);
       } else {
         // Toast de error
         toastStore.error(result.error || 'No se pudo eliminar el enlace');
@@ -240,9 +262,16 @@
 
   // Handle drag start
   function handleDragStart(event: DragEvent, link: Link) {
-    if (!editable) return;
+    if (!editable || !link || !link.id) {
+      console.warn('Cannot start drag: link is invalid or has no ID');
+      event.preventDefault();
+      return;
+    }
     
     draggedLink = link;
+    // Guardar el orden original para poder revertir si es necesario
+    originalOrder = sortLinksByOrder(displayLinks || []).filter(l => l.id).map(l => l.id!);
+    
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/html', '');
@@ -251,7 +280,7 @@
 
   // Handle drag over
   function handleDragOver(event: DragEvent, index: number) {
-    if (!editable || !draggedLink) return;
+    if (!editable || !draggedLink || !draggedLink.id) return;
     
     event.preventDefault();
     dropTarget = index;
@@ -259,38 +288,109 @@
 
   // Handle drop
   async function handleDrop(event: DragEvent, targetIndex: number) {
-    if (!editable || !draggedLink) return;
+    if (!editable || !draggedLink || !draggedLink.id || !linkTreeId) {
+      console.warn('Cannot handle drop: missing required data');
+      return;
+    }
     
     event.preventDefault();
     
-    const sourceIndex = sortLinksByOrder(links).findIndex(l => l.id === draggedLink!.id);
+    // Guardar una referencia local al enlace arrastrado para evitar problemas de concurrencia
+    const currentDraggedLink = draggedLink;
     
-    if (sourceIndex !== targetIndex && draggedLink.id) {
-      // Calculate new order
-      let newOrder: number;
+    // Verificación adicional de seguridad
+    if (!currentDraggedLink || !currentDraggedLink.id) {
+      console.warn('Dragged link is null or has no ID');
+      draggedLink = null;
+      dropTarget = null;
+      return;
+    }
+    
+    // Obtener todos los enlaces ordenados (incluyendo los que no tienen ID)
+    const allSortedLinks = sortLinksByOrder(displayLinks || []);
+    
+    // Encontrar el índice del enlace arrastrado en el array completo
+    const sourceIndexInAll = allSortedLinks.findIndex(l => l.id === currentDraggedLink.id);
+    
+    if (sourceIndexInAll === -1) {
+      console.warn('Link not found in sorted list');
+      draggedLink = null;
+      dropTarget = null;
+      return;
+    }
+    
+    // Solo procesar si realmente se está moviendo a una posición diferente
+    if (sourceIndexInAll !== targetIndex) {
+      // Crear el nuevo orden usando todos los enlaces
+      const newOrder: string[] = [];
       
-      if (targetIndex === 0) {
-        newOrder = 0;
-      } else if (targetIndex >= sortLinksByOrder(links).length - 1) {
-        newOrder = sortLinksByOrder(links).length;
-      } else {
-        newOrder = targetIndex;
+      // Copiar todos los IDs válidos excepto el que se está moviendo
+      for (let i = 0; i < allSortedLinks.length; i++) {
+        const link = allSortedLinks[i];
+        
+        if (i !== sourceIndexInAll && link?.id) {
+          newOrder.push(link.id);
+        }
       }
       
+      // Insertar el ID movido en la nueva posición
+      newOrder.splice(targetIndex, 0, currentDraggedLink.id);
+      
+      // === PATRÓN OPTIMISTA MEJORADO ===
+      // 1. Guardar el estado actual para poder revertir si es necesario
+      const currentLinks = [...(displayLinks || [])];
+      const currentOrder = sortLinksByOrder(currentLinks).filter(l => l.id).map(l => l.id!);
+      
+      // 2. Aplicar el cambio optimista inmediatamente
+      const reorderedLinks = newOrder.map(id => {
+        const link = currentLinks.find(l => l.id === id);
+        if (!link) {
+          console.warn(`Link with id ${id} not found in current links`);
+          return null;
+        }
+        return link;
+      }).filter(Boolean) as Link[];
+      
+      // Actualizar el estado optimista
+      optimisticLinks = reorderedLinks;
+      isOptimisticUpdate = true;
+      lastOptimisticOrder = newOrder;
+      
+      // 3. Iniciar barra de progreso
+      startReorderProgress();
+      
+      // 4. Enviar el cambio al backend
       try {
-        const result = await updateLink(linkTreeId, draggedLink.id, { order: newOrder });
+        console.log('newOrder', newOrder);
+        console.log('draggedLink', linkTreeId);
+        const result = await reorderLinks(linkTreeId, newOrder);
         
         if (result.success) {
-          dispatch('linkReordered', { linkId: draggedLink.id, newOrder });
-          
-          // Toast de éxito
+          // Éxito: mantener el cambio optimista y limpiar el estado
+          dispatch('linkReordered', { linkId: currentDraggedLink.id, newOrder: targetIndex });
           toastStore.success('Orden de enlaces actualizado');
+          
+          // Completar progreso
+          completeReorderProgress();
+          
+          // Limpiar estado optimista
+          clearOptimisticState();
         } else {
-          // Toast de error
-          toastStore.error('No se pudo actualizar el orden de los enlaces');
+          // Error: revertir el cambio optimista
+          console.warn('Backend rejected reorder, reverting optimistic update');
+          optimisticLinks = [...currentLinks];
+          clearOptimisticState();
+          cancelReorderProgress();
+          
+          toastStore.error(result.error || 'No se pudo actualizar el orden de los enlaces');
         }
       } catch (err) {
-        console.error('Error reordering link:', err);
+        // Error de red: revertir el cambio optimista
+        console.error('Error reordering links:', err);
+        optimisticLinks = [...currentLinks];
+        clearOptimisticState();
+        cancelReorderProgress();
+        
         toastStore.error('Error al reordenar los enlaces');
       }
     }
@@ -301,6 +401,7 @@
 
   // Handle drag end
   function handleDragEnd() {
+    // Limpiar el estado del drag
     draggedLink = null;
     dropTarget = null;
   }
@@ -381,6 +482,64 @@
 
   // Initialize on mount
   initializeLinks();
+
+  // Limpiar estado optimista al desmontar el componente
+  onDestroy(() => {
+    clearOptimisticState();
+    cancelReorderProgress();
+  });
+
+  // Función para limpiar estado optimista
+  function clearOptimisticState() {
+    isOptimisticUpdate = false;
+    optimisticLinks = [];
+    lastOptimisticOrder = [];
+  }
+
+  // Función para iniciar el progreso de reordenamiento
+  function startReorderProgress() {
+    isReorderingInProgress = true;
+    reorderProgress = 0;
+    
+    // Simular progreso gradual
+    reorderProgressInterval = setInterval(() => {
+      reorderProgress = Math.min(reorderProgress + Math.random() * 15, 90);
+    }, 200) as any;
+  }
+
+  // Función para completar el progreso de reordenamiento
+  function completeReorderProgress() {
+    if (reorderProgressInterval) {
+      clearInterval(reorderProgressInterval);
+      reorderProgressInterval = null;
+    }
+    reorderProgress = 100;
+    
+    // Ocultar progreso después de un breve delay
+    setTimeout(() => {
+      isReorderingInProgress = false;
+      reorderProgress = 0;
+    }, 500);
+  }
+
+  // Función para cancelar el progreso de reordenamiento
+  function cancelReorderProgress() {
+    if (reorderProgressInterval) {
+      clearInterval(reorderProgressInterval);
+      reorderProgressInterval = null;
+    }
+    isReorderingInProgress = false;
+    reorderProgress = 0;
+  }
+
+  // Limpiar estado optimista cuando se recargan los enlaces
+  $: if ($currentLinks.length > 0 && isOptimisticUpdate) {
+    // Solo limpiar si los enlaces del store son diferentes a los optimistas
+    const storeLinksOrder = sortLinksByOrder($currentLinks).filter(l => l.id).map(l => l.id!);
+    if (JSON.stringify(storeLinksOrder) !== JSON.stringify(lastOptimisticOrder)) {
+      clearOptimisticState();
+    }
+  }
 </script>
 
 <div class="link-manager card">
@@ -388,19 +547,21 @@
   <div class="management-header">
     <div class="flex justify-between items-center">
       <div>
-        <h3 class="text-2xl font-bold text-primary mb-sm">Enlaces ({sortLinksByOrder(links).length})</h3>
+        <h3 class="text-2xl font-bold text-primary mb-sm">Enlaces ({sortLinksByOrder(displayLinks || []).length})</h3>
         <p class="text-muted">Gestiona los enlaces de tu LinkTree</p>
       </div>
       
       {#if editable}
-        <button 
-          class="btn btn-primary"
-          on:click={() => showCreateForm = true}
-          disabled={showCreateForm || showEditForm}
-        >
-          <i class="fa-solid fa-plus"></i>
-          Agregar Enlace
-        </button>
+        <div class="flex gap-sm">
+          <button 
+            class="btn btn-primary"
+            on:click={() => showCreateForm = true}
+            disabled={isReorderingInProgress || showCreateForm || showEditForm}
+          >
+            <i class="fa-solid fa-plus"></i>
+            Agregar Enlace
+          </button>
+        </div>
       {/if}
     </div>
   </div>
@@ -414,13 +575,34 @@
     </div>
   {/if}
 
+  <!-- Optimistic Update Indicator -->
+  {#if isOptimisticUpdate}
+    <div class="optimistic-indicator">
+      <i class="fa-solid fa-clock text-info"></i>
+      <span class="text-sm text-info">Guardando cambios...</span>
+    </div>
+  {/if}
+
+  <!-- Progress Bar for Reordering -->
+  {#if isReorderingInProgress}
+    <div class="progress-bar-container">
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {reorderProgress}%"></div>
+      </div>
+      <div class="progress-text">
+        <i class="fa-solid fa-arrows-up-down text-primary"></i>
+        <span class="text-sm text-primary">Actualizando orden...</span>
+      </div>
+    </div>
+  {/if}
+
   <!-- Links List -->
   {#if $isLoading}
     <div class="loading-state">
       <div class="animate-spin w-xl h-xl border-2 border-accent border-t-primary rounded-full mb-md"></div>
       <p class="text-muted">Cargando enlaces...</p>
     </div>
-  {:else if sortLinksByOrder(links).length === 0}
+  {:else if sortLinksByOrder(displayLinks || []).length === 0}
     <div class="empty-state">
       <div class="text-6xl mb-md">🔗</div>
       <h4 class="text-xl font-semibold text-primary mb-sm">No hay enlaces</h4>
@@ -431,19 +613,37 @@
         }
       </p>
     </div>
+  {:else if sortLinksByOrder(displayLinks || []).filter(l => !l.id).length > 0}
+    <div class="warning-state">
+      <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+      <h4 class="text-lg font-semibold text-warning mb-sm">Enlaces sin ID</h4>
+      <p class="text-muted mb-md">
+        Algunos enlaces no tienen ID válido y no se pueden reordenar. 
+        {editable ? 'Guarda los cambios pendientes para solucionarlo.' : ''}
+      </p>
+      {#if editable}
+        <button class="btn btn-warning" on:click={() => initializeLinks(true)}>
+          <i class="fa-solid fa-refresh"></i>
+          Recargar Enlaces
+        </button>
+      {/if}
+    </div>
   {:else}
     <div class="links-list">
-      {#each sortLinksByOrder(links) as link, index (link.id)}
+      {#each sortLinksByOrder(displayLinks || []) as link, index (link.id)}
         <div 
           class="link-item card card-compact"
           class:dragging={draggedLink?.id === link.id}
           class:drop-target={dropTarget === index}
           class:inactive={!link.active}
-          draggable={editable}
+          class:reordering={isReorderingInProgress}
+          draggable={editable && !isReorderingInProgress && !!link.id}
           on:dragstart={(e) => handleDragStart(e, link)}
           on:dragover={(e) => handleDragOver(e, index)}
           on:drop={(e) => handleDrop(e, index)}
           on:dragend={handleDragEnd}
+          on:dragleave={() => dropTarget = null}
+          
         >
           <!-- Link Display -->
           <div class="link-content flex items-center gap-lg">
@@ -457,10 +657,10 @@
 
             <div class="link-details flex-1 min-w-0">
               <div class="link-title text-lg font-semibold text-primary mb-xs">{link.title}</div>
-              <div class="link-url text-sm text-accent mb-xs break-all">{link.url}</div>
-              {#if link.description}
-                <div class="link-description text-sm text-muted mb-xs">{link.description}</div>
-              {/if}
+                              <div class="link-url text-sm text-accent mb-xs break-all">{link.url}</div>
+                                  {#if link.description}
+                    <div class="link-description text-sm text-muted mb-xs">{link.description}</div>
+                  {/if}
               <div class="link-meta flex gap-lg text-xs text-light">
                 <span class="link-type">{LINK_TYPE_LABELS[link.type]}</span>
                 {#if showAnalytics && link.analytics}
@@ -478,6 +678,7 @@
                   class:active={link.active}
                   on:click={() => toggleLinkActive(link)}
                   title={link.active ? 'Desactivar' : 'Activar'}
+                  disabled={isReorderingInProgress}
                 >
                   <i class="fa-solid {link.active ? 'fa-eye' : 'fa-eye-slash'}"></i>
                 </button>
@@ -486,6 +687,7 @@
                   class="btn-icon"
                   on:click={() => startEditLink(link)}
                   title="Editar"
+                  disabled={isReorderingInProgress}
                 >
                   <i class="fa-solid fa-edit"></i>
                 </button>
@@ -493,7 +695,7 @@
                 <button
                   class="btn-icon delete"
                   on:click={() => showDeleteConfirmation(link)}
-                  disabled={deletingLinkId === link.id}
+                  disabled={deletingLinkId === link.id || isReorderingInProgress}
                   title="Eliminar"
                 >
                   {#if deletingLinkId === link.id}
@@ -761,5 +963,151 @@
 />
 
 <style>
- 
+  .link-item {
+    transition: all 0.2s ease;
+    cursor: grab;
+  }
+
+  .link-item:active {
+    cursor: grabbing;
+  }
+
+  .link-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+
+  .link-item.drop-target {
+    border: 2px dashed var(--color-primary);
+    background-color: var(--color-primary-bg);
+    transform: scale(1.02);
+  }
+
+  .link-item.reordering {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .link-item.inactive {
+    opacity: 0.6;
+  }
+
+  .link-handle {
+    cursor: grab;
+    color: var(--color-muted);
+    transition: color 0.2s ease;
+  }
+
+  .link-handle:hover {
+    color: var(--color-primary);
+  }
+
+  .link-item.dragging .link-handle {
+    cursor: grabbing;
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-error);
+  }
+
+  .error-state i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .warning-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-warning);
+  }
+
+  .warning-state i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .optimistic-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--color-info-bg);
+    border: 1px solid var(--color-info);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    animation: pulse 2s infinite;
+  }
+
+  .progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--color-info-bg);
+    border: 1px solid var(--color-info);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background-color: var(--color-muted);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background-color: var(--color-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease-in-out;
+  }
+
+  .progress-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-primary);
+    white-space: nowrap;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
 </style> 

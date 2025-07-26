@@ -11,7 +11,9 @@ import {
   type LinkUpdateRequest,
   type LinkResponse,
   type ImageUploadResponse,
-  type LinkTreeAnalytics
+  type LinkTreeAnalytics,
+  type LinkReorderResponse,
+  type LinkNormalizeOrderResponse
 } from '../services/linkTreeService.ts';
 import type { LinkTree, Link } from '../interfaces/links.ts';
 import { authStore } from './authStore.ts';
@@ -37,6 +39,8 @@ export interface LinkTreesState {
   isUpdatingLink: boolean;
   isDeletingLink: boolean;
   isRegisteringClick: boolean;
+  isReorderingLinks: boolean;
+  isNormalizingOrder: boolean;
   
   // Estados para Analytics
   isLoadingAnalytics: boolean;
@@ -50,6 +54,8 @@ export interface LinkTreesState {
   imageError: string | null;
   linkError: string | null;
   analyticsError: string | null;
+  reorderError: string | null;
+  normalizeError: string | null;
   
   // Cache metadata
   lastUpdated: {
@@ -113,6 +119,20 @@ export interface RegisterClickResult {
   error?: string;
 }
 
+export interface ReorderLinksResult {
+  success: boolean;
+  links?: Link[];
+  message?: string;
+  error?: string;
+}
+
+export interface NormalizeOrderResult {
+  success: boolean;
+  links?: Link[];
+  message?: string;
+  error?: string;
+}
+
 /**
  * Estado inicial del store
  */
@@ -131,6 +151,8 @@ const initialState: LinkTreesState = {
   isUpdatingLink: false,
   isDeletingLink: false,
   isRegisteringClick: false,
+  isReorderingLinks: false,
+  isNormalizingOrder: false,
   isLoadingAnalytics: false,
   currentAnalytics: null,
   error: null,
@@ -140,6 +162,8 @@ const initialState: LinkTreesState = {
   imageError: null,
   linkError: null,
   analyticsError: null,
+  reorderError: null,
+  normalizeError: null,
   lastUpdated: {
     linkTrees: null,
     current: null,
@@ -169,6 +193,8 @@ class LinkTreeStore {
   public readonly isUpdatingLink: Readable<boolean>;
   public readonly isDeletingLink: Readable<boolean>;
   public readonly isRegisteringClick: Readable<boolean>;
+  public readonly isReorderingLinks: Readable<boolean>;
+  public readonly isNormalizingOrder: Readable<boolean>;
   public readonly isLoadingAnalytics: Readable<boolean>;
   public readonly error: Readable<string | null>;
   public readonly createError: Readable<string | null>;
@@ -177,6 +203,8 @@ class LinkTreeStore {
   public readonly imageError: Readable<string | null>;
   public readonly linkError: Readable<string | null>;
   public readonly analyticsError: Readable<string | null>;
+  public readonly reorderError: Readable<string | null>;
+  public readonly normalizeError: Readable<string | null>;
   public readonly linkTrees: Readable<LinkTree[]>;
   public readonly currentLinkTree: Readable<LinkTree | null>;
   public readonly currentLinks: Readable<Link[]>;
@@ -199,6 +227,8 @@ class LinkTreeStore {
     this.isUpdatingLink = derived(this.store, $state => $state.isUpdatingLink);
     this.isDeletingLink = derived(this.store, $state => $state.isDeletingLink);
     this.isRegisteringClick = derived(this.store, $state => $state.isRegisteringClick);
+    this.isReorderingLinks = derived(this.store, $state => $state.isReorderingLinks);
+    this.isNormalizingOrder = derived(this.store, $state => $state.isNormalizingOrder);
     this.isLoadingAnalytics = derived(this.store, $state => $state.isLoadingAnalytics);
     this.error = derived(this.store, $state => $state.error);
     this.createError = derived(this.store, $state => $state.createError);
@@ -207,6 +237,8 @@ class LinkTreeStore {
     this.imageError = derived(this.store, $state => $state.imageError);
     this.linkError = derived(this.store, $state => $state.linkError);
     this.analyticsError = derived(this.store, $state => $state.analyticsError);
+    this.reorderError = derived(this.store, $state => $state.reorderError);
+    this.normalizeError = derived(this.store, $state => $state.normalizeError);
     this.linkTrees = derived(this.store, $state => $state.linkTrees);
     this.currentLinkTree = derived(this.store, $state => $state.currentLinkTree);
     this.currentLinks = derived(this.store, $state => $state.currentLinks);
@@ -1098,6 +1130,192 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
     }
   }
 
+  // ===== MÉTODOS PARA REORDENAMIENTO DE LINKS =====
+
+  /**
+   * Reordena los enlaces de un LinkTree (sin actualización optimista local)
+   */
+  async reorderLinks(linkTreeId: string, newOrder: string[]): Promise<ReorderLinksResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return {
+        success: false,
+        error: 'Debes estar autenticado para reordenar enlaces'
+      };
+    }
+
+    // NO establecer estado de carga para permitir patrón optimista
+    this.clearReorderError();
+
+    try {
+      const result = await linkTreeService.reorderLinks(linkTreeId, newOrder);
+
+      if (result.success && result.data) {
+        // Actualizar cache local después del éxito
+        this.updateLinksLocally(linkTreeId, result.data.links);
+        
+        return {
+          success: true,
+          links: result.data.links
+        };
+      } else {
+        this.setReorderError(result.error || 'Error reordenando enlaces');
+        
+        return {
+          success: false,
+          error: result.error || 'Error reordenando enlaces'
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido reordenando enlaces';
+      this.setReorderError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Actualiza los enlaces localmente en el cache
+   */
+  private updateLinksLocally(linkTreeId: string, updatedLinks: Link[]): void {
+    this.store.update(state => {
+      return {
+        ...state,
+        currentLinks: updatedLinks,
+        // También actualizar el LinkTree en cache si existe
+        linkTrees: state.linkTrees.map(lt => 
+          lt.id === linkTreeId 
+            ? { ...lt, links: updatedLinks }
+            : lt
+        ),
+        currentLinkTree: state.currentLinkTree?.id === linkTreeId 
+          ? { ...state.currentLinkTree, links: updatedLinks }
+          : state.currentLinkTree,
+        lastUpdated: {
+          ...state.lastUpdated,
+          links: new Date()
+        }
+      };
+    });
+  }
+
+  /**
+   * Reordena los enlaces de un LinkTree (con actualización local inmediata)
+   */
+  async reorderLinksWithLocalUpdate(linkTreeId: string, newOrder: string[]): Promise<ReorderLinksResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return {
+        success: false,
+        error: 'Debes estar autenticado para reordenar enlaces'
+      };
+    }
+
+    this.setReorderingLinks(true);
+    this.clearReorderError();
+
+    try {
+      const result = await linkTreeService.reorderLinks(linkTreeId, newOrder);
+
+      if (result.success && result.data) {
+        // Actualizar cache local inmediatamente
+        this.store.update(state => {
+          const updateLinksInArray = (links: Link[]) =>
+            newOrder.map(id => links.find(l => l.id === id)!);
+
+          return {
+            ...state,
+            currentLinks: updateLinksInArray(state.currentLinks),
+            // También actualizar el LinkTree en cache si existe
+            linkTrees: state.linkTrees.map(lt => 
+              lt.id === linkTreeId 
+                ? { ...lt, links: updateLinksInArray(lt.links) }
+                : lt
+            ),
+            currentLinkTree: state.currentLinkTree?.id === linkTreeId 
+              ? { ...state.currentLinkTree, links: updateLinksInArray(state.currentLinkTree.links) }
+              : state.currentLinkTree,
+            isReorderingLinks: false,
+            reorderError: null,
+            lastUpdated: {
+              ...state.lastUpdated,
+              links: new Date()
+            }
+          };
+        });
+
+        return {
+          success: true,
+          links: result.data.links
+        };
+      } else {
+        this.setReorderingLinks(false);
+        this.setReorderError(result.error || 'Error reordenando enlaces');
+        
+        return {
+          success: false,
+          error: result.error || 'Error reordenando enlaces'
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido reordenando enlaces';
+      this.setReorderingLinks(false);
+      this.setReorderError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  // ===== MÉTODOS PARA NORMALIZACIÓN DE ORDEN =====
+
+  /**
+   * Normaliza el orden de los enlaces de un LinkTree
+   */
+  async normalizeLinkOrder(linkTreeId: string): Promise<NormalizeOrderResult> {
+    if (!this.getCurrentState().isAuthenticated) {
+      return {
+        success: false,
+        error: 'Debes estar autenticado para normalizar el orden de enlaces'
+      };
+    }
+
+    // NO establecer estado de carga para permitir patrón optimista
+    this.clearNormalizeError();
+
+    try {
+      const result = await linkTreeService.normalizeLinkOrder(linkTreeId);
+
+      if (result.success && result.data) {
+        // Actualizar cache local después del éxito
+        this.updateLinksLocally(linkTreeId, result.data.links);
+        
+        return {
+          success: true,
+          links: result.data.links
+        };
+      } else {
+        this.setNormalizeError(result.error || 'Error normalizando orden');
+        
+        return {
+          success: false,
+          error: result.error || 'Error normalizando orden'
+        };
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido normalizando orden';
+      this.setNormalizeError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
   // ===== MÉTODOS AUXILIARES PRIVADOS =====
 
   private setLoadingCurrent(isLoading: boolean): void {
@@ -1138,6 +1356,14 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
 
   private setRegisteringClick(isRegistering: boolean): void {
     this.store.update(state => ({ ...state, isRegisteringClick: isRegistering }));
+  }
+
+  private setReorderingLinks(isReordering: boolean): void {
+    this.store.update(state => ({ ...state, isReorderingLinks: isReordering }));
+  }
+
+  private setNormalizingOrder(isNormalizing: boolean): void {
+    this.store.update(state => ({ ...state, isNormalizingOrder: isNormalizing }));
   }
 
   private setLoadingAnalytics(isLoading: boolean): void {
@@ -1210,6 +1436,14 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
     this.store.update(state => ({ ...state, analyticsError: error }));
   }
 
+  private setReorderError(error: string | null): void {
+    this.store.update(state => ({ ...state, reorderError: error }));
+  }
+
+  private setNormalizeError(error: string | null): void {
+    this.store.update(state => ({ ...state, normalizeError: error }));
+  }
+
   private clearError(): void {
     this.setError(null);
   }
@@ -1236,6 +1470,14 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
 
   private clearAnalyticsError(): void {
     this.setAnalyticsError(null);
+  }
+
+  private clearReorderError(): void {
+    this.setReorderError(null);
+  }
+
+  private clearNormalizeError(): void {
+    this.setNormalizeError(null);
   }
 
   /**
@@ -1288,7 +1530,9 @@ async loadLinkTreeByRestaurant(restaurantId: string, forceReload: boolean = fals
       deleteError: null,
       imageError: null,
       linkError: null,
-      analyticsError: null
+      analyticsError: null,
+      reorderError: null,
+      normalizeError: null
     }));
   }
 
@@ -1371,6 +1615,8 @@ export const linksCreating = linkTreeStore.isCreatingLink;
 export const linksUpdating = linkTreeStore.isUpdatingLink;
 export const linksDeleting = linkTreeStore.isDeletingLink;
 export const linkClickRegistering = linkTreeStore.isRegisteringClick;
+export const linksReordering = linkTreeStore.isReorderingLinks;
+export const linksNormalizingOrder = linkTreeStore.isNormalizingOrder;
 export const analyticsLoading = linkTreeStore.isLoadingAnalytics;
 export const linkTreesError = linkTreeStore.error;
 export const linkTreesCreateError = linkTreeStore.createError;
@@ -1378,6 +1624,8 @@ export const linkTreesUpdateError = linkTreeStore.updateError;
 export const linkTreesDeleteError = linkTreeStore.deleteError;
 export const linkTreesImageError = linkTreeStore.imageError;
 export const linksError = linkTreeStore.linkError;
+export const linksReorderError = linkTreeStore.reorderError;
+export const linksNormalizeError = linkTreeStore.normalizeError;
 export const analyticsError = linkTreeStore.analyticsError;
 export const linkTrees = linkTreeStore.linkTrees;
 export const currentLinkTree = linkTreeStore.currentLinkTree;
@@ -1408,6 +1656,8 @@ export function useLinkTrees() {
     isDeletingLink: linkTreeStore.isDeletingLink,
     isRegisteringClick: linkTreeStore.isRegisteringClick,
     isLoadingAnalytics: linkTreeStore.isLoadingAnalytics,
+    isReorderingLinks: linkTreeStore.isReorderingLinks,
+    isNormalizingOrder: linkTreeStore.isNormalizingOrder,
     
     // Errores como stores reactivos
     error: linkTreeStore.error,
@@ -1417,6 +1667,8 @@ export function useLinkTrees() {
     imageError: linkTreeStore.imageError,
     linkError: linkTreeStore.linkError,
     analyticsError: linkTreeStore.analyticsError,
+    reorderError: linkTreeStore.reorderError,
+    normalizeError: linkTreeStore.normalizeError,
     
     // Datos como stores reactivos
     linkTrees: linkTreeStore.linkTrees,
@@ -1440,6 +1692,11 @@ export function useLinkTrees() {
     updateLink: linkTreeStore.updateLink.bind(linkTreeStore),
     deleteLink: linkTreeStore.deleteLink.bind(linkTreeStore),
     registerLinkClick: linkTreeStore.registerLinkClick.bind(linkTreeStore),
+    
+    // Métodos para Reordenamiento
+    reorderLinks: linkTreeStore.reorderLinks.bind(linkTreeStore),
+    reorderLinksWithLocalUpdate: linkTreeStore.reorderLinksWithLocalUpdate.bind(linkTreeStore),
+    normalizeLinkOrder: linkTreeStore.normalizeLinkOrder.bind(linkTreeStore),
     
     // Métodos para Analytics
     loadAnalytics: linkTreeStore.loadAnalytics.bind(linkTreeStore),

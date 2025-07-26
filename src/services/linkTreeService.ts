@@ -63,6 +63,22 @@ export interface LinkTreeUpdateRequest {
 
 export type LinkTreeResponse = LinkTree;
 
+// ===== INTERFACES PARA REORDENAMIENTO =====
+
+export interface LinkReorderRequest {
+  linkIds: string[];
+}
+
+export interface LinkReorderResponse {
+  message: string;
+  links: Link[];
+}
+
+export interface LinkNormalizeOrderResponse {
+  message: string;
+  links: Link[];
+}
+
 // ===== INTERFACES PARA LINKS =====
 
 export interface LinkCreateRequest {
@@ -703,6 +719,118 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido eliminando enlace'
+      };
+    }
+  }
+
+  /**
+   * Reordena los enlaces de un LinkTree (requiere autenticación)
+   */
+  async reorderLinks(
+    linkTreeId: string, 
+    linkIds: string[]
+  ): Promise<ApiResult<LinkReorderResponse>> {
+    try {
+      const isAuthenticated = await this.checkAuthentication();
+      
+      if (!isAuthenticated) {
+        return {
+          success: false,
+          error: 'Debes estar autenticado para reordenar enlaces'
+        };
+      }
+
+      // Validar que se proporcionen IDs
+      if (!linkIds || linkIds.length === 0) {
+        return {
+          success: false,
+          error: 'Debes proporcionar al menos un ID de enlace'
+        };
+      }
+
+      const response = await this.makeAuthenticatedRequest(
+        `/linktrees/${linkTreeId}/links/reorder`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ linkIds })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        return {
+          success: false,
+          error: errorData.detail || 'Error reordenando enlaces'
+        };
+      }
+
+      const data: LinkReorderResponse = await response.json();
+      
+      // Formatear fechas en los enlaces devueltos
+      const formattedLinks = data.links.map(link => this.formatLinkDates(link));
+      
+      return {
+        success: true,
+        data: {
+          ...data,
+          links: formattedLinks
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido reordenando enlaces'
+      };
+    }
+  }
+  /**
+   * Normaliza el orden de los enlaces de un LinkTree (requiere autenticación)
+   */
+  async normalizeLinkOrder(linkTreeId: string): Promise<ApiResult<LinkNormalizeOrderResponse>> {
+    try {
+      const isAuthenticated = await this.checkAuthentication();
+      
+      if (!isAuthenticated) {
+        return {
+          success: false,
+          error: 'Debes estar autenticado para normalizar el orden de enlaces'
+        };
+      }
+
+      const response = await this.makeAuthenticatedRequest(
+        `/linktrees/${linkTreeId}/links/normalize-order`,
+        {
+          method: 'POST'
+        }
+      );
+
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        return {
+          success: false,
+          error: errorData.detail || 'Error normalizando orden de enlaces'
+        };
+      }
+
+      const data: LinkNormalizeOrderResponse = await response.json();
+      
+      // Formatear fechas en los enlaces devueltos
+      const formattedLinks = data.links.map(link => this.formatLinkDates(link));
+      
+      return {
+        success: true,
+        data: {
+          ...data,
+          links: formattedLinks
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido normalizando orden de enlaces'
       };
     }
   }
