@@ -522,8 +522,14 @@
 <div class="restaurant-dashboard">
   {#if loading}
     <div class="loading-state">
-      <div class="spinner-large animate-spin">⏳</div>
-      <h3>Cargando restaurante...</h3>
+      <div class="spinner" aria-label="Cargando">
+        <svg class="spinner-svg" viewBox="0 0 50 50">
+          <circle class="spinner-bg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
+          <circle class="spinner-fg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
+        </svg>
+      </div>
+      <h3 class="loading-title">Cargando restaurante...</h3>
+      <p class="loading-subtitle">Preparando tu panel de administración</p>
     </div>
   {:else if error}
     <div class="error-state">
@@ -665,16 +671,23 @@
       <!-- Categories and Dishes -->
       {#if isLoading}
         <div class="loading-container">
-          <div class="loading-spinner"></div>
+          <div class="spinner" aria-label="Cargando menú">
+            <svg class="spinner-svg" viewBox="0 0 50 50">
+              <circle class="spinner-bg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
+              <circle class="spinner-fg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
+            </svg>
+          </div>
           <p class="loading-text">Cargando menú...</p>
         </div>
       
       {:else if !hasCategories}
         <!-- Empty State - No Categories -->
         <div class="empty-state">
-          <svg class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 002 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
+          <div class="empty-icon-container">
+            <svg class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 002 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
           <h3 class="empty-title">No hay categorías aún</h3>
           <p class="empty-subtitle">
             Crea tu primera categoría para comenzar a organizar tu menú
@@ -1210,7 +1223,17 @@
     gap: var(--spacing-sm);
   }
 
-  /* Loading */
+  /* Loading States */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-4xl) var(--spacing-lg);
+    text-align: center;
+    min-height: 60vh;
+  }
+
   .loading-container {
     display: flex;
     flex-direction: column;
@@ -1220,26 +1243,63 @@
     text-align: center;
   }
 
-  .loading-spinner {
-    width: 2rem;
-    height: 2rem;
-    border: 2px solid #e5e7eb;
-    border-top: 2px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  .spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
     margin-bottom: var(--spacing-lg);
+  }
+
+  .spinner-svg {
+    width: 56px;
+    height: 56px;
+    animation: spinner-rotate 1s linear infinite;
+  }
+
+  .spinner-bg {
+    stroke: var(--bg-accent);
+    opacity: 0.3;
+  }
+
+  .spinner-fg {
+    stroke: url(#spinner-gradient);
+    stroke-dasharray: 90 150;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    animation: spinner-dash 1.2s ease-in-out infinite;
+  }
+
+  .loading-title {
+    font-size: var(--font-xl);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+  }
+
+  .loading-subtitle {
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: var(--weight-medium);
   }
 
   .loading-text {
     font-size: var(--font-base);
     color: var(--text-secondary);
     margin: 0;
+    font-weight: var(--weight-medium);
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  @keyframes spinner-rotate {
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes spinner-dash {
+    0% { stroke-dasharray: 1 150; stroke-dashoffset: 0; }
+    50% { stroke-dasharray: 90 150; stroke-dashoffset: -35; }
+    100% { stroke-dasharray: 90 150; stroke-dashoffset: -124; }
   }
 
   /* Empty State */
@@ -1248,15 +1308,27 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-3xl) var(--spacing-lg);
+    padding: var(--spacing-4xl) var(--spacing-lg);
     text-align: center;
+    min-height: 50vh;
+  }
+
+  .empty-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    margin-bottom: var(--spacing-xl);
+    border: 2px solid var(--bg-accent);
   }
 
   .empty-icon {
-    width: 3rem;
-    height: 3rem;
-    color: var(--text-light);
-    margin-bottom: var(--spacing-lg);
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--text-secondary);
   }
 
   .empty-title {
@@ -1289,7 +1361,7 @@
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-normal);
     height: fit-content;
-    min-height: 200px;
+    /* min-height: 200px; */
     /* max-height: 80vh; */
     display: flex;
     flex-direction: column;
@@ -2276,3 +2348,13 @@
     transform: translateY(-1px);
   }
 </style>
+
+<!-- SVG gradient definition for spinner -->
+<svg width="0" height="0">
+  <defs>
+    <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="var(--primary-color, #4f46e5)" />
+      <stop offset="100%" stop-color="var(--primary-light, #6366f1)" />
+    </linearGradient>
+  </defs>
+</svg>
