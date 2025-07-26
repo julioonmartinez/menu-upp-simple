@@ -14,10 +14,16 @@
     useCategories,
     useDishes,
     allCategories,
-    allDishes
+    allDishes,
+    dishUtils,
+    SORT_CONSTANTS,
+    DEFAULT_DISH_CONFIG,
+    DISH_SORT_FIELDS,
+    isValidSortField
   } from '../../services/index.ts';
   import type { Category } from '../../interfaces/category.ts';
   import type { Dish } from '../../interfaces/dish.ts';
+  import type { DishSortField } from '../../services/dishService.ts';
   import { toastStore } from '../../stores/toastStore.ts';
 
   export let idRestaurant : string | null = null; 
@@ -97,6 +103,10 @@
   let dragStartIndex = -1;
   let originalCategories: Category[] = [];
 
+  // Estado para ordenamiento de platillos
+  let dishSortConfig: { [categoryId: string]: { field: DishSortField; order: 1 | -1 } } = {};
+  let showSortControls: { [categoryId: string]: boolean } = {};
+
   // Cargar restaurante cuando cambia idRestaurant
   $: if (idRestaurant) {
     loading = true;
@@ -120,6 +130,15 @@
         loading = false;
       });
   }
+
+  // Event listener para cerrar controles de ordenamiento
+  onMount(() => {
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  });
 
   // Computed
   $: hasCategories = Array.isArray(displayCategories) && displayCategories.length > 0;
@@ -291,7 +310,16 @@
   }
 
   function getDishesForCategory(categoryId: string): Dish[] {
-    return $allDishes.filter(dish => dish.categoryId === categoryId);
+    const dishes = $allDishes.filter(dish => dish.categoryId === categoryId);
+    
+    // Aplicar ordenamiento si está configurado
+    const sortConfig = dishSortConfig[categoryId];
+    if (sortConfig) {
+      return dishUtils.sortDishes(dishes, sortConfig.field, sortConfig.order);
+    }
+    
+    // Ordenamiento por defecto: nombre ascendente
+    return dishUtils.sortDishes(dishes, 'name', 1);
   }
 
   function getCategoryName(categoryId: string): string {
@@ -304,6 +332,43 @@
       style: 'currency',
       currency: 'MXN'
     }).format(price);
+  }
+
+  // Funciones para ordenamiento de platillos
+  function toggleSortControls(categoryId: string) {
+    showSortControls[categoryId] = !showSortControls[categoryId];
+    showSortControls = showSortControls; // Trigger reactivity
+  }
+
+  function updateDishSort(categoryId: string, field: DishSortField, order: 1 | -1) {
+    dishSortConfig[categoryId] = { field, order };
+    dishSortConfig = dishSortConfig; // Trigger reactivity
+  }
+
+  function getCurrentSortConfig(categoryId: string) {
+    return dishSortConfig[categoryId] || { 
+      field: DEFAULT_DISH_CONFIG.sorting.defaultField, 
+      order: DEFAULT_DISH_CONFIG.sorting.defaultOrder 
+    };
+  }
+
+  function getSortIcon(order: 1 | -1): string {
+    return order === 1 ? '↑' : '↓';
+  }
+
+  function getSortLabel(field: DishSortField): string {
+    return dishUtils.getSortFieldLabel(field);
+  }
+
+  // Cerrar controles de ordenamiento al hacer clic fuera
+  function handleClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.sort-controls')) {
+      showSortControls = Object.keys(showSortControls).reduce((acc, key) => {
+        acc[key] = false;
+        return acc;
+      }, {} as { [key: string]: boolean });
+    }
   }
 
   function handleImageError(dishId: string) {
@@ -740,6 +805,11 @@
                       {#if category.order !== undefined}
                         <span class="order-indicator">#{category.order}</span>
                       {/if}
+                      {#if dishSortConfig[category.id!]}
+                        <span class="sort-indicator" title="Ordenado por {getSortLabel(getCurrentSortConfig(category.id!).field)}">
+                          {getSortIcon(getCurrentSortConfig(category.id!).order)}
+                        </span>
+                      {/if}
                     </div>
                   </div>
                   {#if category.description}
@@ -769,9 +839,78 @@
               {#if expandedCategories.includes(category.id!)}
                 <div class="dishes-section" in:slide={{ duration: 300, easing: quintOut }}>
                   <div class="dishes-header">
-                    <h4 class="dishes-title">
-                      Platillos en {category.name}
-                    </h4>
+                    <div class="dishes-title-section">
+                      <h4 class="dishes-title">
+                        Platillos en {category.name}
+                      </h4>
+                      
+                      <!-- Controles de ordenamiento -->
+                      <div class="sort-controls">
+                        <button
+                          type="button"
+                          class="btn-sort-toggle"
+                          on:click={() => toggleSortControls(category.id!)}
+                          title="Ordenar platillos"
+                        >
+                          <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                          </svg>
+                          <span class="sort-label">
+                            {getSortLabel(getCurrentSortConfig(category.id!).field)}
+                            {getSortIcon(getCurrentSortConfig(category.id!).order)}
+                          </span>
+                        </button>
+                        
+                        {#if showSortControls[category.id!]}
+                          <div class="sort-dropdown" in:slide={{ duration: 200 }}>
+                            <div class="sort-options">
+                              {#each DISH_SORT_FIELDS as sortOption}
+                                <button
+                                  type="button"
+                                  class="sort-option"
+                                  class:active={getCurrentSortConfig(category.id!).field === sortOption.value}
+                                  on:click={() => {
+                                    const currentOrder = getCurrentSortConfig(category.id!).order;
+                                    updateDishSort(category.id!, sortOption.value, currentOrder);
+                                  }}
+                                >
+                                  <span class="sort-option-label">{sortOption.label}</span>
+                                  {#if getCurrentSortConfig(category.id!).field === sortOption.value}
+                                    <span class="sort-option-icon">{getSortIcon(getCurrentSortConfig(category.id!).order)}</span>
+                                  {/if}
+                                </button>
+                              {/each}
+                            </div>
+                            
+                            <div class="sort-order-controls">
+                              <button
+                                type="button"
+                                class="sort-order-btn"
+                                class:active={getCurrentSortConfig(category.id!).order === 1}
+                                on:click={() => updateDishSort(category.id!, getCurrentSortConfig(category.id!).field, 1)}
+                              >
+                                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                </svg>
+                                Ascendente
+                              </button>
+                              <button
+                                type="button"
+                                class="sort-order-btn"
+                                class:active={getCurrentSortConfig(category.id!).order === -1}
+                                on:click={() => updateDishSort(category.id!, getCurrentSortConfig(category.id!).field, -1)}
+                              >
+                                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                                Descendente
+                              </button>
+                            </div>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                    
                     <button
                       type="button"
                       class="btn-secondary btn-sm"
@@ -826,6 +965,28 @@
                                 {dish.inStock ? 'Disponible' : 'No disponible'}
                               </span>
                             </div>
+                            
+                            <!-- Indicadores de ordenamiento -->
+                            {#if getCurrentSortConfig(category.id!).field === 'rating' && dish.rating}
+                              <div class="dish-rating-indicator">
+                                <span class="rating-stars">{dishUtils.generateStars(dish.rating)}</span>
+                                <span class="rating-value">({dish.rating})</span>
+                              </div>
+                            {/if}
+                            
+                            {#if getCurrentSortConfig(category.id!).field === 'favorites' && dish.favorites}
+                              <div class="dish-favorites-indicator">
+                                <span class="favorites-icon">❤️</span>
+                                <span class="favorites-count">{dish.favorites}</span>
+                              </div>
+                            {/if}
+                            
+                            {#if getCurrentSortConfig(category.id!).field === 'reviewsCount' && dish.reviewsCount}
+                              <div class="dish-reviews-indicator">
+                                <span class="reviews-icon">💬</span>
+                                <span class="reviews-count">{dish.reviewsCount}</span>
+                              </div>
+                            {/if}
                           </div>
                           
                           <div class="dish-actions" 
@@ -1490,6 +1651,16 @@
     font-weight: var(--weight-medium);
   }
 
+  .sort-indicator {
+    font-size: var(--font-xs);
+    color: var(--primary-color);
+    background: var(--bg-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-bold);
+    border: 1px solid var(--primary-color);
+  }
+
   .category-description {
     font-size: var(--font-xs);
     color: var(--text-secondary);
@@ -1549,9 +1720,17 @@
   .dishes-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: var(--spacing-md);
     flex-shrink: 0;
+    gap: var(--spacing-md);
+  }
+
+  .dishes-title-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
   }
 
   .dishes-title {
@@ -1559,6 +1738,126 @@
     font-weight: var(--weight-semibold);
     color: var(--text-secondary);
     margin: 0;
+  }
+
+  /* Controles de ordenamiento */
+  .sort-controls {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-sort-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-md);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .btn-sort-toggle:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+  }
+
+  .btn-sort-toggle .btn-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .sort-label {
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
+  }
+
+  .sort-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    margin-top: var(--spacing-xs);
+    overflow: hidden;
+  }
+
+  .sort-options {
+    border-bottom: 1px solid var(--bg-accent);
+  }
+
+  .sort-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: none;
+    color: var(--text-primary);
+    border: none;
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .sort-option:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .sort-option.active {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+  }
+
+  .sort-option-label {
+    font-weight: var(--weight-medium);
+  }
+
+  .sort-option-icon {
+    font-weight: var(--weight-bold);
+  }
+
+  .sort-order-controls {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sort-order-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: none;
+    color: var(--text-primary);
+    border: none;
+    font-size: var(--font-xs);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .sort-order-btn:hover {
+    background: var(--bg-tertiary);
+  }
+
+  .sort-order-btn.active {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+  }
+
+  .sort-order-btn .btn-icon {
+    width: 0.875rem;
+    height: 0.875rem;
   }
 
   .empty-dishes {
@@ -1750,6 +2049,47 @@
 
   .dish-status.unavailable {
     color: var(--error);
+  }
+
+  /* Indicadores de ordenamiento */
+  .dish-rating-indicator,
+  .dish-favorites-indicator,
+  .dish-reviews-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-accent);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-xs);
+  }
+
+  .dish-rating-indicator {
+    color: #f59e0b;
+  }
+
+  .dish-favorites-indicator {
+    color: #ef4444;
+  }
+
+  .dish-reviews-indicator {
+    color: #3b82f6;
+  }
+
+  .rating-stars {
+    font-size: var(--font-xs);
+  }
+
+  .rating-value,
+  .favorites-count,
+  .reviews-count {
+    font-weight: var(--weight-medium);
+  }
+
+  .favorites-icon,
+  .reviews-icon {
+    font-size: var(--font-xs);
   }
 
   .dish-actions {
@@ -2088,6 +2428,19 @@
       flex-direction: column;
       align-items: stretch;
       gap: var(--spacing-sm);
+    }
+
+    .dishes-title-section {
+      gap: var(--spacing-xs);
+    }
+
+    .sort-controls {
+      align-self: flex-start;
+    }
+
+    .sort-dropdown {
+      min-width: 200px;
+      right: auto;
     }
 
     .dishes-grid {

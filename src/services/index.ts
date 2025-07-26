@@ -3,6 +3,8 @@
 
 import type { Dish } from '../interfaces/dish.ts';
 import type { Category } from './categoryService.ts';
+import { DISH_SORT_FIELDS, isValidSortField } from './dishService.ts';
+import type { DishSortField } from './dishService.ts';
 
 // ==============================================
 // SERVICIOS
@@ -11,7 +13,11 @@ import type { Category } from './categoryService.ts';
 // Servicio de platillos
 export { 
   dishService,
-  default as DishService 
+  default as DishService,
+  
+  // Sistema de ordenamiento
+  DISH_SORT_FIELDS,
+  isValidSortField
 } from './dishService.ts';
 
 // Servicio de categorías
@@ -38,7 +44,8 @@ export type {
   DishResponse,
   FavoriteToggleResponse,
   
-  
+  // Sistema de ordenamiento
+  DishSortField,
 } from './dishService.ts';
 
 export type {
@@ -213,7 +220,6 @@ export type {
   DishStatus,
   DishCategory,
   SortOrder,
-  DishSortField,
   DishStoreAction,
   DishStoreState,
   
@@ -316,6 +322,72 @@ export const dishUtils = {
   truncateText: (text: string, maxLength: number): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
+  },
+
+  /**
+   * Ordena platillos por campo específico
+   */
+  sortDishes: (
+    dishes: Dish[], 
+    sortField: DishSortField = 'name', 
+    sortOrder: 1 | -1 = 1
+  ): Dish[] => {
+    return [...dishes].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'price':
+          aValue = a.price;
+          bValue = b.price;
+          break;
+        case 'rating':
+          aValue = a.rating || 0;
+          bValue = b.rating || 0;
+          break;
+        case 'favorites':
+          aValue = a.favorites || 0;
+          bValue = b.favorites || 0;
+          break;
+        case 'reviewsCount':
+          aValue = a.reviewsCount || 0;
+          bValue = b.reviewsCount || 0;
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+
+      if (aValue < bValue) return -1 * sortOrder;
+      if (aValue > bValue) return 1 * sortOrder;
+      return 0;
+    });
+  },
+
+  /**
+   * Obtiene el label de un campo de ordenamiento
+   */
+  getSortFieldLabel: (field: DishSortField): string => {
+    const sortField = DISH_SORT_FIELDS.find(option => option.value === field);
+    return sortField ? sortField.label : 'Nombre';
+  },
+
+  /**
+   * Valida si un campo de ordenamiento es válido
+   */
+  validateSortField: (field: string): field is DishSortField => {
+    return isValidSortField(field);
+  },
+
+  /**
+   * Genera opciones de ordenamiento para select
+   */
+  generateSortOptions: (): Array<{ value: DishSortField; label: string }> => {
+    return [...DISH_SORT_FIELDS];
   }
 };
 
@@ -449,6 +521,11 @@ export const DEFAULT_DISH_CONFIG = {
     defaultPageSize: 20,
     maxPageSize: 100
   },
+  sorting: {
+    defaultField: 'name' as DishSortField,
+    defaultOrder: 1 as 1 | -1,
+    availableFields: DISH_SORT_FIELDS
+  },
   cache: {
     duration: 5 * 60 * 1000 // 5 minutos
   }
@@ -513,6 +590,27 @@ export const LOADING_STATES = {
   LOADING: 'loading',
   SUCCESS: 'success',
   ERROR: 'error'
+} as const;
+
+/**
+ * ✅ Constantes de ordenamiento
+ */
+export const SORT_CONSTANTS = {
+  ORDER: {
+    ASCENDING: 1,
+    DESCENDING: -1
+  },
+  FIELD_LABELS: {
+    name: 'Nombre',
+    price: 'Precio',
+    rating: 'Valoración',
+    favorites: 'Favoritos',
+    reviewsCount: 'N° de reseñas'
+  },
+  ORDER_LABELS: {
+    1: 'Ascendente',
+    '-1': 'Descendente'
+  }
 } as const;
 
 // ==============================================

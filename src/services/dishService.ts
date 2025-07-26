@@ -15,6 +15,23 @@ export interface ApiError {
   status?: number;
 }
 
+// ✅ Enum para campos de ordenamiento (coincide con el backend)
+export type DishSortField = 'name' | 'price' | 'rating' | 'favorites' | 'reviewsCount';
+
+// ✅ Array para usar en selects/dropdowns
+export const DISH_SORT_FIELDS: { value: DishSortField; label: string }[] = [
+  { value: 'name', label: 'Nombre' },
+  { value: 'price', label: 'Precio' },
+  { value: 'rating', label: 'Valoración' },
+  { value: 'favorites', label: 'Favoritos' },
+  { value: 'reviewsCount', label: 'N° de reseñas' }
+];
+
+// ✅ Helper para validar campos de ordenamiento
+export function isValidSortField(field: string): field is DishSortField {
+  return DISH_SORT_FIELDS.some(option => option.value === field);
+}
+
 // ✅ Interfaces para el servicio de dishes
 export interface DishCreateRequest {
   name: string;
@@ -63,14 +80,14 @@ export interface DishSearchFilters {
   categoryId?: string;
   minRating?: number;
   maxRating?: number;
-  sortBy?: 'rating' | 'comments' | 'price' | 'name';
+  sortBy?: DishSortField;
   sortOrder?: 1 | -1;
 }
 
 export interface DishPaginationParams {
   limit?: number;
   page?: number;
-  sort_by?: string;
+  sort_by?: DishSortField;
   sort_order?: 1 | -1;
   search?: string;
 }
