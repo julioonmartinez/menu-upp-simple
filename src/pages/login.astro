@@ -11,9 +11,8 @@ if (isAuthenticated && user) {
   return Astro.redirect('/dashboard');
 }
 
-// Obtener parámetros de la URL
-const { redirect } = Astro.url.searchParams;
-const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard';
+
+
 
 // Metadatos de la página
 const title = 'Iniciar Sesión - Menu App';
@@ -28,7 +27,7 @@ const description = 'Inicia sesión en tu cuenta para acceder a todas las funcio
     <!-- Formulario de login -->
     <LoginForm 
       client:only="svelte"
-      redirectUrl={redirectUrl}
+      
     />
 
   
