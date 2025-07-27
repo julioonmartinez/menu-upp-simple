@@ -55,13 +55,123 @@
   };
 
   // Estados del formulario
-  let isSubmitting = false;
   let error = null;
   let success = null;
-  let isClosing = false;
+
+  // ESTADOS PARA GUARDADO AUTOMÁTICO Y BOTÓN FLOTANTE
+  let isDirty = false;
+  let isSaving = false;
+  let saveError = null;
+  let lastSaved = null;
+  let autoSaveTimeout;
+
+  // Detectar cambios en formData para activar guardado automático
+  $: if (restaurant && formData) {
+    // Compara los valores actuales con los originales (excluyendo imágenes que se manejan por separado)
+    const hasChanges = JSON.stringify({
+      primaryColor: formData.primaryColor,
+      secondaryColor: formData.secondaryColor,
+      backgroundColor: formData.backgroundColor,
+      textColor: formData.textColor,
+      fontFamily: formData.fontFamily
+    }) !== JSON.stringify({
+      primaryColor: restaurant.primaryColor || '#3b82f6',
+      secondaryColor: restaurant.secondaryColor || '#10b981',
+      backgroundColor: restaurant.backgroundColor || '#ffffff',
+      textColor: restaurant.textColor || '#222222',
+      fontFamily: restaurant.fontFamily || 'Inter'
+    });
+    isDirty = hasChanges;
+    if (hasChanges) {
+      debounceAutoSave();
+    }
+  }
+
+  function debounceAutoSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      autoSave();
+    }, 1500); // 1.5 segundos de espera
+  }
+
+  async function autoSave() {
+    if (!isDirty || isSaving || isUploadingAny) return;
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+    } catch (err) {
+      saveError = err.message || 'Error al guardar automáticamente';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function saveFormData() {
+    const updateData = {
+      primaryColor: formData.primaryColor,
+      secondaryColor: formData.secondaryColor,
+      backgroundColor: formData.backgroundColor,
+      textColor: formData.textColor,
+      fontFamily: formData.fontFamily
+    };
+
+    // Solo incluir imágenes que hayan cambiado
+    ['logo', 'profileImage', 'coverImage', 'image'].forEach(imageType => {
+      if (formData[imageType] !== restaurant?.[imageType]) {
+        updateData[imageType] = formData[imageType];
+      }
+    });
+
+    const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
+    if (!result.success) {
+      throw new Error(result.error || 'Error actualizando la identidad visual');
+    }
+  }
+
+  // Guardar manualmente desde el botón flotante
+  async function handleManualSave() {
+    if (isUploadingAny) {
+      saveError = 'Espera a que terminen de subir las imágenes';
+      return;
+    }
+    
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+      success = 'Identidad visual actualizada correctamente';
+      dispatch('update');
+      await restaurantStore.loadRestaurant(restaurantId, true);
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        success = null;
+      }, 3000);
+    } catch (err) {
+      saveError = err.message || 'Error al guardar';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  // Prevenir salida si hay cambios sin guardar
+  function handleBeforeUnload(event) {
+    if (isDirty || isUploadingAny) {
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
 
   // Reactive statements
-  $: isUpdating = $restaurantStore.isUpdating;
   $: updateError = $restaurantStore.updateError;
   $: isUploadingAny = Object.values(uploading).some(Boolean);
 
@@ -128,59 +238,7 @@
     }
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    console.log('handleSubmit ejecutado');
-    if (isSubmitting || isUploadingAny) {
-      console.log('Bloqueado por isSubmitting o isUploadingAny', { isSubmitting, isUploadingAny });
-      return;
-    }
 
-    isSubmitting = true;
-    error = null;
-    success = null;
-
-    try {
-      const updateData = {
-        primaryColor: formData.primaryColor,
-        secondaryColor: formData.secondaryColor,
-        backgroundColor: formData.backgroundColor,
-        textColor: formData.textColor,
-        fontFamily: formData.fontFamily
-      };
-
-      // Solo incluir imágenes que hayan cambiado
-      ['logo', 'profileImage', 'coverImage', 'image'].forEach(imageType => {
-        if (formData[imageType] !== restaurant?.[imageType]) {
-          updateData[imageType] = formData[imageType];
-        }
-      });
-
-      console.log('Enviando updateData:', updateData);
-      const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
-      console.log('Resultado del update:', result);
-
-      if (result.success) {
-        success = 'Identidad visual actualizada correctamente';
-        dispatch('update');
-        isClosing = true;
-        await restaurantStore.loadRestaurant(restaurantId, true);
-        setTimeout(() => {
-          isClosing = false;
-          dispatch('close');
-        }, 2000);
-      } else {
-        error = result.error || 'Error actualizando la identidad visual';
-        console.error('Error en update:', error);
-        isSubmitting = false;
-      }
-    } catch (err) {
-      error = err.message || 'Error desconocido';
-      console.error('Error en catch:', err);
-    } finally {
-      isSubmitting = false;
-    }
-  }
 </script>
 
 <div class="visual-identity-form">
@@ -205,7 +263,7 @@
     </div>
   {/if}
 
-  <form on:submit={handleSubmit} class="form">
+  <form class="form">
     <!-- Sección de Imágenes -->
     <div class="form-section">
       <h3 class="section-title">Imágenes del Restaurante</h3>
@@ -348,28 +406,39 @@
       />
     </div>
 
-    <!-- Botones -->
-    <div class="form-actions">
-      <button
-        type="button"
-        on:click={() => dispatch('close')}
-        class="cancel-button"
-        disabled={isSubmitting || isUploadingAny || isClosing}
-      >
-        Cancelar
-      </button>
-      
-      <LoadingButton
-        type="submit"
-        loading={isSubmitting || isUpdating || isClosing}
-        disabled={isUploadingAny || isClosing}
-        variant="primary"
-        size="md"
-      >
-        {isUploadingAny ? 'Subiendo imágenes...' : 'Guardar Cambios'}
-      </LoadingButton>
-    </div>
   </form>
+</div>
+
+<!-- BOTÓN FLOTANTE DE GUARDAR -->
+<div class="floating-save-btn">
+  <button
+    class="btn btn-primary floating"
+    on:click={handleManualSave}
+    disabled={(!isDirty && !isUploadingAny) || isSaving}
+    aria-label="Guardar identidad visual"
+    type="button"
+  >
+    {#if isSaving}
+      Guardando...
+    {:else if isUploadingAny}
+      Subiendo...
+    {:else if saveError}
+      Reintentar
+    {:else if !isDirty && lastSaved}
+      Guardado ✓
+    {:else}
+      Guardar
+    {/if}
+  </button>
+  {#if saveError}
+    <div class="save-status error">{saveError}</div>
+  {:else if isSaving}
+    <div class="save-status saving">Guardando...</div>
+  {:else if isUploadingAny}
+    <div class="save-status uploading">Subiendo imágenes...</div>
+  {:else if !isDirty && lastSaved}
+    <div class="save-status success">Guardado</div>
+  {/if}
 </div>
 
 <style>
@@ -567,45 +636,7 @@
 
 
 
-  /* Acciones del formulario */
-  .form-actions {
-    border-top: 1px solid var(--bg-accent);
-    padding-top: var(--spacing-2xl);
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-  }
 
-  .cancel-button {
-    padding: var(--spacing-md) var(--spacing-2xl);
-    border-radius: var(--radius-lg);
-    font-size: var(--font-sm);
-    font-weight: var(--weight-medium);
-    border: 1px solid var(--bg-accent);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    min-width: 120px;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-  }
-
-  .cancel-button:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
-    border-color: var(--text-muted);
-    transform: translateY(-1px);
-  }
-
-  .cancel-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .cancel-button:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
@@ -638,14 +669,6 @@
   }
 
   @media (max-width: 640px) {
-    .form-actions {
-      flex-direction: column;
-    }
-
-    .cancel-button {
-      width: 100%;
-    }
-
     .preview-button {
       width: 100%;
       padding: var(--spacing-lg);
@@ -709,15 +732,7 @@
       background-color: var(--bg-primary);
     }
 
-    .cancel-button {
-      background-color: var(--bg-tertiary);
-      border-color: var(--bg-accent);
-      color: var(--text-primary);
-    }
 
-    .cancel-button:hover:not(:disabled) {
-      background-color: var(--bg-accent);
-    }
   }
 
   /* High contrast mode */
@@ -730,29 +745,19 @@
       border-width: 3px;
     }
 
-    .font-select,
-    .cancel-button {
+    .font-select {
       border-width: 2px;
-    }
-
-    .form-actions {
-      border-top-width: 2px;
     }
   }
 
   /* Focus management */
-  .font-select:focus-visible,
-  .cancel-button:focus-visible {
+  .font-select:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
 
   /* Print styles */
   @media print {
-    .form-actions {
-      display: none;
-    }
-
     .preview-card,
     .color-preview,
     .font-preview {
@@ -764,6 +769,47 @@
       border: 1px solid black;
       background: white !important;
       color: black !important;
+    }
+  }
+
+  /* Estilos para el botón flotante */
+  .floating-save-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .floating-save-btn .floating {
+    min-width: 120px;
+    font-size: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border-radius: 2rem;
+    padding: 0.75rem 2rem;
+  }
+  .save-status {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .save-status.saving { color: #888; }
+  .save-status.success { color: #1a7f37; }
+  .save-status.error { color: #b91c1c; }
+  .save-status.uploading { color: #3b82f6; }
+  @media (max-width: 640px) {
+    .floating-save-btn {
+      right: 1rem;
+      bottom: 1rem;
+    }
+    .floating-save-btn .floating {
+      width: 100%;
+      min-width: 0;
+      padding: 0.75rem 1.5rem;
     }
   }
 </style>

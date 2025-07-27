@@ -28,13 +28,134 @@
   };
 
   // Estados del formulario
-  let isSubmitting = false;
   let error = null;
   let success = null;
-  let isClosing = false;
+
+  // ESTADOS PARA GUARDADO AUTOMÁTICO Y BOTÓN FLOTANTE
+  let isDirty = false;
+  let isSaving = false;
+  let saveError = null;
+  let lastSaved = null;
+  let autoSaveTimeout;
+
+  // Detectar cambios en formData para activar guardado automático
+  $: if (restaurant?.socialLinks && formData) {
+    // Compara los valores actuales con los originales
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify({
+      facebook: restaurant.socialLinks.facebook || '',
+      instagram: restaurant.socialLinks.instagram || '',
+      twitter: restaurant.socialLinks.twitter || '',
+      tiktok: restaurant.socialLinks.tiktok || '',
+      youtube: restaurant.socialLinks.youtube || '',
+      linkedin: restaurant.socialLinks.linkedin || '',
+      whatsapp: restaurant.socialLinks.whatsapp || '',
+      telegram: restaurant.socialLinks.telegram || '',
+      pinterest: restaurant.socialLinks.pinterest || '',
+      snapchat: restaurant.socialLinks.snapchat || '',
+      other: restaurant.socialLinks.other || ''
+    });
+    isDirty = hasChanges;
+    if (hasChanges) {
+      debounceAutoSave();
+    }
+  }
+
+  function debounceAutoSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      autoSave();
+    }, 1500); // 1.5 segundos de espera
+  }
+
+  async function autoSave() {
+    if (!isDirty || isSaving) return;
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+    } catch (err) {
+      saveError = err.message || 'Error al guardar automáticamente';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function saveFormData() {
+    // Validar todas las URLs
+    let hasErrors = false;
+    const errors = {};
+
+    for (const network of socialNetworks) {
+      const validation = validateUrl(formData[network.key], network.pattern);
+      if (!validation.isValid) {
+        errors[network.key] = validation.error;
+        hasErrors = true;
+      }
+      
+      // Aplicar sugerencia si existe
+      if (validation.suggestion) {
+        formData[network.key] = validation.suggestion;
+      }
+    }
+
+    if (hasErrors) {
+      throw new Error('Por favor corrige los enlaces con formato incorrecto');
+    }
+
+    // Filtrar enlaces vacíos
+    const socialLinks = {};
+    for (const [key, value] of Object.entries(formData)) {
+      if (value.trim()) {
+        socialLinks[key] = value.trim();
+      }
+    }
+
+    const result = await restaurantStore.updateRestaurant(restaurantId, {
+      socialLinks
+    });
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Error actualizando las redes sociales');
+    }
+  }
+
+  // Guardar manualmente desde el botón flotante
+  async function handleManualSave() {
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+      success = 'Enlaces de redes sociales actualizados correctamente';
+      dispatch('update');
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        success = null;
+      }, 3000);
+    } catch (err) {
+      saveError = err.message || 'Error al guardar';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  // Prevenir salida si hay cambios sin guardar
+  function handleBeforeUnload(event) {
+    if (isDirty) {
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
 
   // Reactive statements
-  $: isUpdating = $restaurantStore.isUpdating;
   $: updateError = $restaurantStore.updateError;
 
   // Configuración de redes sociales
@@ -193,68 +314,7 @@
     }
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    
-    if (isSubmitting) return;
 
-    // Validar todas las URLs
-    let hasErrors = false;
-    const errors = {};
-
-    for (const network of socialNetworks) {
-      const validation = validateUrl(formData[network.key], network.pattern);
-      if (!validation.isValid) {
-        errors[network.key] = validation.error;
-        hasErrors = true;
-      }
-      
-      // Aplicar sugerencia si existe
-      if (validation.suggestion) {
-        formData[network.key] = validation.suggestion;
-      }
-    }
-
-    if (hasErrors) {
-      error = 'Por favor corrige los enlaces con formato incorrecto';
-      return;
-    }
-
-    isSubmitting = true;
-    error = null;
-    success = null;
-
-    try {
-      // Filtrar enlaces vacíos
-      const socialLinks = {};
-      for (const [key, value] of Object.entries(formData)) {
-        if (value.trim()) {
-          socialLinks[key] = value.trim();
-        }
-      }
-
-      const result = await restaurantStore.updateRestaurant(restaurantId, {
-        socialLinks
-      });
-
-      if (result.success) {
-        success = 'Enlaces de redes sociales actualizados correctamente';
-        dispatch('update');
-        isClosing = true;
-        setTimeout(() => {
-          isClosing = false;
-          dispatch('close');
-        }, 2000);
-      } else {
-        error = result.error || 'Error actualizando las redes sociales';
-        isSubmitting = false;
-      }
-    } catch (err) {
-      error = err.message || 'Error desconocido';
-    } finally {
-      isSubmitting = false;
-    }
-  }
 
   // Contar enlaces activos
   $: activeLinksCount = Object.values(formData).filter(link => link.trim()).length;
@@ -292,7 +352,7 @@
     </div>
   </div>
 
-  <form on:submit={handleSubmit} class="form">
+  <form class="form">
     <!-- Redes Sociales Principales -->
     <div class="form-section">
       <h3 class="section-title">Redes Sociales Principales</h3>
@@ -380,28 +440,35 @@
       </ul>
     </div>
 
-    <!-- Botones -->
-    <div class="form-actions">
-      <button
-        type="button"
-        on:click={() => dispatch('close')}
-        class="cancel-button"
-        disabled={isSubmitting || isClosing}
-      >
-        Cancelar
-      </button>
-      
-      <LoadingButton
-        type="submit"
-        loading={isSubmitting || isUpdating || isClosing}
-        disabled={isClosing}
-        variant="primary"
-        size="md"
-      >
-        Guardar Enlaces
-      </LoadingButton>
-    </div>
   </form>
+</div>
+
+<!-- BOTÓN FLOTANTE DE GUARDAR -->
+<div class="floating-save-btn">
+  <button
+    class="btn btn-primary floating"
+    on:click={handleManualSave}
+    disabled={!isDirty || isSaving}
+    aria-label="Guardar enlaces de redes sociales"
+    type="button"
+  >
+    {#if isSaving}
+      Guardando...
+    {:else if saveError}
+      Reintentar
+    {:else if !isDirty && lastSaved}
+      Guardado ✓
+    {:else}
+      Guardar
+    {/if}
+  </button>
+  {#if saveError}
+    <div class="save-status error">{saveError}</div>
+  {:else if isSaving}
+    <div class="save-status saving">Guardando...</div>
+  {:else if !isDirty && lastSaved}
+    <div class="save-status success">Guardado</div>
+  {/if}
 </div>
 
 <style>
@@ -574,45 +641,7 @@
     margin-bottom: 0;
   }
 
-  /* Acciones del formulario */
-  .form-actions {
-    border-top: 1px solid var(--bg-accent);
-    padding-top: var(--spacing-2xl);
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-  }
 
-  .cancel-button {
-    padding: var(--spacing-md) var(--spacing-2xl);
-    border-radius: var(--radius-lg);
-    font-size: var(--font-sm);
-    font-weight: var(--weight-medium);
-    border: 1px solid var(--bg-accent);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    min-width: 120px;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-  }
-
-  .cancel-button:hover:not(:disabled) {
-    background-color: var(--bg-tertiary);
-    border-color: var(--text-muted);
-    transform: translateY(-1px);
-  }
-
-  .cancel-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .cancel-button:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
@@ -639,14 +668,6 @@
   }
 
   @media (max-width: 640px) {
-    .form-actions {
-      flex-direction: column;
-    }
-
-    .cancel-button {
-      width: 100%;
-    }
-
     .social-grid {
       grid-template-columns: 1fr;
     }
@@ -658,30 +679,23 @@
 
   /* Touch device optimizations */
   @media (hover: none) and (pointer: coarse) {
-    .preview-link:hover,
-    .cancel-button:hover {
+    .preview-link:hover {
       transform: none;
     }
 
-    .preview-link,
-    .cancel-button {
-      min-height: 44px;
-    }
-
     .preview-link {
+      min-height: 44px;
       padding: var(--spacing-sm) var(--spacing-md);
     }
   }
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
-    .preview-link,
-    .cancel-button {
+    .preview-link {
       transition: none;
     }
 
-    .preview-link:hover,
-    .cancel-button:hover {
+    .preview-link:hover {
       transform: none;
     }
   }
@@ -708,15 +722,7 @@
       color: var(--primary-color);
     }
 
-    .cancel-button {
-      background-color: var(--bg-tertiary);
-      border-color: var(--bg-accent);
-      color: var(--text-primary);
-    }
 
-    .cancel-button:hover:not(:disabled) {
-      background-color: var(--bg-accent);
-    }
   }
 
   /* High contrast mode */
@@ -730,29 +736,19 @@
       border-width: 2px;
     }
 
-    .preview-link,
-    .cancel-button {
+    .preview-link {
       border-width: 2px;
-    }
-
-    .form-actions {
-      border-top-width: 2px;
     }
   }
 
   /* Focus management */
-  .preview-link:focus-visible,
-  .cancel-button:focus-visible {
+  .preview-link:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
 
   /* Print styles */
   @media print {
-    .form-actions {
-      display: none;
-    }
-
     .links-counter,
     .tips-section {
       border: 1px solid black;
@@ -799,6 +795,46 @@
 
     .links-counter {
       animation: none;
+    }
+  }
+
+  /* Estilos para el botón flotante */
+  .floating-save-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .floating-save-btn .floating {
+    min-width: 120px;
+    font-size: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border-radius: 2rem;
+    padding: 0.75rem 2rem;
+  }
+  .save-status {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .save-status.saving { color: #888; }
+  .save-status.success { color: #1a7f37; }
+  .save-status.error { color: #b91c1c; }
+  @media (max-width: 640px) {
+    .floating-save-btn {
+      right: 1rem;
+      bottom: 1rem;
+    }
+    .floating-save-btn .floating {
+      width: 100%;
+      min-width: 0;
+      padding: 0.75rem 1.5rem;
     }
   }
 </style>

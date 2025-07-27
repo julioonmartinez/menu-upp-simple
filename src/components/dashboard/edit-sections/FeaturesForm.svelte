@@ -21,13 +21,104 @@
   };
 
   // Estados del formulario
-  let isSubmitting = false;
   let error = null;
   let success = null;
-  let isClosing = false;
+
+  // ESTADOS PARA GUARDADO AUTOMÁTICO Y BOTÓN FLOTANTE
+  let isDirty = false;
+  let isSaving = false;
+  let saveError = null;
+  let lastSaved = null;
+  let autoSaveTimeout;
+
+  // Detectar cambios en formData para activar guardado automático
+  $: if (restaurant && formData) {
+    // Compara los valores actuales con los originales
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify({
+      cuisineType: restaurant.cuisineType || [],
+      features: restaurant.features || [],
+      paymentMethods: restaurant.paymentMethods || [],
+      priceRange: restaurant.priceRange || 'medium'
+    });
+    isDirty = hasChanges;
+    if (hasChanges) {
+      debounceAutoSave();
+    }
+  }
+
+  function debounceAutoSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      autoSave();
+    }, 1500); // 1.5 segundos de espera
+  }
+
+  async function autoSave() {
+    if (!isDirty || isSaving) return;
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+    } catch (err) {
+      saveError = err.message || 'Error al guardar automáticamente';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function saveFormData() {
+    // Validación básica
+    if (formData.cuisineType.length === 0) {
+      throw new Error('Debes agregar al menos un tipo de cocina');
+    }
+    if (formData.paymentMethods.length === 0) {
+      throw new Error('Debes agregar al menos un método de pago');
+    }
+
+    const updateData = {
+      cuisineType: formData.cuisineType,
+      features: formData.features,
+      paymentMethods: formData.paymentMethods,
+      priceRange: formData.priceRange
+    };
+
+    const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
+    if (!result.success) {
+      throw new Error(result.error || 'Error actualizando las características');
+    }
+  }
+
+  // Guardar manualmente desde el botón flotante
+  async function handleManualSave() {
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+    } catch (err) {
+      saveError = err.message || 'Error al guardar';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  // Prevenir salida si hay cambios sin guardar
+  function handleBeforeUnload(event) {
+    if (isDirty) {
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
 
   // Reactive statements
-  $: isUpdating = $restaurantStore.isUpdating;
   $: updateError = $restaurantStore.updateError;
 
   // Sugerencias para tipos de cocina
@@ -85,58 +176,12 @@
     };
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    
-    if (isSubmitting) return;
 
-    // Validación básica
-    if (formData.cuisineType.length === 0) {
-      error = 'Debes agregar al menos un tipo de cocina';
-      return;
-    }
-
-    if (formData.paymentMethods.length === 0) {
-      error = 'Debes agregar al menos un método de pago';
-      return;
-    }
-
-    isSubmitting = true;
-    error = null;
-    success = null;
-
-    try {
-      const updateData = {
-        cuisineType: formData.cuisineType,
-        features: formData.features,
-        paymentMethods: formData.paymentMethods,
-        priceRange: formData.priceRange
-      };
-
-      const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
-
-      if (result.success) {
-        success = 'Características del restaurante actualizadas correctamente';
-        dispatch('update');
-        isClosing = true;
-        setTimeout(() => {
-          isClosing = false;
-          dispatch('close');
-        }, 2000);
-      } else {
-        error = result.error || 'Error actualizando las características';
-        isSubmitting = false;
-      }
-    } catch (err) {
-      error = err.message || 'Error desconocido';
-    } finally {
-      isSubmitting = false;
-    }
-  }
 
   function handleTagsChange(field, event) {
     formData[field] = event.detail.tags;
     error = null; // Limpiar errores al hacer cambios
+    // El guardado automático se activará automáticamente por el reactive statement
   }
 </script>
 
@@ -162,7 +207,7 @@
     </div>
   {/if}
 
-  <form on:submit={handleSubmit} class="form flex flex-col gap-3xl">
+  <form class="form flex flex-col gap-3xl">
     <!-- Tipos de Cocina -->
     <div class="form-section flex flex-col gap-xl">
       <h3 class="section-title text-lg font-semibold text-primary m-0 mb-sm">Tipos de Cocina</h3>
@@ -299,27 +344,36 @@
       </div>
     </div>
 
-    <!-- Botones -->
-    <div class="form-actions border-t pt-xl flex justify-end gap-md flex-wrap">
-      <button
-        type="button"
-        on:click={() => dispatch('close')}
-        class="btn btn-secondary"
-        disabled={isSubmitting || isClosing}
-      >
-        Cancelar
-      </button>
-      
-      <LoadingButton
-        type="submit"
-        loading={isSubmitting || isUpdating || isClosing}
-        disabled={formData.cuisineType.length === 0 || formData.paymentMethods.length === 0 || isClosing}
-        class="btn btn-primary"
-      >
-        Guardar Características
-      </LoadingButton>
-    </div>
+
   </form>
+</div>
+
+<!-- BOTÓN FLOTANTE DE GUARDAR -->
+<div class="floating-save-btn">
+  <button
+    class="btn btn-primary floating"
+    on:click={handleManualSave}
+    disabled={!isDirty || isSaving || formData.cuisineType.length === 0 || formData.paymentMethods.length === 0}
+    aria-label="Guardar características"
+    type="button"
+  >
+    {#if isSaving}
+      Guardando...
+    {:else if saveError}
+      Reintentar
+    {:else if !isDirty && lastSaved}
+      Guardado ✓
+    {:else}
+      Guardar
+    {/if}
+  </button>
+  {#if saveError}
+    <div class="save-status error">{saveError}</div>
+  {:else if isSaving}
+    <div class="save-status saving">Guardando...</div>
+  {:else if !isDirty && lastSaved}
+    <div class="save-status success">Guardado</div>
+  {/if}
 </div>
 
 <style>
@@ -349,10 +403,48 @@
     border-color: var(--primary-light);
   }
   @media (max-width: 640px) {
-    .form-actions { flex-direction: column; }
-    .btn { width: 100%; }
     .price-range-options { grid-template-columns: 1fr; }
     .summary-details { flex-direction: column; align-items: flex-start; }
     .detail-separator { display: none; }
+  }
+
+  /* Estilos para el botón flotante */
+  .floating-save-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .floating-save-btn .floating {
+    min-width: 120px;
+    font-size: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border-radius: 2rem;
+    padding: 0.75rem 2rem;
+  }
+  .save-status {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .save-status.saving { color: #888; }
+  .save-status.success { color: #1a7f37; }
+  .save-status.error { color: #b91c1c; }
+  @media (max-width: 640px) {
+    .floating-save-btn {
+      right: 1rem;
+      bottom: 1rem;
+    }
+    .floating-save-btn .floating {
+      width: 100%;
+      min-width: 0;
+      padding: 0.75rem 1.5rem;
+    }
   }
 </style>

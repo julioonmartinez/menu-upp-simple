@@ -41,48 +41,102 @@
   });
 
   // Estados
-  let isSubmitting = false;
   let error = null;
   let success = null;
 
-  // Reactive statements
-  $: isUpdating = $restaurantStore.isUpdating;
-  $: updateError = $restaurantStore.updateError;
+  // ESTADOS PARA GUARDADO AUTOMÁTICO Y BOTÓN FLOTANTE
+  let isDirty = false;
+  let isSaving = false;
+  let saveError = null;
+  let lastSaved = null;
+  let autoSaveTimeout;
 
-  async function handleSubmit() {
-    if (isSubmitting) return;
-
-    isSubmitting = true;
-    error = null;
-    success = null;
-
-    try {
-      // Preparar datos para el update
-      const updateData = {
-        schedule: formData.schedule.trim(),
-        businessHours: { ...formData.businessHours }
-      };
-
-      const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
-
-      if (result.success) {
-        success = 'Horarios actualizados correctamente';
-        dispatch('update');
-        dispatch('close');
-        
-        // Limpiar mensaje de éxito después de 3 segundos
-        setTimeout(() => {
-          success = null;
-        }, 3000);
-      } else {
-        error = result.error || 'Error actualizando los horarios';
-      }
-    } catch (err) {
-      error = err.message || 'Error desconocido';
-    } finally {
-      isSubmitting = false;
+  // Detectar cambios en formData para activar guardado automático
+  $: if (restaurant && formData) {
+    // Compara los valores actuales con los originales
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify({
+      schedule: restaurant.schedule || '',
+      businessHours: restaurant.businessHours || {}
+    });
+    isDirty = hasChanges;
+    if (hasChanges) {
+      debounceAutoSave();
     }
   }
+
+  function debounceAutoSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+      autoSave();
+    }, 1500); // 1.5 segundos de espera
+  }
+
+  async function autoSave() {
+    if (!isDirty || isSaving) return;
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+    } catch (err) {
+      saveError = err.message || 'Error al guardar automáticamente';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  async function saveFormData() {
+    // Preparar datos para el update
+    const updateData = {
+      schedule: formData.schedule.trim(),
+      businessHours: { ...formData.businessHours }
+    };
+
+    const result = await restaurantStore.updateRestaurant(restaurantId, updateData);
+    if (!result.success) {
+      throw new Error(result.error || 'Error actualizando los horarios');
+    }
+  }
+
+  // Guardar manualmente desde el botón flotante
+  async function handleManualSave() {
+    isSaving = true;
+    saveError = null;
+    try {
+      await saveFormData();
+      lastSaved = new Date();
+      isDirty = false;
+      success = 'Horarios actualizados correctamente';
+      dispatch('update');
+      // Limpiar mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        success = null;
+      }, 3000);
+    } catch (err) {
+      saveError = err.message || 'Error al guardar';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  // Prevenir salida si hay cambios sin guardar
+  function handleBeforeUnload(event) {
+    if (isDirty) {
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
+
+  // Reactive statements
+  $: updateError = $restaurantStore.updateError;
+
+
 
   function toggleDayClosed(dayKey) {
     formData.businessHours[dayKey].closed = !formData.businessHours[dayKey].closed;
@@ -153,7 +207,7 @@
     </div>
   {/if}
 
-  <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-2xl">
+  <form class="flex flex-col gap-2xl">
     <div>
       <TextareaField
         label="Descripción de horarios (opcional)"
@@ -221,27 +275,35 @@
       </div>
     </div>
 
-    <div class="border-t border-accent pt-2xl flex justify-end gap-md">
-      <button
-        type="button"
-        on:click={() => window.history.back()}
-        class="btn btn-secondary"
-        disabled={isSubmitting || isUpdating}
-      >
-        <i class="fas fa-times mr-sm"></i>
-        Cancelar
-      </button>
-      
-      <LoadingButton
-        type="submit"
-        loading={isSubmitting || isUpdating}
-        class="btn btn-primary"
-      >
-        <i class="fas fa-save mr-sm"></i>
-        Guardar Horarios
-      </LoadingButton>
-    </div>
   </form>
+</div>
+
+<!-- BOTÓN FLOTANTE DE GUARDAR -->
+<div class="floating-save-btn">
+  <button
+    class="btn btn-primary floating"
+    on:click={handleManualSave}
+    disabled={!isDirty || isSaving}
+    aria-label="Guardar horarios"
+    type="button"
+  >
+    {#if isSaving}
+      Guardando...
+    {:else if saveError}
+      Reintentar
+    {:else if !isDirty && lastSaved}
+      Guardado ✓
+    {:else}
+      Guardar
+    {/if}
+  </button>
+  {#if saveError}
+    <div class="save-status error">{saveError}</div>
+  {:else if isSaving}
+    <div class="save-status saving">Guardando...</div>
+  {:else if !isDirty && lastSaved}
+    <div class="save-status success">Guardado</div>
+  {/if}
 </div>
 
 <style>
@@ -312,6 +374,46 @@
     input[type="checkbox"]:checked {
       background: var(--primary-color);
       border-color: var(--primary-color);
+    }
+  }
+
+  /* Estilos para el botón flotante */
+  .floating-save-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .floating-save-btn .floating {
+    min-width: 120px;
+    font-size: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border-radius: 2rem;
+    padding: 0.75rem 2rem;
+  }
+  .save-status {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .save-status.saving { color: #888; }
+  .save-status.success { color: #1a7f37; }
+  .save-status.error { color: #b91c1c; }
+  @media (max-width: 640px) {
+    .floating-save-btn {
+      right: 1rem;
+      bottom: 1rem;
+    }
+    .floating-save-btn .floating {
+      width: 100%;
+      min-width: 0;
+      padding: 0.75rem 1.5rem;
     }
   }
 </style> 
