@@ -373,7 +373,13 @@ button:focus-visible {
 .mt-6xl { margin-top: var(--spacing-6xl); }
 .mt-7xl { margin-top: var(--spacing-7xl); }
 .mt-8xl { margin-top: var(--spacing-8xl); }
-
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
+.mt-2xl { margin-top: var(--spacing-2xl); }
+.mt-3xl { margin-top: var(--spacing-3xl); }
+.mt-4xl { margin-top: var(--spacing-4xl); }
+.mt-5xl { margin-top: var(--spacing-5xl); }
+.mt-6xl { margin-top: var(--spacing-6xl); }
 .mb-sm { margin-bottom: var(--spacing-sm); }
 .mb-md { margin-bottom: var(--spacing-md); }
 .mb-lg { margin-bottom: var(--spacing-lg); }
@@ -381,6 +387,7 @@ button:focus-visible {
 .mb-2xl { margin-bottom: var(--spacing-2xl); }
 .mb-3xl { margin-bottom: var(--spacing-3xl); }
 .mb-4xl { margin-bottom: var(--spacing-4xl); }
+
 
 /* Typography utilities mejoradas */
 .text-xs { font-size: var(--font-xs); }
