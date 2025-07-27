@@ -542,27 +542,29 @@
   }
 </script>
 
-<div class="link-manager card">
+<div class="link-manager">
   <!-- Header -->
   <div class="management-header">
-    <div class="flex justify-between items-center">
-      <div>
-        <h3 class="text-2xl font-bold text-primary mb-sm">Enlaces ({sortLinksByOrder(displayLinks || []).length})</h3>
-        <p class="text-muted">Gestiona los enlaces de tu LinkTree</p>
-      </div>
-      
-      {#if editable}
-        <div class="flex gap-sm">
-          <button 
-            class="btn btn-primary"
-            on:click={() => showCreateForm = true}
-            disabled={isReorderingInProgress || showCreateForm || showEditForm}
-          >
-            <i class="fa-solid fa-plus"></i>
-            Agregar Enlace
-          </button>
+    <div class="management-header-content">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-2xl font-bold text-primary mb-sm">Enlaces ({sortLinksByOrder(displayLinks || []).length})</h3>
+          <p class="text-muted">Gestiona los enlaces de tu LinkTree</p>
         </div>
-      {/if}
+        
+        {#if editable}
+          <div class="flex gap-sm">
+            <button 
+              class="btn btn-primary"
+              on:click={() => showCreateForm = true}
+              disabled={isReorderingInProgress || showCreateForm || showEditForm}
+            >
+              <i class="fa-solid fa-plus"></i>
+              Agregar Enlace
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 
@@ -962,152 +964,3 @@
   on:cancel={cancelDelete}
 />
 
-<style>
-  .link-item {
-    transition: all 0.2s ease;
-    cursor: grab;
-  }
-
-  .link-item:active {
-    cursor: grabbing;
-  }
-
-  .link-item.dragging {
-    opacity: 0.5;
-    transform: rotate(2deg);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    z-index: 10;
-  }
-
-  .link-item.drop-target {
-    border: 2px dashed var(--color-primary);
-    background-color: var(--color-primary-bg);
-    transform: scale(1.02);
-  }
-
-  .link-item.reordering {
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  .link-item.inactive {
-    opacity: 0.6;
-  }
-
-  .link-handle {
-    cursor: grab;
-    color: var(--color-muted);
-    transition: color 0.2s ease;
-  }
-
-  .link-handle:hover {
-    color: var(--color-primary);
-  }
-
-  .link-item.dragging .link-handle {
-    cursor: grabbing;
-  }
-
-  .loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    text-align: center;
-  }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem;
-    text-align: center;
-  }
-
-  .error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    text-align: center;
-    color: var(--color-error);
-  }
-
-  .error-state i {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-  }
-
-  .warning-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    text-align: center;
-    color: var(--color-warning);
-  }
-
-  .warning-state i {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-  }
-
-  .optimistic-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: var(--color-info-bg);
-    border: 1px solid var(--color-info);
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-    animation: pulse 2s infinite;
-  }
-
-  .progress-bar-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: var(--color-info-bg);
-    border: 1px solid var(--color-info);
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .progress-bar {
-    flex: 1;
-    height: 8px;
-    background-color: var(--color-muted);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background-color: var(--color-primary);
-    border-radius: 4px;
-    transition: width 0.3s ease-in-out;
-  }
-
-  .progress-text {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--color-primary);
-    white-space: nowrap;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
-</style> 
