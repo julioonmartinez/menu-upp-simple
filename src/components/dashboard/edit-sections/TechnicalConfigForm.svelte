@@ -10,6 +10,14 @@
 </script>
 
 <div class="technical-config-form">
+  <!-- Header -->
+  <div class="form-header">
+    <h2>Configuraciones Técnicas</h2>
+    <p class="subtitle">
+      Gestiona códigos QR, dominios personalizados y configuraciones avanzadas
+    </p>
+  </div>
+
   <!-- Código QR -->
   <div class="form-section">
     <h3 class="section-title">
@@ -32,6 +40,19 @@
 <style>
   .technical-config-form {
     width: 100%;
+  }
+
+  .form-header h2 {
+    color: var(--primary-color);
+    font-size: var(--font-3xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .form-header .subtitle {
+    color: var(--text-muted);
+    font-size: var(--font-base);
+    margin: 0;
   }
   .form-section {
     padding: var(--spacing-2xl);

@@ -1,0 +1,20 @@
+---
+//dashboard/restaurant/[id]/technical-config.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import TechnicalConfigForm from '../../../../components/dashboard/edit-sections/TechnicalConfigForm.svelte';
+import { restaurantService } from '../../../../services/restaurantService';
+const id = Astro.params.id;
+let restaurant = null;
+
+try {
+  const result = await restaurantService.getRestaurant(id!);
+  if (result.success) {
+    restaurant = result.data;
+  }
+} catch (e) {
+  restaurant = null;
+}
+---
+<PrivateLayout title='Menuupp - Configuraciones Técnicas' description='Configuraciones técnicas del restaurante'>
+  <TechnicalConfigForm client:load {restaurant} restaurantId={id} />
+</PrivateLayout> 

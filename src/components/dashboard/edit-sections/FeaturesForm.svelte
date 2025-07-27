@@ -141,6 +141,14 @@
 </script>
 
 <div class="features-form w-full container">
+  <!-- Header -->
+  <div class="form-header">
+    <h2>Características del Restaurante</h2>
+    <p class="subtitle">
+      Define el tipo de cocina, servicios y métodos de pago de tu restaurante
+    </p>
+  </div>
+
   <!-- Mensajes -->
   {#if error || updateError}
     <div class="message-container mb-2xl">
@@ -315,6 +323,19 @@
 </div>
 
 <style>
+  .form-header h2 {
+    color: var(--primary-color);
+    font-size: var(--font-3xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .form-header .subtitle {
+    color: var(--text-muted);
+    font-size: var(--font-base);
+    margin: 0;
+  }
+
   .features-summary { color: var(--text-inverse); }
   .summary-content { width: 100%; }
   .summary-icon { font-size: 1.5rem; }

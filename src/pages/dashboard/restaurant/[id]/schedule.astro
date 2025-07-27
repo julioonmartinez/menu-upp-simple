@@ -1,0 +1,20 @@
+---
+//dashboard/restaurant/[id]/schedule.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import ScheduleForm from '../../../../components/dashboard/edit-sections/ScheduleForm.svelte';
+import { restaurantService } from '../../../../services/restaurantService';
+const id = Astro.params.id;
+let restaurant = null;
+
+try {
+  const result = await restaurantService.getRestaurant(id!);
+  if (result.success) {
+    restaurant = result.data;
+  }
+} catch (e) {
+  restaurant = null;
+}
+---
+<PrivateLayout title='Menuupp - Horarios' description='Configuración de horarios del restaurante'>
+  <ScheduleForm client:load {restaurant} restaurantId={id} />
+</PrivateLayout> 

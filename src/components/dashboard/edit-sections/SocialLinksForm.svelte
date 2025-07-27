@@ -261,6 +261,14 @@
 </script>
 
 <div class="social-links-form">
+  <!-- Header -->
+  <div class="form-header">
+    <h2>Redes Sociales</h2>
+    <p class="subtitle">
+      Conecta tus redes sociales para que tus clientes puedan encontrarte
+    </p>
+  </div>
+
   <!-- Mensajes -->
   {#if error || updateError}
     <div class="message-container">
@@ -400,6 +408,19 @@
   /* Container principal */
   .social-links-form {
     width: 100%;
+  }
+
+  .form-header h2 {
+    color: var(--primary-color);
+    font-size: var(--font-3xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .form-header .subtitle {
+    color: var(--text-muted);
+    font-size: var(--font-base);
+    margin: 0;
   }
 
   /* Mensajes */

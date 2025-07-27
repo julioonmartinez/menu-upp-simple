@@ -2,16 +2,8 @@
   //src/components/RestaurantUpdate.svelte
   import { onMount } from 'svelte';
   import { restaurantStore } from '../stores/restaurantStore.ts';
-  import BasicInfoForm from './dashboard/edit-sections/BasicInfoForm.svelte';
-  import ScheduleForm from './dashboard/edit-sections/ScheduleForm.svelte';
-  import VisualIdentityForm from './dashboard/edit-sections/VisualIdentityForm.svelte';
-  import SocialLinksForm from './dashboard/edit-sections/SocialLinksForm.svelte';
-  import FeaturesForm from './dashboard/edit-sections/FeaturesForm.svelte';
-  import TechnicalConfigForm from './dashboard/edit-sections/TechnicalConfigForm.svelte';
-
   import LoadingSpinner from './ui/LoadingSpinner.svelte';
   import ErrorMessage from './ui/ErrorMessage.svelte';
-  import Modal from './ui/Modal.svelte';
   import { toastStore } from '../stores/toastStore.ts';
 
   export let restaurantId;
@@ -20,8 +12,7 @@
   let error = null;
   let restaurant = null;
 
-  // Estado de modales
-  let activeModal = null;
+
 
   // Reactive statements para el store
   $: isLoadingStore = $restaurantStore.isLoadingCurrent;
@@ -35,54 +26,49 @@
       name: 'Información Básica',
       icon: 'fas fa-info-circle',
       description: 'Nombre, username, contacto y ubicación',
-      component: BasicInfoForm
+      route: 'basic-info'
     },
     {
       id: 'schedule',
       name: 'Horarios',
       icon: 'fas fa-clock',
       description: 'Horarios de atención y días laborales',
-      component: ScheduleForm
+      route: 'schedule'
     },
     {
       id: 'visual',
       name: 'Identidad Visual',
       icon: 'fas fa-palette',
       description: 'Logo, colores, fuentes e imágenes',
-      component: VisualIdentityForm,
-     
+      route: 'visual-identity'
     },
     {
       id: 'social',
       name: 'Redes Sociales',
       icon: 'fas fa-share-alt',
       description: 'Enlaces a redes sociales',
-      component: SocialLinksForm,
-      
+      route: 'social-links'
     },
     {
       id: 'features',
       name: 'Características',
       icon: 'fas fa-star',
       description: 'Tipo de cocina, métodos de pago, rango de precios',
-      component: FeaturesForm,
-      
+      route: 'features'
     },
     {
       id: 'hero-slides',
       name: 'Hero Slides',
       icon: 'fas fa-images',
       description: 'Carrusel de imágenes destacadas para el menú',
-      component: null,
-      
+      route: 'hero-slides-form'
     },
     {
       id: 'technical',
       name: 'Configuraciones',
       icon: 'fas fa-cog',
       description: 'QR, dominio personalizado, configuraciones técnicas',
-      component: TechnicalConfigForm,
-      
+      route: 'technical-config'
     }
   ];
 
@@ -111,30 +97,18 @@
     }
   }
 
-  function openModal(sectionId) {
+  function openSection(sectionId) {
     const section = sections.find(s => s.id === sectionId);
     if (section && !section.disabled) {
-      // Redirigir a la página específica para Hero Slides
-      if (sectionId === 'hero-slides') {
-        window.location.href = `/dashboard/restaurant/${restaurantId}/hero-slides-form`;
-        return;
-      }
-      // Para otras secciones, mantener el comportamiento del modal
-      activeModal = sectionId;
+      // Redirigir a la página específica para cada sección
+      window.location.href = `/dashboard/restaurant/${restaurantId}/${section.route}`;
     }
-  }
-
-  function closeModal() {
-    activeModal = null;
   }
 
   function onSectionUpdate() {
     // Recargar el restaurante después de una actualización
     loadRestaurant();
   }
-
-  // Obtener la sección activa
-  $: activeSection = sections.find(s => s.id === activeModal);
 </script>
 
 <style>
@@ -308,7 +282,7 @@
       {#each sections as section}
         <div
           class="card transition-all section-card {section.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg border-primary'}"
-          on:click={() => openModal(section.id)}
+          on:click={() => openSection(section.id)}
         >
           {#if section.disabled}
             <div class="absolute top-xs right-xs">
@@ -360,19 +334,3 @@
   {/if}
 </div>
 
-{#if activeSection && activeSection.component}
-  <Modal
-    isOpen={!!activeModal}
-    title={activeSection.name}
-    size="xl"
-    on:close={closeModal}
-  >
-    <svelte:component
-      this={activeSection.component}
-      {restaurant}
-      {restaurantId}
-      on:update={onSectionUpdate}
-      on:close={closeModal}
-    />
-  </Modal>
-{/if}

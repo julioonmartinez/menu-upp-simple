@@ -207,6 +207,14 @@
 </script>
 
 <div class="form-container container">
+  <!-- Header -->
+  <div class="form-header">
+    <h2>Información Básica</h2>
+    <p class="subtitle">
+      Configura el nombre, contacto y ubicación de tu restaurante
+    </p>
+  </div>
+
   <!-- Mensajes -->
   {#if error || updateError}
     <div class="message-container mb-2xl">
@@ -382,6 +390,19 @@
   .form-container { width: 100%; }
   .form-grid { width: 100%; }
   .form-field.full-width, .col-span-full { grid-column: 1 / -1; }
+
+  .form-header h2 {
+    color: var(--primary-color);
+    font-size: var(--font-3xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .form-header .subtitle {
+    color: var(--text-muted);
+    font-size: var(--font-base);
+    margin: 0;
+  }
 
   @media (max-width: 640px) {
     .form-actions { flex-direction: column; }

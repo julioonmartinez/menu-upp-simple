@@ -184,6 +184,14 @@
 </script>
 
 <div class="visual-identity-form">
+  <!-- Header -->
+  <div class="form-header">
+    <h2>Identidad Visual</h2>
+    <p class="subtitle">
+      Personaliza el logo, colores y fuentes de tu restaurante
+    </p>
+  </div>
+
   <!-- Mensajes -->
   {#if error || updateError}
     <div class="message-container">
@@ -368,6 +376,19 @@
   /* Container principal */
   .visual-identity-form {
     width: 100%;
+  }
+
+  .form-header h2 {
+    color: var(--primary-color);
+    font-size: var(--font-3xl);
+    font-weight: var(--weight-bold);
+    margin: 0 0 var(--spacing-md) 0;
+  }
+
+  .form-header .subtitle {
+    color: var(--text-muted);
+    font-size: var(--font-base);
+    margin: 0;
   }
 
   /* Mensajes */

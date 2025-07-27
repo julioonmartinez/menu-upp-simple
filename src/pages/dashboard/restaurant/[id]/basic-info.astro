@@ -1,0 +1,20 @@
+---
+//dashboard/restaurant/[id]/basic-info.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import BasicInfoForm from '../../../../components/dashboard/edit-sections/BasicInfoForm.svelte';
+import { restaurantService } from '../../../../services/restaurantService';
+const id = Astro.params.id;
+let restaurant = null;
+
+try {
+  const result = await restaurantService.getRestaurant(id!);
+  if (result.success) {
+    restaurant = result.data;
+  }
+} catch (e) {
+  restaurant = null;
+}
+---
+<PrivateLayout title='Menuupp - Información Básica' description='Configuración de información básica del restaurante'>
+  <BasicInfoForm client:load {restaurant} restaurantId={id} />
+</PrivateLayout> 

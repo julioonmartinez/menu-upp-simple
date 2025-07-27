@@ -1,0 +1,20 @@
+---
+//dashboard/restaurant/[id]/visual-identity.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import VisualIdentityForm from '../../../../components/dashboard/edit-sections/VisualIdentityForm.svelte';
+import { restaurantService } from '../../../../services/restaurantService';
+const id = Astro.params.id;
+let restaurant = null;
+
+try {
+  const result = await restaurantService.getRestaurant(id!);
+  if (result.success) {
+    restaurant = result.data;
+  }
+} catch (e) {
+  restaurant = null;
+}
+---
+<PrivateLayout title='Menuupp - Identidad Visual' description='Configuración de identidad visual del restaurante'>
+  <VisualIdentityForm client:load {restaurant} restaurantId={id} />
+</PrivateLayout> 

@@ -1,0 +1,20 @@
+---
+//dashboard/restaurant/[id]/social-links.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import SocialLinksForm from '../../../../components/dashboard/edit-sections/SocialLinksForm.svelte';
+import { restaurantService } from '../../../../services/restaurantService';
+const id = Astro.params.id;
+let restaurant = null;
+
+try {
+  const result = await restaurantService.getRestaurant(id!);
+  if (result.success) {
+    restaurant = result.data;
+  }
+} catch (e) {
+  restaurant = null;
+}
+---
+<PrivateLayout title='Menuupp - Redes Sociales' description='Configuración de redes sociales del restaurante'>
+  <SocialLinksForm client:load {restaurant} restaurantId={id} />
+</PrivateLayout> 

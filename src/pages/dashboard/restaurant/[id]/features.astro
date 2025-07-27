@@ -1,0 +1,20 @@
+---
+//dashboard/restaurant/[id]/features.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import FeaturesForm from '../../../../components/dashboard/edit-sections/FeaturesForm.svelte';
+import { restaurantService } from '../../../../services/restaurantService';
+const id = Astro.params.id;
+let restaurant = null;
+
+try {
+  const result = await restaurantService.getRestaurant(id!);
+  if (result.success) {
+    restaurant = result.data;
+  }
+} catch (e) {
+  restaurant = null;
+}
+---
+<PrivateLayout title='Menuupp - Características' description='Configuración de características del restaurante'>
+  <FeaturesForm client:load {restaurant} restaurantId={id} />
+</PrivateLayout> 
