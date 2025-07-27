@@ -109,8 +109,7 @@
       window.location.href = `/dashboard/restaurant/${restaurantId}/${section.route}`;
     }
   }
-
-  function onSectionUpdate() {
+   function onSectionUpdate() {
     // Recargar el restaurante después de una actualización
     loadRestaurant();
   }
@@ -122,11 +121,11 @@
      ==================================== */
   
   .dashboard-header {
-    background:var(--bg-tertiary);
+    background:var(--bg-primary);
     border-radius: var(--radius-2xl);
     padding: var(--spacing-3xl);
     margin-bottom: var(--spacing-3xl);
-    color: white;
+    color: var(--text-primary);
     position: relative;
     overflow: hidden;
   }
@@ -473,6 +472,8 @@
   .section-card-text {
     flex: 1;
     min-width: 0;
+    width: 100%;
+    text-align: center;
   }
 
   .section-card-title {
@@ -493,6 +494,7 @@
   .section-card-action {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--spacing-xs);
     color: var(--primary-color);
     font-size: var(--font-sm);
@@ -798,7 +800,7 @@
             href="/{restaurant.username}"
             target="_blank"
             class="btn btn-sm"
-            style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); color: white;"
+            style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3);"
           >
             <i class="fas fa-external-link-alt mr-xs"></i> Ver Público
           </a>
