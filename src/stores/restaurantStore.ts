@@ -144,6 +144,7 @@ class RestaurantStore {
   public readonly userRestaurants: Readable<Restaurant[]>;
   public readonly currentRestaurant: Readable<Restaurant | null>;
   public readonly isAuthenticated: Readable<boolean>;
+  public readonly usernameAvailability: Readable<{ [username: string]: boolean }>;
 
   constructor() {
     this.store = writable<RestaurantsState>(initialState);
@@ -168,6 +169,7 @@ class RestaurantStore {
     this.userRestaurants = derived(this.store, $state => $state.userRestaurants);
     this.currentRestaurant = derived(this.store, $state => $state.currentRestaurant);
     this.isAuthenticated = derived(this.store, $state => $state.isAuthenticated);
+    this.usernameAvailability = derived(this.store, $state => $state.usernameAvailability);
 
     // Reaccionar a cambios de autenticación
     authStore.isAuthenticated.subscribe(isAuthenticated => {
@@ -993,6 +995,7 @@ export const allRestaurants = restaurantStore.allRestaurants;
 export const userRestaurants = restaurantStore.userRestaurants;
 export const currentRestaurant = restaurantStore.currentRestaurant;
 export const restaurantsIsAuthenticated = restaurantStore.isAuthenticated;
+export const restaurantsUsernameAvailability = restaurantStore.usernameAvailability;
 
 /**
  * Hook personalizado para usar en componentes Svelte
