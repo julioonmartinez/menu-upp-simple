@@ -14,7 +14,10 @@ import {
   type RatingResponse,
   type FavoriteToggleResponse,
   type ImageUploadResponse,
-  type DishStatsResponse
+  type DishStatsResponse,
+  type DishPositionUpdate,
+  type PositionUpdateResponse,
+  type BulkPositionUpdateResponse
 } from '../services/dishService.ts';
 import type { Dish } from '../interfaces/dish.ts';
 import { authStore } from './authStore.ts';
@@ -52,6 +55,7 @@ export interface DishesState {
   isTogglingFavorite: boolean;
   isUploadingImage: boolean;
   isLoadingStats: boolean;
+  isReorderingDishes: boolean;
   
   // Errores
   error: string | null;
@@ -63,6 +67,7 @@ export interface DishesState {
   imageError: string | null;
   searchError: string | null;
   statsError: string | null;
+  reorderError: string | null;
   
   // Cache metadata
   lastUpdated: {
@@ -134,6 +139,12 @@ export interface SearchResult {
   error?: string;
 }
 
+export interface ReorderDishesResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 /**
  * Estado inicial del store
  */
@@ -197,6 +208,7 @@ class DishStore {
   public readonly isTogglingFavorite: Readable<boolean>;
   public readonly isUploadingImage: Readable<boolean>;
   public readonly isSearching: Readable<boolean>;
+  public readonly isReorderingDishes: Readable<boolean>;
   public readonly error: Readable<string | null>;
   public readonly createError: Readable<string | null>;
   public readonly updateError: Readable<string | null>;
@@ -229,6 +241,7 @@ class DishStore {
     this.isTogglingFavorite = derived(this.store, $state => $state.isTogglingFavorite);
     this.isUploadingImage = derived(this.store, $state => $state.isUploadingImage);
     this.isSearching = derived(this.store, $state => $state.isSearching);
+    this.isReorderingDishes = derived(this.store, $state => $state.isReorderingDishes);
     this.error = derived(this.store, $state => $state.error);
     this.createError = derived(this.store, $state => $state.createError);
     this.updateError = derived(this.store, $state => $state.updateError);
@@ -237,6 +250,7 @@ class DishStore {
     this.favoriteError = derived(this.store, $state => $state.favoriteError);
     this.imageError = derived(this.store, $state => $state.imageError);
     this.searchError = derived(this.store, $state => $state.searchError);
+    this.reorderError = derived(this.store, $state => $state.reorderError);
     this.allDishes = derived(this.store, $state => $state.allDishes);
     this.currentDish = derived(this.store, $state => $state.currentDish);
     this.topRatedDishes = derived(this.store, $state => $state.topRatedDishes);
@@ -1126,6 +1140,151 @@ class DishStore {
   }
 
   /**
+   * Reordena platillos por drag & drop
+   */
+  async reorderDishes(
+    originalDishes: Dish[],
+    draggedIndex: number,
+    targetIndex: number,
+    categoryId?: string
+  ): Promise<ReorderDishesResult> {
+    this.setReorderingDishes(true);
+    this.clearReorderError();
+
+    // Crear nueva lista con el elemento movido
+    const reorderedDishes = [...originalDishes];
+    const [draggedDish] = reorderedDishes.splice(draggedIndex, 1);
+    reorderedDishes.splice(targetIndex, 0, draggedDish);
+
+    // Actualizar posiciones optimistamente INMEDIATAMENTE
+    const updatedDishes = reorderedDishes.map((dish, index) => ({
+      ...dish,
+      position: index + 1
+    }));
+
+    // Guardar el estado original para poder revertir en caso de error
+    const originalState = this.getCurrentState();
+    const originalDishesState = [...originalState.allDishes];
+
+    // Actualizar el store optimistamente INMEDIATAMENTE
+    this.store.update(state => ({
+      ...state,
+      allDishes: state.allDishes.map(dish => {
+        const updatedDish = updatedDishes.find(d => d.id === dish.id);
+        return updatedDish ? { ...dish, position: updatedDish.position } : dish;
+      })
+    }));
+
+    try {
+      // Actualizar posiciones en el backend
+      const positionUpdates: DishPositionUpdate[] = updatedDishes.map((dish) => ({
+        dish_id: dish.id!,
+        new_position: dish.position
+      }));
+
+      // Llamar al servicio para actualizar posiciones
+      const result = await dishService.updateDishPositionsBulk(positionUpdates);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: 'Platillos reordenados correctamente'
+        };
+      } else {
+        // REVERTIR cambios optimistas en caso de error
+        this.store.update(state => ({
+          ...state,
+          allDishes: originalDishesState
+        }));
+        
+        this.setReorderError(result.error || 'Error reordenando platillos');
+        return {
+          success: false,
+          error: result.error || 'Error reordenando platillos'
+        };
+      }
+    } catch (error) {
+      // REVERTIR cambios optimistas en caso de excepción
+      this.store.update(state => ({
+        ...state,
+        allDishes: originalDishesState
+      }));
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      this.setReorderError(errorMessage);
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      this.setReorderingDishes(false);
+    }
+  }
+
+  /**
+   * Actualiza la posición de un platillo individual
+   */
+  async updateDishPosition(dishId: string, newPosition: number): Promise<ReorderDishesResult> {
+    this.setReorderingDishes(true);
+    this.clearReorderError();
+
+    // Guardar el estado original para poder revertir en caso de error
+    const originalState = this.getCurrentState();
+    const originalDish = originalState.allDishes.find(dish => dish.id === dishId);
+    const originalPosition = originalDish?.position;
+
+    // Actualizar el store optimistamente INMEDIATAMENTE
+    this.store.update(state => ({
+      ...state,
+      allDishes: state.allDishes.map(dish => 
+        dish.id === dishId ? { ...dish, position: newPosition } : dish
+      )
+    }));
+
+    try {
+      const result = await dishService.updateDishPosition(dishId, newPosition);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: 'Posición actualizada correctamente'
+        };
+      } else {
+        // REVERTIR cambios optimistas en caso de error
+        this.store.update(state => ({
+          ...state,
+          allDishes: state.allDishes.map(dish => 
+            dish.id === dishId ? { ...dish, position: originalPosition } : dish
+          )
+        }));
+        
+        this.setReorderError(result.error || 'Error actualizando posición');
+        return {
+          success: false,
+          error: result.error || 'Error actualizando posición'
+        };
+      }
+    } catch (error) {
+      // REVERTIR cambios optimistas en caso de excepción
+      this.store.update(state => ({
+        ...state,
+        allDishes: state.allDishes.map(dish => 
+          dish.id === dishId ? { ...dish, position: originalPosition } : dish
+        )
+      }));
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      this.setReorderError(errorMessage);
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      this.setReorderingDishes(false);
+    }
+  }
+
+  /**
    * Métodos de utilidad privados
    */
   private setLoadingAll(isLoading: boolean): void {
@@ -1176,6 +1335,10 @@ class DishStore {
     this.store.update(state => ({ ...state, isLoadingStats: isLoading }));
   }
 
+  private setReorderingDishes(isReordering: boolean): void {
+    this.store.update(state => ({ ...state, isReorderingDishes: isReordering }));
+  }
+
   private setCurrentDish(dish: Dish | null): void {
     this.store.update(state => ({ 
       ...state, 
@@ -1223,6 +1386,10 @@ class DishStore {
     this.store.update(state => ({ ...state, statsError: error }));
   }
 
+  private setReorderError(error: string | null): void {
+    this.store.update(state => ({ ...state, reorderError: error }));
+  }
+
   private clearError(): void {
     this.setError(null);
   }
@@ -1257,6 +1424,10 @@ class DishStore {
 
   private clearStatsError(): void {
     this.setStatsError(null);
+  }
+
+  private clearReorderError(): void {
+    this.setReorderError(null);
   }
 
   /**
@@ -1296,7 +1467,8 @@ class DishStore {
       favoriteError: null,
       imageError: null,
       searchError: null,
-      statsError: null
+      statsError: null,
+      reorderError: null
     }));
   }
 
@@ -1374,6 +1546,7 @@ export const dishesRating = dishStore.isRating;
 export const dishesTogglingFavorite = dishStore.isTogglingFavorite;
 export const dishesUploadingImage = dishStore.isUploadingImage;
 export const dishesSearching = dishStore.isSearching;
+export const dishesReorderingDishes = dishStore.isReorderingDishes;
 export const dishesError = dishStore.error;
 export const dishesCreateError = dishStore.createError;
 export const dishesUpdateError = dishStore.updateError;
@@ -1382,6 +1555,7 @@ export const dishesRatingError = dishStore.ratingError;
 export const dishesFavoriteError = dishStore.favoriteError;
 export const dishesImageError = dishStore.imageError;
 export const dishesSearchError = dishStore.searchError;
+export const dishesReorderError = dishStore.reorderError;
 export const allDishes = dishStore.allDishes;
 export const currentDish = dishStore.currentDish;
 export const topRatedDishes = dishStore.topRatedDishes;
@@ -1409,6 +1583,7 @@ export function useDishes() {
     isTogglingFavorite: state.isTogglingFavorite,
     isUploadingImage: state.isUploadingImage,
     isSearching: state.isSearching,
+    isReorderingDishes: state.isReorderingDishes,
     
     // Errores
     error: state.error,
@@ -1419,6 +1594,7 @@ export function useDishes() {
     favoriteError: state.favoriteError,
     imageError: state.imageError,
     searchError: state.searchError,
+    reorderError: state.reorderError,
     
     // Datos
     allDishes: state.allDishes,
@@ -1446,6 +1622,8 @@ export function useDishes() {
     loadMostCommentedDishes: dishStore.loadMostCommentedDishes.bind(dishStore),
     searchDishes: dishStore.searchDishes.bind(dishStore),
     loadDishStats: dishStore.loadDishStats.bind(dishStore),
+    reorderDishes: dishStore.reorderDishes.bind(dishStore),
+    updateDishPosition: dishStore.updateDishPosition.bind(dishStore),
     clearCache: dishStore.clearCache.bind(dishStore),
     clearAllErrors: dishStore.clearAllErrors.bind(dishStore),
     

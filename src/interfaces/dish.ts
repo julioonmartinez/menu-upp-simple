@@ -11,7 +11,7 @@ export interface Dish {
   price: number;
   categoryId: string;
   restaurantId?: string;
-  
+  position: number;
   // Imagen - soporta tanto URL simple como datos complejos
   image?: string;
   image_data?: ImageData;

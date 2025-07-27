@@ -46,6 +46,14 @@ export type {
   
   // Sistema de ordenamiento
   DishSortField,
+  
+  // ✅ Nuevas interfaces de posicionamiento
+  DishPositionUpdate,
+  DishPositionBulkUpdate,
+  DishPositionInfo,
+  PositionUpdateResponse,
+  BulkPositionUpdateResponse,
+  ResetPositionsResponse,
 } from './dishService.ts';
 
 export type {
@@ -357,6 +365,10 @@ export const dishUtils = {
           aValue = a.reviewsCount || 0;
           bValue = b.reviewsCount || 0;
           break;
+        case 'position':
+          aValue = a.position || 0;
+          bValue = b.position || 0;
+          break;
         default:
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
@@ -388,6 +400,119 @@ export const dishUtils = {
    */
   generateSortOptions: (): Array<{ value: DishSortField; label: string }> => {
     return [...DISH_SORT_FIELDS];
+  },
+
+  // ✅ Nuevas utilidades para posicionamiento
+  /**
+   * Obtiene el texto de posición del platillo
+   */
+  getPositionText: (dish: Dish): string => {
+    if (dish.position === undefined || dish.position === null) {
+      return 'Sin posición asignada';
+    }
+    return `Posición ${dish.position}`;
+  },
+
+  /**
+   * Verifica si un platillo tiene posición asignada
+   */
+  hasPosition: (dish: Dish): boolean => {
+    return dish.position !== undefined && dish.position !== null && dish.position > 0;
+  },
+
+  /**
+   * Obtiene la clase CSS para indicar posición
+   */
+  getPositionClass: (dish: Dish): string => {
+    if (!dishUtils.hasPosition(dish)) {
+      return 'no-position';
+    }
+    if (dish.position === 1) {
+      return 'position-first';
+    }
+    if (dish.position <= 3) {
+      return 'position-top';
+    }
+    return 'position-normal';
+  },
+
+  /**
+   * Formatea la posición para mostrar
+   */
+  formatPosition: (position: number): string => {
+    if (position === 1) return '1er lugar';
+    if (position === 2) return '2do lugar';
+    if (position === 3) return '3er lugar';
+    return `${position}° lugar`;
+  },
+
+  /**
+   * Ordena platillos por posición
+   */
+  sortByPosition: (dishes: Dish[], ascending: boolean = true): Dish[] => {
+    return [...dishes].sort((a, b) => {
+      const aPos = a.position || 0;
+      const bPos = b.position || 0;
+      
+      if (ascending) {
+        return aPos - bPos;
+      } else {
+        return bPos - aPos;
+      }
+    });
+  },
+
+  /**
+   * Filtra platillos con posición asignada
+   */
+  filterWithPosition: (dishes: Dish[]): Dish[] => {
+    return dishes.filter(dish => dishUtils.hasPosition(dish));
+  },
+
+  /**
+   * Filtra platillos sin posición asignada
+   */
+  filterWithoutPosition: (dishes: Dish[]): Dish[] => {
+    return dishes.filter(dish => !dishUtils.hasPosition(dish));
+  },
+
+  /**
+   * Obtiene el siguiente número de posición disponible
+   */
+  getNextPosition: (dishes: Dish[]): number => {
+    const positions = dishes
+      .map(dish => dish.position)
+      .filter(pos => pos !== undefined && pos !== null && pos > 0)
+      .sort((a, b) => (a || 0) - (b || 0));
+    
+    if (positions.length === 0) return 1;
+    
+    const maxPosition = Math.max(...positions);
+    return maxPosition + 1;
+  },
+
+  /**
+   * Valida si una posición está disponible
+   */
+  isPositionAvailable: (dishes: Dish[], position: number, excludeDishId?: string): boolean => {
+    return !dishes.some(dish => {
+      if (excludeDishId && dish.id === excludeDishId) return false;
+      return dish.position === position;
+    });
+  },
+
+  /**
+   * Reordena posiciones después de eliminar un platillo
+   */
+  reorderPositions: (dishes: Dish[], removedPosition?: number): Dish[] => {
+    if (!removedPosition) return dishes;
+    
+    return dishes.map(dish => {
+      if (dish.position && dish.position > removedPosition) {
+        return { ...dish, position: dish.position - 1 };
+      }
+      return dish;
+    });
   }
 };
 
@@ -505,6 +630,7 @@ export const DEFAULT_DISH_CONFIG = {
     showImage: true,
     showAvailability: true,
     showDiscount: true,
+    showPosition: true, // ✅ Nueva opción para mostrar posición
     imageSize: 'medium' as const,
     layout: 'card' as const
   },
@@ -515,7 +641,9 @@ export const DEFAULT_DISH_CONFIG = {
     maxDescriptionLength: 1000,
     minPrice: 0,
     maxPrice: 10000,
-    maxDiscount: 100
+    maxDiscount: 100,
+    minPosition: 1, // ✅ Nueva validación para posición
+    maxPosition: 999 // ✅ Nueva validación para posición
   },
   pagination: {
     defaultPageSize: 20,
@@ -525,6 +653,13 @@ export const DEFAULT_DISH_CONFIG = {
     defaultField: 'name' as DishSortField,
     defaultOrder: 1 as 1 | -1,
     availableFields: DISH_SORT_FIELDS
+  },
+  position: { // ✅ Nueva configuración de posicionamiento
+    enabled: true,
+    autoReorder: true,
+    allowGaps: false,
+    maxPositions: 999,
+    defaultSortByPosition: true
   },
   cache: {
     duration: 5 * 60 * 1000 // 5 minutos
@@ -570,6 +705,14 @@ export const ERROR_MESSAGES = {
   DISH_IMAGE_TOO_LARGE: 'La imagen es demasiado grande (máximo 5MB)',
   DISH_IMAGE_INVALID_TYPE: 'Tipo de imagen no válido (solo JPG, PNG, WEBP)',
   
+  // ✅ Nuevos mensajes de error para posicionamiento
+  DISH_POSITION_INVALID: 'La posición debe ser un número mayor a 0',
+  DISH_POSITION_ALREADY_EXISTS: 'Ya existe un platillo con esa posición',
+  DISH_POSITION_OUT_OF_RANGE: 'La posición está fuera del rango permitido',
+  DISH_POSITION_UPDATE_FAILED: 'Error al actualizar la posición del platillo',
+  DISH_POSITIONS_BULK_UPDATE_FAILED: 'Error al actualizar las posiciones en lote',
+  DISH_POSITIONS_RESET_FAILED: 'Error al resetear las posiciones',
+  
   // Categorías
   CATEGORY_NOT_FOUND: 'Categoría no encontrada',
   CATEGORY_NAME_REQUIRED: 'El nombre de la categoría es requerido',
@@ -605,11 +748,34 @@ export const SORT_CONSTANTS = {
     price: 'Precio',
     rating: 'Valoración',
     favorites: 'Favoritos',
-    reviewsCount: 'N° de reseñas'
+    reviewsCount: 'N° de reseñas',
+    position: 'Posición personalizada' // ✅ Nueva etiqueta para posición
   },
   ORDER_LABELS: {
     1: 'Ascendente',
     '-1': 'Descendente'
+  }
+} as const;
+
+/**
+ * ✅ Constantes de posicionamiento
+ */
+export const POSITION_CONSTANTS = {
+  MIN_POSITION: 1,
+  MAX_POSITION: 999,
+  DEFAULT_POSITION: 1,
+  POSITION_LABELS: {
+    FIRST: '1er lugar',
+    SECOND: '2do lugar',
+    THIRD: '3er lugar',
+    NTH: '° lugar',
+    NO_POSITION: 'Sin posición asignada'
+  },
+  POSITION_CLASSES: {
+    NO_POSITION: 'no-position',
+    FIRST: 'position-first',
+    TOP: 'position-top',
+    NORMAL: 'position-normal'
   }
 } as const;
 
@@ -641,5 +807,6 @@ export default {
 //   DEFAULT_DISH_CONFIG,
 //   DEFAULT_CATEGORY_CONFIG,
 //   ERROR_MESSAGES,
-//   LOADING_STATES
+//   LOADING_STATES,
+//   POSITION_CONSTANTS
 };

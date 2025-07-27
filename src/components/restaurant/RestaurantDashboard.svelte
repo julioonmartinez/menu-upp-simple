@@ -17,9 +17,7 @@
     allDishes,
     dishUtils,
     SORT_CONSTANTS,
-    DEFAULT_DISH_CONFIG,
-    DISH_SORT_FIELDS,
-    isValidSortField
+    DEFAULT_DISH_CONFIG
   } from '../../services/index.ts';
   import type { Category } from '../../interfaces/category.ts';
   import type { Dish } from '../../interfaces/dish.ts';
@@ -63,14 +61,17 @@
     isCreating: isCreatingDish,
     isUpdating: isUpdatingDish,
     isDeleting: isDeletingDish,
+    isReorderingDishes,
     error: dishError,
     createError: dishCreateError,
     updateError: dishUpdateError,
     deleteError: dishDeleteError,
+    reorderError: dishReorderError,
     loadDishesByFilters,
     createDish,
     updateDish,
     deleteDish,
+    reorderDishes,
     clearAllErrors: clearDishErrors
   } = useDishes();
 
@@ -96,16 +97,20 @@
   // Estado para categorías expandibles
   let expandedCategories: string[] = [];
 
-  // Estado para drag & drop
+  // Estado para drag & drop de categorías
   let draggedCategory: Category | null = null;
   let draggedOverCategory: Category | null = null;
-  let isDragging = false;
-  let dragStartIndex = -1;
+  let isDraggingCategory = false;
+  let categoryDragStartIndex = -1;
   let originalCategories: Category[] = [];
 
-  // Estado para ordenamiento de platillos
-  let dishSortConfig: { [categoryId: string]: { field: DishSortField; order: 1 | -1 } } = {};
-  let showSortControls: { [categoryId: string]: boolean } = {};
+  // Estado para drag & drop de platillos
+  let draggedDish: Dish | null = null;
+  let draggedOverDish: Dish | null = null;
+  let isDraggingDish = false;
+  let dishDragStartIndex = -1;
+  let originalDishes: Dish[] = [];
+  let activeDragCategoryId: string | null = null;
 
   // Cargar restaurante cuando cambia idRestaurant
   $: if (idRestaurant) {
@@ -143,7 +148,11 @@
   // Computed
   $: hasCategories = Array.isArray(displayCategories) && displayCategories.length > 0;
   $: hasDishes = Array.isArray($allDishes) && $allDishes.length > 0;
-  $: isLoading = loading || isLoadingCategories || isLoadingDishes;
+  $: isLoading = loading || isLoadingCategories || isLoadingDishes || isReorderingDishes;
+  
+  // Debug para verificar reactividad
+  $: console.log('allDishes updated:', $allDishes.length, 'dishes');
+  $: console.log('isReorderingDishes:', isReorderingDishes);
   
   // Categorías ordenadas por el campo order
   $: sortedCategories = $allCategories
@@ -309,17 +318,27 @@
     itemToDelete = null;
   }
 
-  function getDishesForCategory(categoryId: string): Dish[] {
+  // Computed para platillos de cada categoría - Reactivo
+  $: dishesByCategory = (categoryId: string) => {
     const dishes = $allDishes.filter(dish => dish.categoryId === categoryId);
     
-    // Aplicar ordenamiento si está configurado
-    const sortConfig = dishSortConfig[categoryId];
-    if (sortConfig) {
-      return dishUtils.sortDishes(dishes, sortConfig.field, sortConfig.order);
-    }
-    
-    // Ordenamiento por defecto: nombre ascendente
-    return dishUtils.sortDishes(dishes, 'name', 1);
+    // Ordenar por posición si está disponible, sino por nombre
+    return dishes.sort((a, b) => {
+      const aPos = a.position || 0;
+      const bPos = b.position || 0;
+      
+      if (aPos !== bPos) {
+        return aPos - bPos;
+      }
+      
+      // Si no hay posición, ordenar por nombre
+      return a.name.localeCompare(b.name);
+    });
+  };
+
+  // Función para compatibilidad
+  function getDishesForCategory(categoryId: string): Dish[] {
+    return dishesByCategory(categoryId);
   }
 
   function getCategoryName(categoryId: string): string {
@@ -334,41 +353,154 @@
     }).format(price);
   }
 
-  // Funciones para ordenamiento de platillos
-  function toggleSortControls(categoryId: string) {
-    showSortControls[categoryId] = !showSortControls[categoryId];
-    showSortControls = showSortControls; // Trigger reactivity
-  }
-
-  function updateDishSort(categoryId: string, field: DishSortField, order: 1 | -1) {
-    dishSortConfig[categoryId] = { field, order };
-    dishSortConfig = dishSortConfig; // Trigger reactivity
-  }
-
-  function getCurrentSortConfig(categoryId: string) {
-    return dishSortConfig[categoryId] || { 
-      field: DEFAULT_DISH_CONFIG.sorting.defaultField, 
-      order: DEFAULT_DISH_CONFIG.sorting.defaultOrder 
-    };
-  }
-
-  function getSortIcon(order: 1 | -1): string {
-    return order === 1 ? '↑' : '↓';
-  }
-
-  function getSortLabel(field: DishSortField): string {
-    return dishUtils.getSortFieldLabel(field);
-  }
-
-  // Cerrar controles de ordenamiento al hacer clic fuera
-  function handleClickOutside(event: MouseEvent) {
+  // Funciones para drag & drop de platillos
+  function handleDishDragStart(event: DragEvent, dish: Dish, index: number, categoryId: string) {
+    if (!event.dataTransfer) return;
+    
+    draggedDish = dish;
+    dishDragStartIndex = index;
+    activeDragCategoryId = categoryId;
+    originalDishes = [...dishesByCategory(categoryId)];
+    isDraggingDish = true;
+    
+    // Configurar el drag data
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', dish.id || '');
+    
+    // Agregar clase visual
     const target = event.target as HTMLElement;
-    if (!target.closest('.sort-controls')) {
-      showSortControls = Object.keys(showSortControls).reduce((acc, key) => {
-        acc[key] = false;
-        return acc;
-      }, {} as { [key: string]: boolean });
+    if (target) {
+      target.classList.add('dragging-dish');
     }
+    
+    console.log('Dish drag started:', dish.name, 'from index:', index, 'in category:', categoryId);
+  }
+
+  function handleDishDragOver(event: DragEvent, dish: Dish) {
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = 'move';
+    
+    if (draggedDish && draggedDish.id !== dish.id) {
+      draggedOverDish = dish;
+    }
+  }
+
+  function handleDishDragEnter(event: DragEvent, dish: Dish) {
+    event.preventDefault();
+    if (draggedDish && draggedDish.id !== dish.id) {
+      draggedOverDish = dish;
+    }
+  }
+
+  function handleDishDragLeave(event: DragEvent) {
+    event.preventDefault();
+    const target = event.target as HTMLElement;
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    
+    if (!target.contains(relatedTarget)) {
+      draggedOverDish = null;
+    }
+  }
+
+  async function handleDishDrop(event: DragEvent, targetDish: Dish, targetIndex: number, categoryId: string) {
+    event.preventDefault();
+    
+    if (!draggedDish || !event.dataTransfer || activeDragCategoryId !== categoryId) return;
+    
+    const draggedIndex = dishDragStartIndex;
+    
+    // Limpiar estado visual
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.remove('dragging-dish');
+    }
+    
+    // Verificar que realmente se movió
+    if (draggedIndex === targetIndex) {
+      console.log('No dish movement detected');
+      resetDishDragState();
+      return;
+    }
+    
+    console.log('Dish drop detected:', {
+      dragged: draggedDish.name,
+      target: targetDish.name,
+      fromIndex: draggedIndex,
+      toIndex: targetIndex,
+      categoryId
+    });
+    
+    try {
+      const result = await reorderDishes(originalDishes, draggedIndex, targetIndex, categoryId);
+      
+      if (result.success) {
+        toastStore.success('Platillos reordenados correctamente');
+        console.log('Dish reorder successful:', result.message);
+      } else {
+        toastStore.error(result.error || 'Error al reordenar platillos');
+        console.error('Dish reorder failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Error during dish reorder:', error);
+      toastStore.error('Error inesperado al reordenar platillos');
+    } finally {
+      resetDishDragState();
+    }
+  }
+
+  function handleDishDragEnd(event: DragEvent) {
+    event.preventDefault();
+    
+    // Limpiar clases visuales
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.remove('dragging-dish');
+    }
+    
+    resetDishDragState();
+  }
+
+  function resetDishDragState() {
+    draggedDish = null;
+    draggedOverDish = null;
+    isDraggingDish = false;
+    dishDragStartIndex = -1;
+    originalDishes = [];
+    activeDragCategoryId = null;
+  }
+
+  function getDishDragClasses(dish: Dish): string {
+    let classes = 'dish-card';
+    
+    if (draggedDish?.id === dish.id) {
+      classes += ' dragging-dish';
+    }
+    
+    if (draggedOverDish?.id === dish.id && draggedDish?.id !== dish.id) {
+      classes += ' drag-over-dish';
+    }
+    
+    // Agregar clase de reordenamiento en progreso
+    if (isReorderingDishes) {
+      classes += ' reordering';
+    }
+    
+    return classes;
+  }
+
+  // Función para determinar si se puede hacer drag & drop de categorías
+  function canDragCategories(): boolean {
+    return expandedCategories.length === 0;
+  }
+
+  // Función para determinar si se puede hacer drag & drop de platillos
+  function canDragDishes(categoryId: string): boolean {
+    return expandedCategories.includes(categoryId);
+  }
+
+  // Cerrar controles al hacer clic fuera
+  function handleClickOutside(event: MouseEvent) {
+    // Esta función se mantiene para futuras funcionalidades
   }
 
   function handleImageError(dishId: string) {
@@ -431,17 +563,14 @@
     console.log('All categories collapsed');
   }
 
-  // Drag & Drop Functions
+  // Drag & Drop Functions para categorías
   function handleDragStart(event: DragEvent, category: Category, index: number) {
-    if (!event.dataTransfer) return;
+    if (!event.dataTransfer || !canDragCategories()) return;
     
     draggedCategory = category;
-    dragStartIndex = index;
+    categoryDragStartIndex = index;
     originalCategories = [...sortedCategories];
-    isDragging = true;
-    
-    // Guardar el orden original para poder revertir si hay error
-    const originalOrder = category.order || 0;
+    isDraggingCategory = true;
     
     // Configurar el drag data
     event.dataTransfer.effectAllowed = 'move';
@@ -453,7 +582,7 @@
       target.classList.add('dragging');
     }
     
-    console.log('Drag started:', category.name, 'from index:', index);
+    console.log('Category drag started:', category.name, 'from index:', index);
   }
 
   function handleDragOver(event: DragEvent, category: Category) {
@@ -486,9 +615,9 @@
   async function handleDrop(event: DragEvent, targetCategory: Category, targetIndex: number) {
     event.preventDefault();
     
-    if (!draggedCategory || !event.dataTransfer) return;
+    if (!draggedCategory || !event.dataTransfer || !canDragCategories()) return;
     
-    const draggedIndex = dragStartIndex;
+    const draggedIndex = categoryDragStartIndex;
     
     // Limpiar estado visual
     const target = event.target as HTMLElement;
@@ -498,12 +627,12 @@
     
     // Verificar que realmente se movió
     if (draggedIndex === targetIndex) {
-      console.log('No movement detected');
+      console.log('No category movement detected');
       resetDragState();
       return;
     }
     
-    console.log('Drop detected:', {
+    console.log('Category drop detected:', {
       dragged: draggedCategory.name,
       target: targetCategory.name,
       fromIndex: draggedIndex,
@@ -526,7 +655,7 @@
       
       if (result.success) {
         toastStore.success('Categorías reordenadas correctamente');
-        console.log('Reorder successful:', result.message);
+        console.log('Category reorder successful:', result.message);
       } else {
         // Revertir cambios optimistas en caso de error
         originalCategories.forEach((cat, index) => {
@@ -534,7 +663,7 @@
         });
         
         toastStore.error(result.error || 'Error al reordenar categorías');
-        console.error('Reorder failed:', result.error);
+        console.error('Category reorder failed:', result.error);
       }
     } catch (error) {
       // Revertir cambios optimistas en caso de excepción
@@ -542,7 +671,7 @@
         revertCategoryOrderOptimistically(cat.id!, cat.order || index + 1);
       });
       
-      console.error('Error during reorder:', error);
+      console.error('Error during category reorder:', error);
       toastStore.error('Error inesperado al reordenar categorías');
     } finally {
       resetDragState();
@@ -564,13 +693,17 @@
   function resetDragState() {
     draggedCategory = null;
     draggedOverCategory = null;
-    isDragging = false;
-    dragStartIndex = -1;
+    isDraggingCategory = false;
+    categoryDragStartIndex = -1;
     originalCategories = [];
   }
 
   function getDragClasses(category: Category): string {
     let classes = 'category-card';
+    
+    if (!canDragCategories()) {
+      classes += ' drag-disabled';
+    }
     
     if (draggedCategory?.id === category.id) {
       classes += ' dragging';
@@ -639,7 +772,7 @@
     </div>
 
     <!-- Error Display -->
-    {#if categoryError || dishError || categoryReorderError}
+    {#if categoryError || dishError || categoryReorderError || dishReorderError}
       <div class="error-container">
         <div class="error-content">
           <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -648,7 +781,7 @@
           <div class="error-text">
             <p class="error-title">Error en el sistema</p>
             <p class="error-message">
-              {categoryError || dishError || categoryReorderError}
+              {categoryError || dishError || categoryReorderError || dishReorderError}
             </p>
           </div>
         </div>
@@ -663,7 +796,11 @@
           <p class="section-subtitle">
             Organiza tu menú creando categorías y agregando platillos
             {#if hasCategories}
-              <br><span class="drag-hint">💡 Arrastra las categorías para reordenarlas</span>
+              {#if canDragCategories()}
+                <br><span class="drag-hint">💡 Arrastra las categorías para reordenarlas</span>
+              {:else}
+                <br><span class="drag-hint">💡 Colapsa todas las categorías para reordenarlas</span>
+              {/if}
             {/if}
           </p>
         </div>
@@ -775,7 +912,7 @@
           {#each displayCategories as category, index}
             <div 
               class={getDragClasses(category)}
-              draggable="true"
+              draggable={canDragCategories()}
               on:dragstart={(e) => handleDragStart(e, category, index)}
               on:dragover={(e) => handleDragOver(e, category)}
               on:dragenter={(e) => handleDragEnter(e, category)}
@@ -801,13 +938,13 @@
                       </h3>
                     </div>
                     <div class="category-stats">
-                      <span class="dish-count">{getDishesForCategory(category.id!).length} platillos</span>
+                      <span class="dish-count">{dishesByCategory(category.id!).length} platillos</span>
                       {#if category.order !== undefined}
                         <span class="order-indicator">#{category.order}</span>
                       {/if}
-                      {#if dishSortConfig[category.id!]}
-                        <span class="sort-indicator" title="Ordenado por {getSortLabel(getCurrentSortConfig(category.id!).field)}">
-                          {getSortIcon(getCurrentSortConfig(category.id!).order)}
+                      {#if canDragDishes(category.id!)}
+                        <span class="drag-enabled-indicator" title="Drag & drop de platillos habilitado">
+                          🎯
                         </span>
                       {/if}
                     </div>
@@ -844,71 +981,16 @@
                         Platillos en {category.name}
                       </h4>
                       
-                      <!-- Controles de ordenamiento -->
-                      <div class="sort-controls">
-                        <button
-                          type="button"
-                          class="btn-sort-toggle"
-                          on:click={() => toggleSortControls(category.id!)}
-                          title="Ordenar platillos"
-                        >
-                          <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                          </svg>
-                          <span class="sort-label">
-                            {getSortLabel(getCurrentSortConfig(category.id!).field)}
-                            {getSortIcon(getCurrentSortConfig(category.id!).order)}
-                          </span>
-                        </button>
-                        
-                        {#if showSortControls[category.id!]}
-                          <div class="sort-dropdown" in:slide={{ duration: 200 }}>
-                            <div class="sort-options">
-                              {#each DISH_SORT_FIELDS as sortOption}
-                                <button
-                                  type="button"
-                                  class="sort-option"
-                                  class:active={getCurrentSortConfig(category.id!).field === sortOption.value}
-                                  on:click={() => {
-                                    const currentOrder = getCurrentSortConfig(category.id!).order;
-                                    updateDishSort(category.id!, sortOption.value, currentOrder);
-                                  }}
-                                >
-                                  <span class="sort-option-label">{sortOption.label}</span>
-                                  {#if getCurrentSortConfig(category.id!).field === sortOption.value}
-                                    <span class="sort-option-icon">{getSortIcon(getCurrentSortConfig(category.id!).order)}</span>
-                                  {/if}
-                                </button>
-                              {/each}
-                            </div>
-                            
-                            <div class="sort-order-controls">
-                              <button
-                                type="button"
-                                class="sort-order-btn"
-                                class:active={getCurrentSortConfig(category.id!).order === 1}
-                                on:click={() => updateDishSort(category.id!, getCurrentSortConfig(category.id!).field, 1)}
-                              >
-                                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                </svg>
-                                Ascendente
-                              </button>
-                              <button
-                                type="button"
-                                class="sort-order-btn"
-                                class:active={getCurrentSortConfig(category.id!).order === -1}
-                                on:click={() => updateDishSort(category.id!, getCurrentSortConfig(category.id!).field, -1)}
-                              >
-                                <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                                Descendente
-                              </button>
-                            </div>
-                          </div>
-                        {/if}
-                      </div>
+                      <!-- Indicador de drag & drop -->
+                      {#if canDragDishes(category.id!)}
+                        <div class="drag-hint-dishes">
+                          <span class="drag-hint-text">💡 Arrastra los platillos para reordenarlos</span>
+                        </div>
+                      {:else}
+                        <div class="drag-hint-dishes">
+                          <span class="drag-hint-text">💡 Expande la categoría para reordenar platillos</span>
+                        </div>
+                      {/if}
                     </div>
                     
                     <button
@@ -923,7 +1005,7 @@
                     </button>
                   </div>
 
-                  {#if getDishesForCategory(category.id!).length === 0}
+                  {#if dishesByCategory(category.id!).length === 0}
                     <div class="empty-dishes">
                       <p class="empty-dishes-text">No hay platillos en esta categoría</p>
                       <button
@@ -936,8 +1018,15 @@
                     </div>
                   {:else}
                     <div class="dishes-grid">
-                      {#each getDishesForCategory(category.id!) as dish}
-                        <div class="dish-card" 
+                      {#each dishesByCategory(category.id!) as dish, index}
+                        <div class={getDishDragClasses(dish)}
+                             draggable={canDragDishes(category.id!)}
+                             on:dragstart={(e) => handleDishDragStart(e, dish, index, category.id!)}
+                             on:dragover={(e) => handleDishDragOver(e, dish)}
+                             on:dragenter={(e) => handleDishDragEnter(e, dish)}
+                             on:dragleave={handleDishDragLeave}
+                             on:drop={(e) => handleDishDrop(e, dish, index, category.id!)}
+                             on:dragend={handleDishDragEnd}
                              on:mouseenter={() => showActions(dish.id!)}
                              on:mouseleave={() => hideActions(dish.id!)}>
                           {#if shouldShowImage(dish)}
@@ -966,25 +1055,11 @@
                               </span>
                             </div>
                             
-                            <!-- Indicadores de ordenamiento -->
-                            {#if getCurrentSortConfig(category.id!).field === 'rating' && dish.rating}
-                              <div class="dish-rating-indicator">
-                                <span class="rating-stars">{dishUtils.generateStars(dish.rating)}</span>
-                                <span class="rating-value">({dish.rating})</span>
-                              </div>
-                            {/if}
-                            
-                            {#if getCurrentSortConfig(category.id!).field === 'favorites' && dish.favorites}
-                              <div class="dish-favorites-indicator">
-                                <span class="favorites-icon">❤️</span>
-                                <span class="favorites-count">{dish.favorites}</span>
-                              </div>
-                            {/if}
-                            
-                            {#if getCurrentSortConfig(category.id!).field === 'reviewsCount' && dish.reviewsCount}
-                              <div class="dish-reviews-indicator">
-                                <span class="reviews-icon">💬</span>
-                                <span class="reviews-count">{dish.reviewsCount}</span>
+                            <!-- Indicador de posición -->
+                            {#if dish.position}
+                              <div class="dish-position-indicator">
+                                <span class="position-icon">📍</span>
+                                <span class="position-value">Posición {dish.position}</span>
                               </div>
                             {/if}
                           </div>
@@ -1548,8 +1623,63 @@
     transform: scale(1.02);
   }
 
+  .category-card.drag-disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .category-card.drag-disabled .drag-handle {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
   .category-card.dragging .drag-handle {
     cursor: grabbing;
+  }
+
+  /* Drag & Drop de Platillos */
+  .dish-card.dragging-dish {
+    opacity: 0.5;
+    transform: rotate(1deg) scale(1.05);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    position: relative;
+  }
+
+  .dish-card.drag-over-dish {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color);
+    transform: scale(1.02);
+  }
+
+  .dish-card:not([draggable="true"]) {
+    cursor: default;
+  }
+
+  .dish-card[draggable="true"] {
+    cursor: grab;
+  }
+
+  .dish-card[draggable="true"]:active {
+    cursor: grabbing;
+  }
+
+  .dish-card.reordering {
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  .dish-card.reordering::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(79, 70, 229, 0.1);
+    border-radius: var(--radius-lg);
+    pointer-events: none;
+    z-index: 1;
   }
 
   .drag-hint {
@@ -1661,6 +1791,16 @@
     border: 1px solid var(--primary-color);
   }
 
+  .drag-enabled-indicator {
+    font-size: var(--font-xs);
+    color: var(--success);
+    background: var(--bg-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-bold);
+    border: 1px solid var(--success);
+  }
+
   .category-description {
     font-size: var(--font-xs);
     color: var(--text-secondary);
@@ -1740,125 +1880,17 @@
     margin: 0;
   }
 
-  /* Controles de ordenamiento */
-  .sort-controls {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .btn-sort-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    border: 1px solid var(--bg-accent);
-    border-radius: var(--radius-md);
-    font-size: var(--font-xs);
-    font-weight: var(--weight-medium);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-  }
-
-  .btn-sort-toggle:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-color: var(--primary-color);
-  }
-
-  .btn-sort-toggle .btn-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-
-  .sort-label {
-    font-size: var(--font-xs);
-    font-weight: var(--weight-medium);
-  }
-
-  .sort-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--bg-primary);
-    border: 1px solid var(--bg-accent);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    z-index: 100;
+  .drag-hint-dishes {
     margin-top: var(--spacing-xs);
-    overflow: hidden;
   }
 
-  .sort-options {
-    border-bottom: 1px solid var(--bg-accent);
-  }
-
-  .sort-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: none;
-    color: var(--text-primary);
-    border: none;
+  .drag-hint-text {
     font-size: var(--font-xs);
-    cursor: pointer;
-    transition: all var(--transition-normal);
+    color: var(--text-secondary);
+    font-style: italic;
   }
 
-  .sort-option:hover {
-    background: var(--bg-tertiary);
-  }
-
-  .sort-option.active {
-    background: var(--primary-color);
-    color: var(--text-inverse);
-  }
-
-  .sort-option-label {
-    font-weight: var(--weight-medium);
-  }
-
-  .sort-option-icon {
-    font-weight: var(--weight-bold);
-  }
-
-  .sort-order-controls {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sort-order-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: none;
-    color: var(--text-primary);
-    border: none;
-    font-size: var(--font-xs);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-  }
-
-  .sort-order-btn:hover {
-    background: var(--bg-tertiary);
-  }
-
-  .sort-order-btn.active {
-    background: var(--primary-color);
-    color: var(--text-inverse);
-  }
-
-  .sort-order-btn .btn-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
+  /* Controles de ordenamiento - Eliminados */
 
   .empty-dishes {
     text-align: center;
@@ -2051,10 +2083,8 @@
     color: var(--error);
   }
 
-  /* Indicadores de ordenamiento */
-  .dish-rating-indicator,
-  .dish-favorites-indicator,
-  .dish-reviews-indicator {
+  /* Indicador de posición */
+  .dish-position-indicator {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
@@ -2063,33 +2093,15 @@
     background: var(--bg-accent);
     border-radius: var(--radius-sm);
     font-size: var(--font-xs);
+    color: var(--primary-color);
   }
 
-  .dish-rating-indicator {
-    color: #f59e0b;
-  }
-
-  .dish-favorites-indicator {
-    color: #ef4444;
-  }
-
-  .dish-reviews-indicator {
-    color: #3b82f6;
-  }
-
-  .rating-stars {
+  .position-icon {
     font-size: var(--font-xs);
   }
 
-  .rating-value,
-  .favorites-count,
-  .reviews-count {
+  .position-value {
     font-weight: var(--weight-medium);
-  }
-
-  .favorites-icon,
-  .reviews-icon {
-    font-size: var(--font-xs);
   }
 
   .dish-actions {
