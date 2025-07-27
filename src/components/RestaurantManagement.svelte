@@ -289,87 +289,33 @@
 </script>
 
 <div class="restaurant-management container ">
-  <!-- Header con estadísticas y controles -->
-  <div class="management-header card mb-2xl">
-    <!-- Estadísticas resumidas -->
-    <!-- <div class="stats-overview grid gap-lg grid-cols-2 md:grid-cols-4 mb-xl">
-      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
-        <div class="stat-value text-2xl font-bold text-primary">{stats.total}</div>
-        <div class="stat-label text-sm text-muted mt-xs">Restaurantes</div>
-      </div>
-      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
-        <div class="stat-value text-2xl font-bold text-primary">{stats.averageCompleteness}%</div>
-        <div class="stat-label text-sm text-muted mt-xs">Completitud Promedio</div>
-      </div>
-      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
-        <div class="stat-value text-2xl font-bold text-primary">{stats.totalVisits}</div>
-        <div class="stat-label text-sm text-muted mt-xs">Visitas Totales</div>
-      </div>
-      <div class="stat-card bg-gray-light border rounded-lg p-lg text-center">
-        <div class="stat-value text-2xl font-bold text-primary">{stats.averageRating.toFixed(1)}</div>
-        <div class="stat-label text-sm text-muted mt-xs">Rating Promedio</div>
-      </div>
-    </div> -->
-    
-    <!-- Controles de vista -->
-    <div class="view-controls flex flex-wrap gap-md items-center">
-      
-      <!-- Buscador -->
-      <div class="search-box relative flex-1 min-w-[200px]">
+  <!-- Header con controles principales -->
+  <div class="management-header card mb-2xl flex flex-col md:flex-row items-center justify-between gap-md py-lg px-xl bg-white rounded-xl shadow">
+    <!-- Botón Crear Restaurante -->
+    {#if showCreateButton}
+      <button
+        class="btn btn-primary flex w-full items-center gap-sm text-base px-lg py-md rounded-lg shadow-md hover:shadow-lg transition disabled:opacity-60"
+        style="max-width: 320px;"
+        onclick={handleCreateClick}
+        disabled={!canCreateMore || loading}
+      >
+        <i class="fa-solid fa-plus"></i>
+        <span>Crear Restaurante</span>
+      </button>
+    {/if}
+
+    <!-- Buscador: solo si hay más de 5 restaurantes -->
+    {#if (restaurants?.length || 0) > 5}
+      <div class="search-box relative w-full max-w-md mt-md md:mt-0">
         <i class="fa-solid fa-magnifying-glass absolute left-md top-1/2 -translate-y-1/2 text-muted"></i>
         <input
           type="text"
           placeholder="Buscar restaurantes..."
           bind:value={searchQuery}
-          class="input pl-2xl"
+          class="input pl-2xl w-full rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
         />
       </div>
-
-      <!-- Controles de filtro -->
-      <div class="filter-controls flex gap-xs items-center">
-        <select bind:value={filterBy} class="input">
-          <option value="all">Todos</option>
-          <option value="complete">Completos</option>
-          <option value="incomplete">Incompletos</option>
-          <option value="active">Activos</option>
-          <option value="inactive">Inactivos</option>
-        </select>
-        <select bind:value={sortBy} class="input">
-          <option value="updatedAt">Última actualización</option>
-          <option value="createdAt">Fecha de creación</option>
-          <option value="name">Nombre</option>
-          <option value="completeness">Completitud</option>
-        </select>
-        <button
-          class="btn-icon"
-          onclick={toggleSortOrder}
-          title={sortOrder === 'asc' ? 'Cambiar a descendente' : 'Cambiar a ascendente'}
-        >
-          <i class={sortOrder === 'asc' ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'}></i>
-        </button>
-        <button class="btn-icon" onclick={handleRefresh} title="Actualizar">
-          <i class="fa-solid fa-arrows-rotate"></i>
-        </button>
-      </div>
-
-      <!-- Acciones -->
-      <div class="action-controls flex gap-xs items-center">
-        <!-- <button class="btn-icon" onclick={handleRefresh} title="Actualizar">
-          <i class="fa-solid fa-arrows-rotate"></i>
-        </button> -->
-        
-        {#if showCreateButton}
-          <button
-            class="btn btn-primary"
-            onclick={handleCreateClick}
-            disabled={!canCreateMore || loading}
-          >
-            <i class="fa-solid fa-plus"></i>
-            <span class="">Crear Restaurante</span>
-          </button>
-        {/if}
-      </div>
-    </div>
+    {/if}
   </div>
 
   <!-- Contenido principal -->
@@ -645,4 +591,219 @@
       gap: 1rem;
     }
   }
+
+/**
+ * MODERN RESTAURANT MANAGEMENT STYLES
+ * Inspirado en los rediseños previos
+ */
+
+.management-header {
+  background: linear-gradient(135deg, #fafbfc, #f8fafc);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-3xl);
+  margin-bottom: var(--spacing-3xl);
+  border: 1px solid var(--bg-accent);
+  position: relative;
+  overflow: hidden;
+}
+.management-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  opacity: 0.7;
+}
+
+.management-header .btn {
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+.management-header .btn:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.search-box input {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--bg-accent);
+  color: var(--text-primary);
+  transition: all var(--transition-normal);
+}
+.search-box input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Estados principales */
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4xl);
+  text-align: center;
+  background: linear-gradient(135deg, #fafbfc, #f8fafc);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--bg-accent);
+  min-height: 300px;
+  position: relative;
+  overflow: hidden;
+}
+.loading-state::before,
+.error-state::before,
+.empty-state::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  opacity: 0.7;
+}
+
+.loading-state .spinner-large {
+  margin-bottom: var(--spacing-lg);
+}
+
+.error-state i,
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.error-state h3,
+.empty-state h3 {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--spacing-md);
+  line-height: var(--leading-tight);
+}
+.error-state h3 { color: var(--error); }
+.empty-state h3 { color: var(--primary-color); }
+.error-state p,
+.empty-state p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  max-width: 500px;
+  line-height: var(--leading-relaxed);
+}
+
+/* Lista y cards de restaurantes */
+.restaurants-container {
+  background: linear-gradient(135deg, #fafbfc, #f8fafc);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--bg-accent);
+  padding: var(--spacing-3xl);
+  position: relative;
+  overflow: hidden;
+}
+.restaurants-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  opacity: 0.7;
+}
+
+.restaurants-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.RestaurantListItem,
+.restaurant-list-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-accent);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-xl);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+.RestaurantListItem:hover,
+.restaurant-list-item:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+.RestaurantListItem::before,
+.restaurant-list-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-gradient);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+.RestaurantListItem:hover::before,
+.restaurant-list-item:hover::before {
+  transform: scaleX(1);
+}
+
+.list-header {
+  padding-bottom: var(--spacing-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .management-header {
+    padding: var(--spacing-2xl);
+    margin-bottom: var(--spacing-2xl);
+  }
+  .restaurants-container {
+    padding: var(--spacing-2xl);
+  }
+  .RestaurantListItem,
+  .restaurant-list-item {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 640px) {
+  .management-header {
+    padding: var(--spacing-xl);
+  }
+  .restaurants-container {
+    padding: var(--spacing-xl);
+  }
+  .RestaurantListItem,
+  .restaurant-list-item {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .management-header {
+    background: linear-gradient(135deg, #1e293b, #334155);
+  }
+  .loading-state,
+  .error-state,
+  .empty-state,
+  .restaurants-container {
+    background: linear-gradient(135deg, #1e293b, #334155);
+  }
+  .RestaurantListItem,
+  .restaurant-list-item {
+    background: var(--bg-primary);
+  }
+}
 </style>
