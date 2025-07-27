@@ -775,7 +775,7 @@
     margin: 0 auto;
     /* padding: var(--spacing-2xl); */
     font-family: inherit;
-    background: var(--bg-primary);
+    /* background: var(--bg-primary); */
     border-radius: var(--radius-xl);
     /* box-shadow: var(--shadow-md); */
   }

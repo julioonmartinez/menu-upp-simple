@@ -8,7 +8,7 @@
   import SocialLinksForm from './dashboard/edit-sections/SocialLinksForm.svelte';
   import FeaturesForm from './dashboard/edit-sections/FeaturesForm.svelte';
   import TechnicalConfigForm from './dashboard/edit-sections/TechnicalConfigForm.svelte';
-  import HeroSlidesForm from './dashboard/edit-sections/HeroSlidesForm.svelte';
+
   import LoadingSpinner from './ui/LoadingSpinner.svelte';
   import ErrorMessage from './ui/ErrorMessage.svelte';
   import Modal from './ui/Modal.svelte';
@@ -73,7 +73,7 @@
       name: 'Hero Slides',
       icon: 'fas fa-images',
       description: 'Carrusel de imágenes destacadas para el menú',
-      component: HeroSlidesForm,
+      component: null,
       
     },
     {
@@ -114,6 +114,12 @@
   function openModal(sectionId) {
     const section = sections.find(s => s.id === sectionId);
     if (section && !section.disabled) {
+      // Redirigir a la página específica para Hero Slides
+      if (sectionId === 'hero-slides') {
+        window.location.href = `/dashboard/restaurant/${restaurantId}/hero-slides-form`;
+        return;
+      }
+      // Para otras secciones, mantener el comportamiento del modal
       activeModal = sectionId;
     }
   }
@@ -354,7 +360,7 @@
   {/if}
 </div>
 
-{#if activeSection}
+{#if activeSection && activeSection.component}
   <Modal
     isOpen={!!activeModal}
     title={activeSection.name}

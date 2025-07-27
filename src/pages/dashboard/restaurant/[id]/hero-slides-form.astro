@@ -1,0 +1,19 @@
+---
+//dashboard/restaurant/[id]/hero-slides-form.astro
+import PrivateLayout from '../../../../layouts/PrivateLayout.astro';
+import HeroSlidesFormComponent from '../../../../components/dashboard/edit-sections/HeroSlidesForm.svelte';
+const id = Astro.params.id;
+let linkTree = null;
+
+// try {
+//   const result = await linkTreeService.getLinkTreeByRestaurant(id!);
+//   if (result.success) {
+//     linkTree = result.data;
+//   }
+// } catch (e) {
+//   linkTree = null;
+// }
+---
+<PrivateLayout title='Menuupp - Links' description='Links de tu restaurante'>
+  <HeroSlidesFormComponent client:load restaurantId={id} />
+</PrivateLayout>
