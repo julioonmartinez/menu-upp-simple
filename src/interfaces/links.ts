@@ -522,7 +522,7 @@ export function getLinkTreePublicUrl(linkTree: LinkTree, baseUrl?: string): stri
   const base = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
   return linkTree.customSlug 
     ? `${base}/${linkTree.customSlug}`
-    : `${base}/links/${linkTree.id}`;
+    : `${base}/${linkTree.id}`;
 }
 
 /**
