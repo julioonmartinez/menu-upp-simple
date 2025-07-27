@@ -49,89 +49,84 @@
     </button>
   </div>
 
-  <!-- Contenedor de las dos cards principales en grid responsivo -->
-  <div class="main-cards-grid flex flex-col gap-2xl md:grid md:grid-cols-2 md:gap-3xl md:items-stretch md:mb-2xl">
-    <!-- Card Promocional Servicio Especial -->
-    <div>
-      <div class="promo-card  themed-card flex flex-col md:flex-col items-center gap-lg p-2xl mb-xl mt-xl shadow-lg relative overflow-visible h-full">
-        <!-- Cinta de descuento -->
-        <div class="discount-badge-wrapper">
-          <span class="discount-badge bg-success text-inverse font-bold px-md py-xs rounded-xl shadow-md text-base tracking-wide animate-bounce">
-            -30% OFF
-          </span>
-        </div>
-        <div class="flex-1 flex flex-col gap-md">
-          <div class="flex items-center gap-md mb-sm">
-            <i class="fas fa-bolt text-3xl animate-bounce"></i>
-            <span class="uppercase font-bold tracking-wider text-base">¡Promoción Especial!</span>
+  <!-- Cards Container -->
+  <div class="cards-container flex flex-col gap-2xl mb-2xl">
+    <!-- Card de Ayuda Simple y Elegante -->
+    <div class="help-card-container flex justify-center">
+      <div class="help-card card-help">
+        <div class="help-card-content">
+          <div class="help-icon-wrapper">
+            <i class="fas fa-hands-helping help-icon"></i>
           </div>
-          <h2 class="text-2xl font-extrabold leading-tight mb-xs">¿Quieres tu menú digital sin complicaciones?</h2>
-          <div class="price-section flex flex-col items-center justify-center gap-xs p-md mb-md mt-xs bg-opacity-20 rounded-2xl shadow-md border border-white/30 max-w-xs mx-auto relative overflow-visible">
-            <div class="ribbon-discount">-30%</div>
-            <div class="flex items-center gap-sm mb-xs">
-              <span style="font-size: 1.25rem; font-weight: 600; opacity: 0.6;">de <span style="text-decoration: line-through;">$999</span> a</span>
+          <div class="help-text-content">
+            <h2 class="help-title">¿Necesitas ayuda para crear tu menú?</h2>
+            <p class="help-subtitle">Nuestro equipo está aquí para ayudarte</p>
+            <div class="help-cta">
+              <span class="help-free-badge">¡Gratis!</span>
+              <a href="https://wa.me/5215510986418?text=Hola%2C%20necesito%20ayuda%20para%20crear%20mi%20men%C3%BA%20digital" target="_blank" rel="noopener" class="help-contact-btn">
+                <i class="fab fa-whatsapp"></i>
+                Contáctanos
+              </a>
             </div>
-            <div class="flex items-baseline gap-xs">
-              <span class="text-4xl font-black text-accent">$699</span>
-              <span class="text-base font-semibold text-success">MXN</span>
-            </div>
-            <div class="text-xs opacity-80 mt-xs mb-sm">¡Precio final, todo incluido!</div>
           </div>
-          <!-- Lista de beneficios mejorada -->
-          <ul class="list-disc improved-benefits-list pl-2xl text-base mb-md opacity-90">
-            <li><i class="fa-solid fa-book"></i>Menú digital ilimitado</li>
-            <li><i class="fa-solid fa-users"></i> Nosotros crearemos tu menú digital</li>
-            <li><i class="fa-solid fa-utensils"></i> Platillo por platillo</li>
-            <li><i class="fas fa-sync-alt text-success mr-xs"></i> Actualizaciones ilimitadas</li>
-            <li><i class="fas fa-globe text-accent mr-xs"></i> Subdominio gratis</li>
-            <li><i class="fas fa-link text-primary mr-xs"></i> O conecta tu propio dominio</li>
-            <li><i class="fas fa-headset mr-xs"></i> Asistencia personalizada 24h</li>
-          </ul>
-          <a href="https://wa.me/5215510986418?text=Hola%2C%20quiero%20mi%20men%C3%BA%20digital%20con%20la%20promo%20de%20MenuUpp" target="_blank" rel="noopener" class="btn btn-inverse btn-lg btn-rounded flex items-center gap-sm shadow-md hover:scale-105 transition-bounce" style="background: #25D366; color: #fff;">
-            <i class="fab fa-whatsapp text-2xl"></i>
-            ¡Solicitar por WhatsApp!
-          </a>
-        </div>
-        <div class="hidden md:block flex-shrink-0">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Menú digital" style="width: 160px; height: 160px; object-fit: contain; filter: drop-shadow(0 8px 32px rgba(0,0,0,0.15));" loading="lazy" />
         </div>
       </div>
     </div>
-    <!-- Card Plan Pro -->
-    <div>
-      <div class="plan-pro-card themed-card flex flex-col md:flex-col items-center gap-lg p-2xl mb-xl mt-xl shadow-lg border-l-4 border-primary relative overflow-visible h-full">
-        <div class="planpro-flex-1 flex flex-col h-full">
-          <div class="flex items-center gap-md mb-sm">
-            <i class="fas fa-crown text-3xl text-accent"></i>
-            <span class="uppercase font-bold tracking-wider text-base text-primary">Plan Pro: Expande tu Negocio</span>
+
+    <!-- Card de Notificación de Pedido - Preview -->
+    <div class="order-notification-container flex justify-center">
+      <div class="order-notification-card">
+        <div class="notification-header">
+          <div class="notification-icon-wrapper">
+            <i class="fas fa-bell notification-icon"></i>
           </div>
-          <h2 class="text-xl font-extrabold leading-tight mb-xs text-primary">Crea más de 5 restaurantes y accede a beneficios exclusivos</h2>
-          <!-- Sección de precio mejorada -->
-          <div class="planpro-price-wrapper">
-            <span class="planpro-badge">PRO</span>
-            <div class="planpro-price-main">
-              <span class="planpro-currency">$</span>
-              <span class="planpro-amount">199</span>
-              <span class="planpro-period">MXN/mes</span>
-            </div>
-          </div>
-          
-          <ul class="pro-benefits-list pl-2xl text-base mb-md opacity-90">
-            <li><i class="fas fa-store-alt text-primary mr-xs"></i> Crea has 30 restaurantes</li>
-            <li><i class="fab fa-whatsapp text-success mr-xs"></i>Cada restaurante tiene su propio dominio</li>
-            <li><i class="fas fa-headset text-secondary mr-xs"></i> Soporte prioritario 24/7</li>
-            <li><i class="fas fa-chart-line text-accent mr-xs"></i> <span class="font-bold text-accent">Nuevo:</span> Estadísticas de visitas</li>
-          </ul>
-          
-          <div class="planpro-btn-wrapper" style="margin-top:auto;">
-            <a href="https://wa.me/5215510986418?text=Hola%2C%20quiero%20el%20Plan%20Pro%20de%20MenuUpp" target="_blank" rel="noopener" class="btn btn-primary btn-lg btn-rounded w-full flex items-center gap-sm shadow-md w-fit">
-              <i class="fab fa-whatsapp text-2xl"></i>
-              ¡Quiero el Plan Pro!
-            </a>
+          <div class="notification-badge">
+            <span class="badge-text">NUEVO</span>
           </div>
         </div>
-        <div class="hidden md:block flex-shrink-0">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="Plan Pro" style="width: 140px; height: 140px; object-fit: contain; filter: drop-shadow(0 8px 32px rgba(0,0,0,0.10));" loading="lazy" />
+        
+        <div class="notification-content">
+          <h3 class="notification-title">¡Has recibido un pedido!</h3>
+          <div class="order-details">
+            <div class="order-info">
+              <div class="order-number">
+                <i class="fas fa-receipt"></i>
+                <span>Pedido #ORD-2024-001</span>
+              </div>
+              <div class="order-amount">
+                <i class="fas fa-dollar-sign"></i>
+                <span class="amount">$1,200 MXN</span>
+              </div>
+            </div>
+            <div class="order-items">
+              <div class="item">
+                <span class="item-name">Hamburguesa Clásica</span>
+                <span class="item-quantity">x2</span>
+              </div>
+              <div class="item">
+                <span class="item-name">Papas Fritas</span>
+                <span class="item-quantity">x1</span>
+              </div>
+              <div class="item">
+                <span class="item-name">Refresco</span>
+                <span class="item-quantity">x2</span>
+              </div>
+            </div>
+            <div class="customer-info">
+              <i class="fas fa-user"></i>
+              <span>Cliente: María González</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-banner">
+          <div class="preview-content">
+            <i class="fas fa-rocket preview-icon"></i>
+            <div class="preview-text">
+              <span class="preview-title">Próximamente</span>
+              <span class="preview-subtitle">Recibe pedidos por WhatsApp automáticamente</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -223,287 +218,8 @@
       max-width: 100%;
     }
   }
-  .discount-badge-wrapper {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 10;
-    display: flex;
-    align-items: flex-start;
-  }
-  @media (max-width: 768px) {
-    .discount-badge-wrapper {
-      position: static;
-      justify-content: center;
-      margin-bottom: 1rem;
-      width: 100%;
-    }
-    .promo-card {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  }
-  .discount-badge {
-    background: linear-gradient(90deg, #10b981 60%, #34d399 100%);
-    box-shadow: 0 4px 16px rgba(16,185,129,0.15);
-    letter-spacing: 0.04em;
-    border: 2px solid #fff2;
-    min-width: 90px;
-    text-align: center;
-  }
-  .promo-price-row {
-    flex-wrap: wrap;
-  }
-  @media (max-width: 600px) {
-    .promo-price-responsive {
-      flex-direction: column;
-      align-items: center;
-      gap: 0.25rem;
-      text-align: center;
-    }
-    .promo-price-responsive span {
-      margin: 0 !important;
-    }
-    .promo-price-responsive .text-3xl {
-      margin-top: 0.25rem;
-      margin-bottom: 0.25rem;
-    }
-  }
-  .price-section {
-    background: rgba(255,255,255,0.18);
-    border-radius: 1.25rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-    border: 1.5px solid rgba(255,255,255,0.18);
-    margin-bottom: 1.5rem;
-    margin-top: 0.5rem;
-    max-width: 320px;
-    width: 100%;
-    transition: box-shadow 0.2s;
-    position: relative;
-    overflow: visible;
-    padding: 0.5rem 0.3rem;
-  }
-  .price-section:hover {
-    box-shadow: 0 8px 32px rgba(255,107,53,0.10), 0 2px 8px rgba(16,185,129,0.10);
-  }
-  .ribbon-discount {
-    position: absolute;
-    top: 18px;
-    right: -48px;
-    width: 140px;
-    background: linear-gradient(90deg, #10b981 60%, #34d399 100%);
-    color: #fff;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 0.4em 0;
-    transform: rotate(32deg);
-    box-shadow: 0 4px 16px rgba(16,185,129,0.15);
-    border-radius: 0.5em;
-    z-index: 20;
-    border: 2px solid #fff2;
-    pointer-events: none;
-  }
-  @media (max-width: 600px) {
-    .price-section {
-      /* padding: 1.25rem 0.5rem; */
-      max-width: 100%;
-    }
-    .ribbon-discount {
-      top: 12px;
-      right: -38px;
-      width: 110px;
-      font-size: 0.95rem;
-    }
-  }
-  .benefits-bar {
-    background: rgba(255,255,255,0.10);
-    border-radius: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    margin-top: 0.5rem;
-    margin-bottom: 0;
-    width: 100%;
-    font-size: 0.92em;
-    flex-wrap: wrap;
-    gap: 0.5em;
-    justify-content: center;
-  }
-  .benefit {
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 0.25em;
-    font-size: 0.98em;
-  }
-  .separator {
-    color: #fff8;
-    font-size: 1.1em;
-    margin: 0 0.2em;
-    user-select: none;
-  }
-  @media (max-width: 600px) {
-    .benefits-bar {
-      font-size: 0.85em;
-      gap: 0.25em;
-      padding: 0.25rem 0.1rem;
-    }
-    .benefit {
-      font-size: 0.93em;
-    }
-  }
-  .improved-benefits-list {
-    margin-top: -0.5rem;
-    margin-bottom: 2rem;
-    padding-left: 2rem;
-    list-style-type: disc;
-    /* color: var(--text-inverse); */
-    background: rgba(255,255,255,0.08);
-    border-radius: 1rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    font-size: 1.04em;
-    font-weight: 500;
-    overflow: hidden;
-  }
-  .improved-benefits-list li {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.5em 0.5em 0.5em 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    transition: background 0.15s;
-  }
-  .improved-benefits-list li:last-child {
-    border-bottom: none;
-  }
-  .improved-benefits-list i {
-    min-width: 1.2em;
-    text-align: center;
-    font-size: 1.1em;
-    opacity: 0.92;
-  }
-  @media (max-width: 600px) {
-    .improved-benefits-list {
-      font-size: 0.97em;
-      padding-left: 1.2rem;
-    }
-    .improved-benefits-list li {
-      padding: 0.45em 0.2em 0.45em 0;
-    }
-  }
-  .plan-pro-card {
-    border-left: 6px solid var(--primary-color);
-    background: rgba(255,255,255,0.95);
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-    margin-bottom: 2.5rem;
-    margin-top: 2.5rem;
-    max-width: 900px;
-    width: 100%;
-    transition: box-shadow 0.2s;
-    position: relative;
-    overflow: visible;
-    
-  }
-  .plan-pro-card:hover {
-    box-shadow: 0 8px 32px rgba(255,107,53,0.10), 0 2px 8px rgba(16,185,129,0.10);
-  }
-  .pro-benefits-list {
-    margin-top: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding-left: 2rem;
-    list-style-type: disc;
-    color: var(--text-primary);
-    background: rgba(255,255,255,0.08);
-    border-radius: 1rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    font-size: 1.04em;
-    font-weight: 500;
-    overflow: hidden;
-  }
-  .pro-benefits-list li {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.5em 0.5em 0.5em 0;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    transition: background 0.15s;
-  }
-  .pro-benefits-list li:last-child {
-    border-bottom: none;
-  }
-  .pro-benefits-list i {
-    min-width: 1.2em;
-    text-align: center;
-    font-size: 1.1em;
-    opacity: 0.92;
-  }
-  @media (max-width: 900px) {
-    .plan-pro-card {
-      flex-direction: column;
-      align-items: stretch;
-      padding: 1.5rem 1rem;
-    }
-    .plan-pro-card img {
-      margin: 0 auto;
-    }
-  }
-  @media (max-width: 600px) {
-    .plan-pro-card {
-      font-size: 0.97em;
-      padding: 1.25rem 0.5rem;
-      max-width: 100%;
-    }
-    .pro-benefits-list {
-      font-size: 0.95em;
-      padding-left: 1.2rem;
-    }
-    .pro-benefits-list li {
-      padding: 0.45em 0.2em 0.45em 0;
-    }
-  }
-  .themed-card {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-color: var(--bg-accent);
-    box-shadow: var(--shadow-md);
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-  }
-  .themed-card .text-accent {
-    color: var(--primary-color);
-  }
-  .themed-card .text-success {
-    color: var(--success);
-  }
-  .themed-card .text-secondary {
-    color: var(--secondary-color);
-  }
-  .themed-card .text-primary {
-    color: var(--text-primary);
-  }
-  .themed-card .bg-opacity-20 {
-    background: rgba(255,255,255,0.18);
-  }
-  @media (prefers-color-scheme: dark) {
-    .themed-card {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      border-color: var(--bg-accent);
-      box-shadow: var(--shadow-lg);
-    }
-    .themed-card .bg-opacity-20 {
-      background: rgba(30,41,59,0.18);
-    }
-    .themed-card .pro-benefits-list, .themed-card .improved-benefits-list {
-      background: rgba(30,41,59,0.18);
-      color: var(--text-primary);
-    }
-  }
-  .main-cards-grid {
-    width: 100%;
-    margin: 0 auto 2rem auto;
-    max-width: 1200px;
-  }
+
+
   @media (min-width: 768px) {
     .main-cards-grid {
       display: grid;
@@ -522,233 +238,604 @@
       margin-top: 0;
       margin-bottom: 0;
     }
-  }
-  /* Elimina utilidades tipo Tailwind no presentes en global-styles.css y reemplaza por CSS puro */
-.promo-card, .plan-pro-card {
-  max-width: 370px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 1rem 0.75rem;
-  min-height: unset;
-  max-height: unset;
-  box-sizing: border-box;
-  font-size: 0.97em;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-radius: 1.5rem;
-  border: 1px solid var(--bg-accent);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-.promo-card .price-section, .plan-pro-card .price-section {
-  /* padding: 1.5rem 1rem; */
-  max-width: 220px;
-  background: rgba(255,255,255,0.18);
-  border-radius: 1rem;
-  margin: 0 auto 0.5rem auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border: 1px solid var(--bg-accent);
-  text-align: center;
-}
-.promo-card img, .plan-pro-card img {
-  width: 60px;
-  height: 60px;
-  min-width: 48px;
-  min-height: 48px;
-  max-width: 70px;
-  max-height: 70px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.10));
-}
-.promo-card ul, .plan-pro-card ul {
-  font-size: 0.93em;
-  margin-bottom: 0.5rem;
-  margin-top: 0.2rem;
-  padding-left: 1rem;
-  background: rgba(255,255,255,0.08);
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.03);
-  width: 100%;
-}
-.promo-card ul li, .plan-pro-card ul li {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.35em 0.2em 0.35em 0;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-}
-.promo-card ul li:last-child, .plan-pro-card ul li:last-child {
-  border-bottom: none;
-}
-.promo-card .btn, .plan-pro-card .btn {
-  font-size: 0.97em;
-  padding: 1rem 1.2rem;
-  min-height: 34px;
-  border-radius: 0.75rem;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  background: var(--primary-gradient);
-  color: var(--text-inverse);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  transition: background 0.2s;
-}
-.promo-card .btn:active, .plan-pro-card .btn:active {
-  background: var(--primary-dark);
-}
-.promo-card h2, .plan-pro-card h2 {
-  font-size: 1.1rem;
-  margin-bottom: 0.3rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  text-align: center;
-}
-.promo-card .flex-1, .plan-pro-card .flex-1 {
-  gap: 0.5rem;
-}
-.promo-card .ribbon-discount, .plan-pro-card .ribbon-discount {
-  font-size: 0.9em;
-  width: 80px;
-  right: -28px;
-  top: 10px;
-  padding: 0.25em 0;
-  position: absolute;
-  background: linear-gradient(90deg, #10b981 60%, #34d399 100%);
-  color: #fff;
-  text-align: center;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  border-radius: 0.5em;
-  z-index: 20;
-  border: 2px solid #fff2;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgba(16,185,129,0.10);
-  transform: rotate(32deg);
-}
-.promo-card .discount-badge, .plan-pro-card .discount-badge {
-  font-size: 0.9em;
-  padding: 0.25em 0.7em;
-  background: linear-gradient(90deg, #10b981 60%, #34d399 100%);
-  color: #fff;
-  border-radius: 1em;
-  font-weight: 700;
-  border: 2px solid #fff2;
-  box-shadow: 0 2px 8px rgba(16,185,129,0.10);
-}
-@media (min-width: 768px) {
-  .main-cards-grid {
-    gap: 1rem;
-  }
-  .promo-card, .plan-pro-card {
-    max-width: 340px;
-    padding: 1.8rem 1.5rem;
-    font-size: 0.95em;
-  }
-  .promo-card img, .plan-pro-card img {
-    width: 50px;
-    height: 50px;
-    max-width: 60px;
-    max-height: 60px;
-  }
-  .promo-card ul, .plan-pro-card ul {
-    font-size: 0.91em;
-  }
-}
-@media (max-width: 600px) {
-  .promo-card, .plan-pro-card {
-    max-width: 100%;
-    padding: 1.5rem 1.2rem;
-    font-size: 0.95em;
-  }
-  .promo-card img, .plan-pro-card img {
-    width: 44px;
-    height: 44px;
-    max-width: 50px;
-    max-height: 50px;
-  }
-  .promo-card ul, .plan-pro-card ul {
-    font-size: 0.89em;
-  }
-}
-  .promo-card:hover, .plan-pro-card:hover {
-    box-shadow: none;
-    transform: none;
-  }
-  .planpro-flex-1 {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-  .planpro-btn-wrapper {
-    margin-top: auto;
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    padding-top: 0.5rem;
-  }
 
-  /* --- Estilos modernos para la sección de precio Plan Pro --- */
-  .planpro-price-wrapper {
+
+  /* ====================================
+     CARD DE AYUDA - DISEÑO UX/UI PROFESIONAL
+     ==================================== */
+  
+  .help-card-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .help-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-3xl);
+    box-shadow: var(--shadow-xl);
     position: relative;
-    background: rgba(255,255,255,0.18); /* Igual que .price-section de promo-card */
-    border: 1px solid var(--bg-accent);
-    border-radius: 1.2em;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    padding: 1.2em 1.5em 1em 1.5em;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .help-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s ease;
+  }
+  
+  .help-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-2xl), 0 0 40px rgba(255, 107, 53, 0.3);
+  }
+  
+  .help-card:hover::before {
+    left: 100%;
+  }
+  
+  .help-card-content {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2xl);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .help-icon-wrapper {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 1.5em;
-    margin-top: 0.5em;
-    min-width: 180px;
-    max-width: 260px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+  
+  .help-icon {
+    font-size: 2rem;
+    color: var(--text-inverse);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+  
+  .help-text-content {
+    flex: 1;
     color: var(--text-inverse);
   }
-  .planpro-badge {
-    position: absolute;
-    top: -0.9em;
-    right: 1.2em;
-    background: var(--secondary-color);
-    color: #fff;
-    font-size: 0.85em;
-    font-weight: 700;
-    padding: 0.25em 0.9em;
-    border-radius: 1em;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-    letter-spacing: 0.04em;
+  
+  .help-title {
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-bold);
+    margin-bottom: var(--spacing-sm);
+    line-height: var(--leading-tight);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  .planpro-price-main {
+  
+  .help-subtitle {
+    font-size: var(--font-lg);
+    opacity: 0.9;
+    margin-bottom: var(--spacing-lg);
+    font-weight: var(--weight-medium);
+  }
+  
+  .help-cta {
     display: flex;
-    align-items: baseline;
-    gap: 0.2em;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
   }
-  .planpro-currency {
+  
+  .help-free-badge {
+    background: var(--success);
+    color: var(--text-inverse);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes pulse-glow {
+    0% {
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    100% {
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+    }
+  }
+  
+  .help-contact-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-inverse);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    font-weight: var(--weight-semibold);
+    font-size: var(--font-base);
+    text-decoration: none;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .help-contact-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+  
+  .help-contact-btn:active {
+    transform: translateY(0);
+  }
+  
+  .help-contact-btn i {
     font-size: 1.2em;
-    font-weight: 600;
-    opacity: 0.85;
-    margin-right: 0.1em;
   }
-  .planpro-amount {
-    font-size: 2.8em;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    margin-right: 0.15em;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  
+  /* Responsive para la card de ayuda */
+  @media (max-width: 768px) {
+    .help-card {
+      padding: var(--spacing-2xl);
+      margin: 0 var(--spacing-md);
+    }
+    
+    .help-card-content {
+      flex-direction: column;
+      text-align: center;
+      gap: var(--spacing-xl);
+    }
+    
+    .help-icon-wrapper {
+      width: 70px;
+      height: 70px;
+    }
+    
+    .help-icon {
+      font-size: 1.75rem;
+    }
+    
+    .help-title {
+      font-size: var(--font-xl);
+    }
+    
+    .help-subtitle {
+      font-size: var(--font-base);
+    }
+    
+    .help-cta {
+      justify-content: center;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+    
+    .help-contact-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .help-card {
+      padding: var(--spacing-xl);
+      margin: 0 var(--spacing-sm);
+    }
+    
+    .help-icon-wrapper {
+      width: 60px;
+      height: 60px;
+    }
+    
+    .help-icon {
+      font-size: 1.5rem;
+    }
+    
+    .help-title {
+      font-size: var(--font-lg);
+    }
+    
+    .help-subtitle {
+      font-size: var(--font-sm);
+    }
+  }
+  
+  /* Dark mode support para la card de ayuda */
+  @media (prefers-color-scheme: dark) {
+    .help-card {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .help-icon-wrapper {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .help-contact-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .help-contact-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .help-card::before {
+      display: none;
+    }
+    
+    .help-card:hover {
+      transform: none;
+    }
+    
+    .help-contact-btn:hover {
+      transform: none;
+    }
+    
+    .help-free-badge {
+      animation: none;
+    }
+  }
+
+  /* ====================================
+     CARD DE NOTIFICACIÓN DE PEDIDOS - PREVIEW
+     ==================================== */
+  
+  .cards-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .order-notification-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .order-notification-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+  }
+  
+  .order-notification-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--success) 0%, var(--primary-color) 50%, var(--success) 100%);
+    animation: shimmer-border 2s ease-in-out infinite;
+  }
+  
+  @keyframes shimmer-border {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  
+  .order-notification-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-color);
+  }
+  
+  .notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .notification-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);
+  }
+  
+  .notification-icon {
+    font-size: 1.25rem;
+    color: var(--text-inverse);
+  }
+  
+  .notification-badge {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    animation: pulse-badge 2s ease-in-out infinite;
+  }
+  
+  @keyframes pulse-badge {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  .notification-content {
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  .notification-title {
+    font-size: var(--font-xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  
+  .notification-title::before {
+    content: '🎉';
+    font-size: 1.2em;
+  }
+  
+  .order-details {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--bg-accent);
+  }
+  
+  .order-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--bg-accent);
+  }
+  
+  .order-number, .order-amount {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+  }
+  
+  .order-number i, .order-amount i {
+    color: var(--primary-color);
+    font-size: 0.9em;
+  }
+  
+  .amount {
+    font-weight: var(--weight-bold);
+    color: var(--success);
+    font-size: var(--font-lg);
+  }
+  
+  .order-items {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  
+  .item:last-child {
+    border-bottom: none;
+  }
+  
+  .item-name {
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+  }
+  
+  .item-quantity {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    padding: 0.2em 0.6em;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+  }
+  
+  .customer-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: var(--font-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--bg-accent);
+  }
+  
+  .customer-info i {
     color: var(--primary-color);
   }
-  .planpro-period {
-    font-size: 1em;
-    font-weight: 500;
-    color: var(--success);
-    margin-left: 0.2em;
-    opacity: 0.95;
+  
+  .preview-banner {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    position: relative;
+    overflow: hidden;
   }
+  
+  .preview-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s ease;
+  }
+  
+  .preview-banner:hover::before {
+    left: 100%;
+  }
+  
+  .preview-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .preview-icon {
+    font-size: 1.5rem;
+    color: var(--text-inverse);
+    animation: rocket-bounce 2s ease-in-out infinite;
+  }
+  
+  @keyframes rocket-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  
+  .preview-text {
+    flex: 1;
+    color: var(--text-inverse);
+  }
+  
+  .preview-title {
+    display: block;
+    font-size: var(--font-lg);
+    font-weight: var(--weight-bold);
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .preview-subtitle {
+    display: block;
+    font-size: var(--font-sm);
+    opacity: 0.9;
+  }
+  
+  /* Responsive para la card de notificación */
+  @media (max-width: 768px) {
+    .order-notification-card {
+      padding: var(--spacing-xl);
+      margin: 0 var(--spacing-md);
+    }
+    
+    .notification-header {
+      flex-direction: column;
+      gap: var(--spacing-md);
+      text-align: center;
+    }
+    
+    .order-info {
+      flex-direction: column;
+      gap: var(--spacing-sm);
+      align-items: flex-start;
+    }
+    
+    .preview-content {
+      flex-direction: column;
+      text-align: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .preview-icon {
+      font-size: 1.25rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .order-notification-card {
+      padding: var(--spacing-lg);
+      margin: 0 var(--spacing-sm);
+    }
+    
+    .notification-title {
+      font-size: var(--font-lg);
+    }
+    
+    .order-details {
+      padding: var(--spacing-md);
+    }
+    
+    .preview-banner {
+      padding: var(--spacing-md);
+    }
+  }
+  
+  /* Dark mode support para la card de notificación */
+  @media (prefers-color-scheme: dark) {
+    .order-notification-card {
+      background: var(--bg-primary);
+      border-color: var(--bg-accent);
+    }
+    
+    .order-details {
+      background: var(--bg-tertiary);
+      border-color: var(--bg-accent);
+    }
+    
+    .item {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .customer-info {
+      border-top-color: var(--bg-accent);
+    }
+  }
+  
+  /* Reduced motion support para la card de notificación */
+  @media (prefers-reduced-motion: reduce) {
+    .order-notification-card::before {
+      animation: none;
+    }
+    
+    .order-notification-card:hover {
+      transform: none;
+    }
+    
+    .notification-badge {
+      animation: none;
+    }
+    
+    .preview-icon {
+      animation: none;
+    }
+    
+    .preview-banner::before {
+      display: none;
+    }
+  }
+  }
+  
 </style>
