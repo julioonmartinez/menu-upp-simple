@@ -995,10 +995,21 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
     if (!data.url || data.url.trim().length === 0) {
       errors.push('La URL del enlace es requerida');
     } else {
-      try {
-        new URL(data.url);
-      } catch {
-        errors.push('La URL no tiene un formato válido');
+      // Validar URLs de teléfono
+      if (data.url.startsWith('tel:')) {
+        // URLs de teléfono son válidas
+      }
+      // Validar URLs de email
+      else if (data.url.startsWith('mailto:')) {
+        // URLs de email son válidas
+      }
+      // Validar URLs normales
+      else {
+        try {
+          new URL(data.url);
+        } catch {
+          errors.push('La URL no tiene un formato válido');
+        }
       }
     }
     
@@ -1070,6 +1081,17 @@ async getLinkTreeByRestaurant(restaurantId: string): Promise<ApiResult<LinkTree 
      * Valida si una URL es válida
      */
     isValidUrl: (url: string): boolean => {
+      // Validar URLs de teléfono
+      if (url.startsWith('tel:')) {
+        return true;
+      }
+      
+      // Validar URLs de email
+      if (url.startsWith('mailto:')) {
+        return true;
+      }
+      
+      // Validar URLs normales
       try {
         new URL(url);
         return true;

@@ -52,6 +52,7 @@ export const ICON_MAP: Record<string, string> = {
   'search': 'fa-solid fa-magnifying-glass',
   'map-marker': 'fa-solid fa-location-dot',
   'location-dot': 'fa-solid fa-location-dot',
+  'truck': 'fa-solid fa-truck',
   
   // Negocio - Solid
   'briefcase': 'fa-solid fa-briefcase',
@@ -206,7 +207,7 @@ export function getIconsByCategory(): Record<string, string[]> {
   return {
     'Social': ['instagram', 'facebook', 'twitter', 'youtube', 'linkedin', 'tiktok', 'whatsapp', 'telegram', 'discord', 'twitch', 'spotify', 'pinterest', 'reddit', 'snapchat', 'github'],
     'Comunicación': ['envelope', 'phone', 'mobile', 'comment', 'message', 'sms', 'video', 'microphone', 'headset'],
-    'Navegación': ['home', 'globe', 'link', 'external-link', 'arrow-right', 'arrow-left', 'search', 'map-marker', 'location-dot'],
+    'Navegación': ['home', 'globe', 'link', 'external-link', 'arrow-right', 'arrow-left', 'search', 'map-marker', 'location-dot', 'truck'],
     'Negocio': ['briefcase', 'store', 'shopping-cart', 'credit-card', 'chart-line', 'building', 'industry'],
     'Restaurante': ['utensils', 'hamburger', 'pizza-slice', 'coffee', 'wine-glass', 'beer', 'birthday-cake'],
     'Contenido': ['image', 'video', 'music', 'book', 'newspaper', 'file', 'download'],

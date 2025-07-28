@@ -444,6 +444,17 @@ export const THEME_LABELS: Record<LinkTreeTheme, string> = {
  * Valida si una URL es válida
  */
 export function isValidUrl(url: string): boolean {
+  // Validar URLs de teléfono
+  if (url.startsWith('tel:')) {
+    return true;
+  }
+  
+  // Validar URLs de email
+  if (url.startsWith('mailto:')) {
+    return true;
+  }
+  
+  // Validar URLs normales
   try {
     new URL(url);
     return true;
