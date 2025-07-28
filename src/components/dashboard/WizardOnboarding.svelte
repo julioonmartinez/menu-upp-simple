@@ -6,6 +6,7 @@
   import OnboardingStepSocialLinks from './onboarding/OnboardingStepSocialLinks.svelte';
   import OnboardingStepSchedule from './onboarding/OnboardingStepSchedule.svelte';
   import OnboardingStepFeatures from './onboarding/OnboardingStepFeatures.svelte';
+  import OnboardingStepLink from './onboarding/OnboardingStepLink.svelte';
   import OnboardingStepQRCode from './onboarding/OnboardingStepQRCode.svelte';
   import { restaurantStore, currentRestaurant } from '../../stores/restaurantStore';
   import { onMount } from 'svelte';
@@ -28,6 +29,7 @@
     'Redes Sociales',
     'Horarios',
     'Características',
+    'Enlace Adicional',
     'QR',
   ];
 
@@ -195,6 +197,15 @@
           />
         {/if}
         {#if currentStep === 8}
+          <OnboardingStepLink
+            bind:this={stepComponent}
+            restaurant={restaurant}
+            restaurantId={restaurantId}
+            on:next={nextStep}
+            on:prev={prevStep}
+          />
+        {/if}
+        {#if currentStep === 9}
           <OnboardingStepQRCode
             bind:this={stepComponent}
             restaurant={restaurant}
