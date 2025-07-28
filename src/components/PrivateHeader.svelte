@@ -18,6 +18,14 @@
   let isScrolled = false;
   let isMobile = false;
   let isSidebarOpen = false;
+  let showBackBtn = true;
+
+  function updateShowBackBtn() {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      showBackBtn = !(path === '/dashboard' || path === '/dashboard/restaurant-create');
+    }
+  }
 
   // Detectar scroll
   function handleScroll() {
@@ -62,9 +70,11 @@
     if (typeof window !== 'undefined') {
       checkMobile();
       handleScroll();
+      updateShowBackBtn();
       
       window.addEventListener('scroll', handleScroll, { passive: true });
       window.addEventListener('resize', checkMobile);
+      window.addEventListener('popstate', updateShowBackBtn);
     }
     
     unsubscribeAuth = authStore.isAuthenticated.subscribe((val) => {
@@ -90,6 +100,7 @@
   <nav class="nav-container">
     <div class="nav-content">
       <!-- Botón de navegación/back -->
+      {#if showBackBtn}
       <button 
         class="nav-back-btn"
         on:click={handleBackClick}
@@ -99,6 +110,7 @@
           <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+{/if}
 
       <!-- Logo/Brand centrado -->
       <button 
