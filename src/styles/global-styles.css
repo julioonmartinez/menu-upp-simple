@@ -1454,6 +1454,10 @@ select.input {
 .pl-2xl {
   padding-left: var(--spacing-2xl);
 }
+.pl-3xl {
+  padding-left: var(--spacing-3xl);
+}
+
 
 /* ====================================
    UTILIDADES PARA EL LAYOUT DE CONTROLES
