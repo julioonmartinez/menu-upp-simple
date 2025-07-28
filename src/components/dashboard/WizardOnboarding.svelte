@@ -4,18 +4,21 @@
   import OnboardingStepDish from './onboarding/OnboardingStepDish.svelte';
   import OnboardingStepHeroSlides from './onboarding/OnboardingStepHeroSlides.svelte';
   import OnboardingStepSocialLinks from './onboarding/OnboardingStepSocialLinks.svelte';
+  import OnboardingStepSchedule from './onboarding/OnboardingStepSchedule.svelte';
+  import OnboardingStepFeatures from './onboarding/OnboardingStepFeatures.svelte';
   import OnboardingStepQRCode from './onboarding/OnboardingStepQRCode.svelte';
   import { restaurantStore, currentRestaurant } from '../../stores/restaurantStore';
   import { onMount } from 'svelte';
 
   export let restaurantId;
 
-  let step = 1;
   let loading = true;
   let error = null;
   let stepComponent;
+  let currentStep = 1;
 
   $: restaurant = $currentRestaurant;
+  $: isValidStep = currentStep >= 1 && currentStep <= steps.length;
 
   const steps = [
     'Imágenes y Colores',
@@ -23,12 +26,50 @@
     'Platillos',
     'Slides Hero',
     'Redes Sociales',
+    'Horarios',
+    'Características',
     'QR',
   ];
+
+  // Función para obtener el parámetro step de la URL
+  function getStepFromURL() {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stepParam = urlParams.get('step');
+      return stepParam ? parseInt(stepParam) : 1;
+    }
+    return 1;
+  }
+
+  // Función para actualizar la URL sin recargar la página
+  function updateURL(stepNumber) {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location);
+      url.searchParams.set('step', stepNumber.toString());
+      window.history.pushState({}, '', url);
+    }
+  }
+
+  // Función para navegar a una URL específica
+  function navigateToURL(url) {
+    if (typeof window !== 'undefined') {
+      window.location.href = url;
+    }
+  }
 
   onMount(async () => {
     loading = true;
     error = null;
+    
+    // Obtener el paso actual de la URL
+    currentStep = getStepFromURL();
+    
+    // Si no hay parámetro step en la URL, redirigir al paso 1
+    if (!new URLSearchParams(window.location.search).has('step')) {
+      updateURL(1);
+      currentStep = 1;
+    }
+    
     const result = await restaurantStore.loadRestaurant(restaurantId, true);
     if (!result.success) {
       error = result.error;
@@ -36,32 +77,48 @@
     loading = false;
   });
 
-  function nextStep() {
-    if (step < steps.length) step += 1;
+  async function navigateToStep(stepNumber) {
+    if (stepNumber >= 1 && stepNumber <= steps.length) {
+      updateURL(stepNumber);
+      currentStep = stepNumber;
+    }
   }
-  function prevStep() {
-    if (step > 1) step -= 1;
+
+  async function nextStep() {
+    if (currentStep < steps.length) {
+      await navigateToStep(currentStep + 1);
+    }
+  }
+
+  async function prevStep() {
+    if (currentStep > 1) {
+      await navigateToStep(currentStep - 1);
+    }
   }
 
   async function handleNext() {
     if (stepComponent && typeof stepComponent.save === 'function') {
       const ok = await stepComponent.save();
-      if (ok) nextStep();
+      if (ok) await nextStep();
     } else {
-      nextStep();
+      await nextStep();
     }
+  }
+
+  async function handleFinish() {
+    navigateToURL('/dashboard');
   }
 </script>
 
 <div class="wizard-container flex flex-col items-center justify-center">
   <div class="card wizard-card w-full max-w-xl p-0 shadow-lg relative">
     <div class="wizard-progress-bar-container">
-      <div class="wizard-progress-bar" style="width: {(step/steps.length)*100}%"></div>
+      <div class="wizard-progress-bar" style="width: {(currentStep/steps.length)*100}%"></div>
     </div>
     <div class="wizard-header p-2xl pb-lg border-b border-accent bg-white rounded-t-xl flex-shrink-0">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-muted font-medium">Paso {step} de {steps.length}</span>
-        <span class="text-lg font-semibold text-primary">{steps[step-1]}</span>
+        <span class="text-sm text-muted font-medium">Paso {currentStep} de {steps.length}</span>
+        <span class="text-lg font-semibold text-primary">{steps[currentStep-1]}</span>
       </div>
     </div>
     <div class="wizard-content p-xs pb-5xl flex-1 overflow-y-auto min-h-[200px] animate-fade-in">
@@ -77,8 +134,8 @@
         </div>
       {:else if error}
         <p class="text-error">{error}</p>
-      {:else if restaurant}
-        {#if step === 1}
+      {:else if restaurant && isValidStep}
+        {#if currentStep === 1}
           <OnboardingStepImagesAndColors
             bind:this={stepComponent}
             restaurant={restaurant}
@@ -86,7 +143,7 @@
             on:next={nextStep}
           />
         {/if}
-        {#if step === 2}
+        {#if currentStep === 2}
           <OnboardingStepCategory
             bind:this={stepComponent}
             restaurantId={restaurantId}
@@ -94,7 +151,7 @@
             on:prev={prevStep}
           />
         {/if}
-        {#if step === 3}
+        {#if currentStep === 3}
           <OnboardingStepDish
             bind:this={stepComponent}
             restaurantId={restaurantId}
@@ -102,7 +159,7 @@
             on:prev={prevStep}
           />
         {/if}
-        {#if step === 4}
+        {#if currentStep === 4}
           <OnboardingStepHeroSlides
             bind:this={stepComponent}
             restaurantId={restaurantId}
@@ -110,7 +167,7 @@
             on:prev={prevStep}
           />
         {/if}
-        {#if step === 5}
+        {#if currentStep === 5}
           <OnboardingStepSocialLinks
             bind:this={stepComponent}
             restaurant={restaurant}
@@ -119,7 +176,25 @@
             on:prev={prevStep}
           />
         {/if}
-        {#if step === 6}
+        {#if currentStep === 6}
+          <OnboardingStepSchedule
+            bind:this={stepComponent}
+            restaurant={restaurant}
+            restaurantId={restaurantId}
+            on:next={nextStep}
+            on:prev={prevStep}
+          />
+        {/if}
+        {#if currentStep === 7}
+          <OnboardingStepFeatures
+            bind:this={stepComponent}
+            restaurant={restaurant}
+            restaurantId={restaurantId}
+            on:next={nextStep}
+            on:prev={prevStep}
+          />
+        {/if}
+        {#if currentStep === 8}
           <OnboardingStepQRCode
             bind:this={stepComponent}
             restaurant={restaurant}
@@ -128,16 +203,23 @@
             on:prev={prevStep}
           />
         {/if}
+      {:else if !isValidStep}
+        <div class="flex flex-col items-center justify-center h-full">
+          <p class="text-error text-center">Paso no válido</p>
+          <button class="btn btn-primary mt-md" on:click={() => navigateToStep(1)}>
+            Ir al primer paso
+          </button>
+        </div>
       {/if}
     </div>
     <div class="wizard-footer px-sm py-sm flex items-center justify-end gap-lg bg-white border-t border-accent rounded-b-xl flex-shrink-0 sticky bottom-0 z-10">
-      {#if step > 1}
+      {#if currentStep > 1}
         <button class="btn btn-secondary" on:click={prevStep}>Atrás</button>
       {/if}
-      {#if step < steps.length}
+      {#if currentStep < steps.length}
         <button class="btn btn-primary" on:click={handleNext}>Siguiente</button>
       {:else}
-        <button class="btn btn-primary" on:click={() => window.location.href = '/dashboard'}>Finalizar</button>
+        <button class="btn btn-primary" on:click={handleFinish}>Finalizar</button>
       {/if}
     </div>
   </div>
