@@ -1,0 +1,171 @@
+---
+import type { HeroSlide } from '../types/slider';
+
+interface Props {
+  slides: HeroSlide[];
+  primaryColor?: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
+  cardWidth?: string;
+}
+
+const {
+  slides,
+  backgroundColor = '#f8f8f8',
+  primaryColor = '#1a202c',
+  secondaryColor = '#e6ddd4',
+  cardWidth = '85vw',
+} = Astro.props;
+---
+
+<section class="hero-carousel" style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor}; --background-color: ${backgroundColor};`}>
+  <div class="carousel-track">
+    {slides.map((slide, idx) => (
+      <div class="carousel-card" style={`width: ${cardWidth};`} tabindex="0">
+        <div class="card-image-horizontal">
+          <img src={slide.imageUrl} alt={slide.alt || slide.title} loading={idx === 0 ? 'eager' : 'lazy'} decoding="async" />
+          <div class="card-overlay"></div>
+          <div class="card-content-horizontal">
+            <h2 class="card-title">{slide.title}</h2>
+            {slide.subtitle && <p class="card-subtitle">{slide.subtitle}</p>}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+.hero-carousel {
+  width: 100%;
+  padding: 1.5rem 0 0.5rem 0;
+  background: var(--background-color, #f8f8f8);
+  overflow-x: auto;
+}
+.carousel-track {
+  display: flex;
+  gap: 1.2rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0 1rem 1rem 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE y Edge */
+}
+.carousel-track::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+.carousel-card {
+  background: transparent;
+  border-radius: 1.2rem;
+  scroll-snap-align: center;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  transition: transform 0.2s, box-shadow 0.2s;
+  outline: none;
+  position: relative;
+  min-width: 320px;
+  max-width: 600px;
+}
+.carousel-card:focus-visible {
+  box-shadow: 0 0 0 3px var(--primary-color, #1a202c);
+  transform: scale(1.03);
+}
+.card-image-horizontal {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/7;
+  overflow: hidden;
+  border-radius: 1.2rem;
+  display: flex;
+  align-items: stretch;
+  min-height: 160px;
+  max-height: 260px;
+}
+.card-image-horizontal img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 1.2rem;
+  transition: transform 0.3s;
+}
+.carousel-card:hover .card-image-horizontal img {
+  transform: scale(1.04);
+}
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 70%, rgba(0,0,0,0.05) 100%);
+  border-radius: 1.2rem;
+  z-index: 1;
+}
+.card-content-horizontal {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 70%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+  color: #fff;
+  pointer-events: none;
+}
+.card-badge {
+  align-self: flex-start;
+  background: var(--primary-color, #1a202c);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  letter-spacing: 0.03em;
+  margin-bottom: 0.7rem;
+}
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem 0;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.card-subtitle {
+  font-size: 1rem;
+  color: #f3f3f3;
+  margin: 0;
+  opacity: 0.92;
+  line-height: 1.4;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+@media (min-width: 700px) {
+  .carousel-track {
+    gap: 2rem;
+    padding: 0 2rem 2rem 2rem;
+  }
+  .carousel-card {
+    min-width: 480px;
+    max-width: 600px;
+  }
+  .card-content-horizontal {
+    width: 60%;
+    padding: 2rem 2rem 2rem 2rem;
+  }
+}
+@media (max-width: 600px) {
+  .carousel-card {
+    min-width: 85vw;
+    max-width: 95vw;
+  }
+  .card-content-horizontal {
+    width: 90%;
+    padding: 1rem 1rem 1.2rem 1rem;
+  }
+}
+</style> 

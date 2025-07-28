@@ -5,7 +5,7 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import CategoryNav from '../../components/CategoryNav.astro';
 import DynamicMenu from '../../components/DynamicMenu.svelte';
-import HeroSlider from '../../components/HeroSlider.astro';
+import HeroCarousel from '../../components/HeroCarousel.astro';
 import FloatingButton from '../../components/microcomponentes/FloatingButton.svelte';
 import BottomSheetQR from '../../components/BottomSheetQR.astro';
 import { fetchAllRestaurantDataByUsername, fetchLinksByUsername } from '../../services/apiService';
@@ -84,6 +84,25 @@ const primaryColor = restaurantInfo?.primaryColor || '#FF4500';
 const secondaryColor = restaurantInfo?.secondaryColor || '#FF6B35';
 const backgroundColor = restaurantInfo?.backgroundColor || linksTreeInfo?.backgroundColor || '#FFFFFF';
 
+// Función para determinar si un color es claro u oscuro
+function isLightColor(color: string): boolean {
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return brightness > 155;
+}
+// Utilidad para iniciales (si no existe ya)
+function getInitials(name: string): string {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map((word: string) => word[0])
+    .join('')
+    .toUpperCase();
+}
+
 // Schema markup específico para menú
 const menuStructuredData = hasValidData ? {
   "@context": "https://schema.org",
@@ -159,22 +178,17 @@ const menuStructuredData = hasValidData ? {
     </nav>
   )}
   
-  <!-- Hero Slider con lazy loading y mejor accesibilidad -->
+  <!-- Hero Carousel moderno de cards -->
   {hasValidData && (
     <section 
       class="hero-section"
-      aria-label="Galería de imágenes del restaurante"
+      aria-label="Promociones y destacados del restaurante"
     >
-      <HeroSlider 
+      <HeroCarousel 
         slides={slides}
-        autoPlay={true}
-        autoPlayInterval={5000}
-        showDots={true}
-        showArrows={true}
-        height="35vh"
         primaryColor={primaryColor}
         secondaryColor={secondaryColor}
-        
+        backgroundColor={backgroundColor}
       />
     </section>
   )}
@@ -257,58 +271,55 @@ const menuStructuredData = hasValidData ? {
   
   <!-- Footer del menú optimizado -->
   <footer 
-    class="menu-footer" 
+    class="menu-footer"
     id="menu-footer"
     style={`
-      --primary-color: ${primaryColor}; 
-      --text-color: ${restaurantInfo?.textColor || linksTreeInfo?.textColor || '#333'}; 
-      opacity: 0; 
+      --primary-color: ${primaryColor};
+      --text-color: ${restaurantInfo?.textColor || linksTreeInfo?.textColor || (isLightColor(primaryColor) ? '#222' : '#fff')};
+      opacity: 0;
       transition: opacity 0.3s ease;
     `}
     role="contentinfo"
   >
     <div class="footer-content">
-      <div class="restaurant-info">
-        <h3>{restaurantInfo!.name}</h3>
-        {restaurantInfo!.address && (
-          <address class="address">
-            <span aria-label="Dirección">📍</span> {restaurantInfo!.address}
-          </address>
-        )}
-        {restaurantInfo!.phone && (
-          <p class="phone">
-            <span aria-label="Teléfono">📞</span> 
-            <a href={`tel:${restaurantInfo!.phone}`}>{restaurantInfo!.phone}</a>
-          </p>
-        )}
-        {restaurantInfo!.schedule && (
-          <p class="schedule">
-            <span aria-label="Horario">🕒</span> {restaurantInfo!.schedule}
-          </p>
+      <div class="footer-main">
+        <div class="footer-logo">
+          {restaurantInfo?.logo_data?.url
+            ? <img src={restaurantInfo.logo_data.url} alt={restaurantInfo.name} />
+            : <span class="footer-initials">{getInitials(restaurantInfo?.name || '')}</span>
+          }
+          <div>
+            <h3>{restaurantInfo!.name}</h3>
+            {restaurantInfo!.address && (
+              <address class="address">{restaurantInfo!.address}</address>
+            )}
+            {restaurantInfo!.phone && (
+              <a href={`tel:${restaurantInfo!.phone}`} class="footer-phone">{restaurantInfo!.phone}</a>
+            )}
+          </div>
+        </div>
+        {restaurantInfo!.socialLinks && (
+          <div class="footer-social">
+            {Object.entries(restaurantInfo!.socialLinks).map(([platform, url]) =>
+              url && (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Síguenos en ${platform}`}
+                  class={`footer-social-link footer-social-link-${platform}`}
+                >
+                  <i class={`fab fa-${platform}`}></i>
+                </a>
+              )
+            )}
+          </div>
         )}
       </div>
-      
-      {restaurantInfo!.socialLinks && (
-        <div class="social-links" aria-label="Redes sociales">
-          {Object.entries(restaurantInfo!.socialLinks).map(([platform, url]) => 
-            url && (
-              <a 
-                href={url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                aria-label={`Síguenos en ${platform}`}
-                class={`social-link social-link-${platform}`}
-              >
-                <i class={`fab fa-${platform}`} aria-hidden="true"></i>
-              </a>
-            )
-          )}
-        </div>
-      )}
-    </div>
-    
-    <div class="footer-bottom">
-      <p>© {new Date().getFullYear()} {restaurantInfo!.name} - Powered by Menu-upp</p>
+      <div class="footer-bottom">
+        <span>© {new Date().getFullYear()} {restaurantInfo!.name}</span>
+        <span class="footer-powered">Powered by <a href="https://menuupp.com" target="_blank" rel="noopener">Menu-upp</a></span>
+      </div>
     </div>
   </footer>
   
@@ -535,6 +546,15 @@ const menuStructuredData = hasValidData ? {
     gap: 2rem;
     align-items: start;
   }
+  .footer-logo img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  justify-self: center;
+}
   
   .restaurant-info h3 {
     font-size: 1.25rem;
