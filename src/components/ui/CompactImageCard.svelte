@@ -39,12 +39,12 @@
     {:else}
       <div class="image-placeholder">+</div>
     {/if}
-    <div class="actions">
-      <button type="button" class="action-btn" aria-label="Cambiar imagen" on:click={triggerFileInput} disabled={disabled || uploading}>
+    <div class="actions-compact-image-card">
+      <button type="button" class="action-btn-compact-image-card" aria-label="Cambiar imagen" on:click={triggerFileInput} disabled={disabled || uploading}>
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </button>
       {#if previewUrl}
-        <button type="button" class="action-btn remove" aria-label="Eliminar imagen" on:click={removeImage} disabled={disabled || uploading}>
+        <button type="button" class="action-btn-compact-image-card remove" aria-label="Eliminar imagen" on:click={removeImage} disabled={disabled || uploading}>
           <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
         </button>
       {/if}
@@ -106,7 +106,7 @@
     background: var(--bg-accent, #f3f4f6);
     border-radius: 1rem;
   }
-  .actions {
+  .actions-compact-image-card {
     position: absolute;
     bottom: 0.25rem;
     right: 0.25rem;
@@ -114,7 +114,7 @@
     gap: 0.25rem;
     z-index: 2;
   }
-  .action-btn {
+  .action-btn-compact-image-card {
     background: var(--bg-primary, #fff);
     border: 1px solid var(--bg-accent, #e5e7eb);
     border-radius: 50%;
@@ -128,12 +128,12 @@
     transition: background 0.2s, border 0.2s;
     box-shadow: var(--shadow-xs, 0 1px 2px rgba(0,0,0,0.04));
   }
-  .action-btn.remove {
+  .action-btn-compact-image-card.remove {
     background: var(--error, #fee2e2);
     color: var(--error-dark, #b91c1c);
     border-color: var(--error, #fee2e2);
   }
-  .action-btn:disabled {
+  .action-btn-compact-image-card:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
