@@ -3,8 +3,8 @@
     margin: 0 auto;
     /* padding: var(--spacing-lg) var(--spacing-md); */
     font-family: inherit;
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl);
+    /* background: var(--bg-primary); */
+    /* border-radius: var(--radius-xl); */
     /* box-shadow: var(--shadow-md); */
   }
   
