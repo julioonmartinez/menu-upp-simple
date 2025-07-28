@@ -312,7 +312,7 @@
           type="text"
           placeholder="Buscar restaurantes..."
           bind:value={searchQuery}
-          class="input pl-2xl w-full rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+          class="input pl-3xl w-full rounded-lg border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
         />
       </div>
     {/if}
