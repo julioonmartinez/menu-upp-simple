@@ -120,30 +120,30 @@
   }
 </script>
 
-<div class="wizard-container flex flex-col items-center justify-center">
-  <div class="card wizard-card w-full max-w-xl p-0 shadow-lg relative">
+<div class="wizard-container">
+  <div class="wizard-card">
     <div class="wizard-progress-bar-container">
       <div class="wizard-progress-bar" style="width: {(currentStep/steps.length)*100}%"></div>
     </div>
-    <div class="wizard-header p-2xl pb-lg border-b border-accent bg-white rounded-t-xl flex-shrink-0">
-      <div class="flex items-center justify-between">
-        <span class="text-sm text-muted font-medium">Paso {currentStep} de {steps.length}</span>
-        <span class="text-lg font-semibold text-primary">{steps[currentStep-1]}</span>
+    <div class="wizard-header">
+      <div class="wizard-header-content">
+        <span class="wizard-step-counter">Paso {currentStep} de {steps.length}</span>
+        <span class="wizard-step-title">{steps[currentStep-1]}</span>
       </div>
     </div>
-    <div class="wizard-content p-xs pb-5xl flex-1 overflow-y-auto min-h-[200px] animate-fade-in">
+    <div class="wizard-content">
       {#if loading}
-        <div class="wizard-loading flex flex-col items-center justify-center h-full w-full animate-fade-in">
-          <div class="spinner mb-md" aria-label="Cargando">
+        <div class="wizard-loading">
+          <div class="spinner" aria-label="Cargando">
             <svg class="spinner-svg" viewBox="0 0 50 50">
               <circle class="spinner-bg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
               <circle class="spinner-fg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
             </svg>
           </div>
-          <span class="text-primary font-semibold text-lg">Cargando…</span>
+          <span class="wizard-loading-text">Cargando…</span>
         </div>
       {:else if error}
-        <p class="text-error">{error}</p>
+        <p class="wizard-error">{error}</p>
       {:else if restaurant && isValidStep}
         {#if currentStep === 1}
           <OnboardingStepImagesAndColors
@@ -223,15 +223,15 @@
           />
         {/if}
       {:else if !isValidStep}
-        <div class="flex flex-col items-center justify-center h-full">
-          <p class="text-error text-center">Paso no válido</p>
-          <button class="btn btn-primary mt-md" on:click={() => navigateToStep(1)}>
+        <div class="wizard-error-state">
+          <p class="wizard-error">Paso no válido</p>
+          <button class="btn btn-primary" on:click={() => navigateToStep(1)}>
             Ir al primer paso
           </button>
         </div>
       {/if}
     </div>
-    <div class="wizard-footer px-sm py-sm flex items-center justify-end gap-lg bg-white border-t border-accent rounded-b-xl flex-shrink-0 sticky bottom-0 z-10">
+    <div class="wizard-footer">
       {#if currentStep > 1}
         <button class="btn btn-secondary" on:click={prevStep}>Atrás</button>
       {/if}
@@ -245,194 +245,165 @@
 </div>
 
 <style>
+  /* Contenedor principal del wizard */
   .wizard-container {
-    background: linear-gradient(135deg, #fafbfc, #f8fafc);
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
     width: 100vw;
     height: 100dvh;
     min-height: 100dvh;
-    padding: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-  }
-  
-  .wizard-card {
-    height: 100dvh;
     max-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    border-radius: var(--radius-xl);
-    background: var(--bg-primary);
-    box-shadow: var(--shadow-xl);
-    border: 1px solid var(--bg-accent);
-    position: relative;
+    padding: 0;
+    margin: 0;
     overflow: hidden;
-  }
-  
-  .wizard-card::before {
-    content: '';
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    opacity: 0.7;
-    z-index: 10;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-overflow-scrolling: touch;
+    z-index: 1000;
   }
   
-  @media (max-width: 640px) {
-    .wizard-card {
-      border-radius: 0;
-      max-width: 100vw;
-      width: 100vw;
-      height: 100dvh;
-    }
+  /* Card principal del wizard */
+  .wizard-card {
+    width: 100%;
+    max-width: 500px;
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--bg-accent);
+    border-radius: var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    -webkit-overflow-scrolling: touch;
   }
   
+  /* Barra de progreso */
   .wizard-progress-bar-container {
     width: 100%;
     height: 6px;
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    background: var(--bg-accent);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     overflow: hidden;
     position: relative;
     z-index: 5;
+    flex-shrink: 0;
   }
   
   .wizard-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
     transition: width 0.4s var(--transition-bounce);
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
   }
   
+  /* Header del wizard */
   .wizard-header {
-    /* background: linear-gradient(135deg, #fafbfc, #f8fafc); */
+    padding: var(--spacing-2xl) var(--spacing-xl) var(--spacing-lg);
     border-bottom: 1px solid var(--bg-accent);
-    /* border-radius: var(--radius-xl) var(--radius-xl) 0 0; */
-    position: sticky;
-    top: 0;
-    z-index: 5;
+    background: var(--bg-primary);
     position: relative;
     overflow: hidden;
-  }
-  
-  .wizard-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    opacity: 0.5;
-  }
-  
-  .wizard-header span:first-child {
-    color: var(--text-secondary);
-    font-weight: var(--weight-medium);
-    position: relative;
-    z-index: 2;
-  }
-  
-  .wizard-header span:last-child {
-    color: var(--primary-color);
-    font-weight: var(--weight-bold);
-    position: relative;
-    z-index: 2;
-  }
-  
-  .wizard-footer {
-    background: linear-gradient(135deg, #fafbfc, #f8fafc);
-    border-top: 1px solid var(--bg-accent);
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-    position: sticky;
-    bottom: 0;
-    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0));
+    flex-shrink: 0;
     z-index: 5;
-    position: relative;
-    overflow: hidden;
   }
   
-  .wizard-footer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    opacity: 0.5;
-  }
-  
-  .wizard-footer .btn {
-    position: relative;
-    z-index: 2;
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-normal);
-  }
-  
-  .wizard-footer .btn:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-  }
-  
-  .wizard-content {
-    min-height: 340px;
-    animation: fadeIn 0.5s;
-    overflow-y: auto;
-    flex: 1 1 0%;
-    /* background: var(--bg-primary); */
-    position: relative;
-    z-index: 1;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .wizard-loading {
-    min-height: 200px;
+  .wizard-header-content {
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex-direction: column;
+    justify-content: space-between;
     width: 100%;
-    height: 100%;
-    /* background: linear-gradient(135deg, #fafbfc, #f8fafc); */
-    /* border-radius: var(--radius-xl); */
-    animation: fadeIn 0.5s;
-    /* border: 1px solid var(--bg-accent); */
-    position: relative;
-    overflow: hidden;
   }
   
-  /* .wizard-loading::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    opacity: 0.7;
-  } */
+  .wizard-step-counter {
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+    font-weight: var(--weight-medium);
+  }
   
-  .wizard-loading span {
+  .wizard-step-title {
+    font-size: var(--font-xl);
+    font-weight: var(--weight-bold);
+    color: var(--primary-color);
+  }
+  
+  /* Contenido principal */
+  .wizard-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    min-height: 300px;
     position: relative;
-    z-index: 2;
+    z-index: 1;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+  }
+  
+  /* Footer con botones */
+  .wizard-footer {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0));
+    background: var(--bg-primary);
+    border-top: 1px solid var(--bg-accent);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-lg);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+  }
+  
+  /* Estados de loading y error */
+  .wizard-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    min-height: 200px;
+  }
+  
+  .wizard-loading-text {
     color: var(--primary-color);
     font-weight: var(--weight-bold);
+    font-size: var(--font-lg);
+    margin-top: var(--spacing-lg);
   }
   
+  .wizard-error {
+    color: var(--error);
+    text-align: center;
+    font-weight: var(--weight-medium);
+  }
+  
+  .wizard-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: var(--spacing-lg);
+  }
+  
+  /* Spinner */
   .spinner {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 56px;
     height: 56px;
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-lg);
     position: relative;
     z-index: 2;
   }
@@ -449,7 +420,7 @@
   }
   
   .spinner-fg {
-    stroke: url(#spinner-gradient);
+    stroke: var(--primary-color);
     stroke-dasharray: 90 150;
     stroke-dashoffset: 0;
     stroke-linecap: round;
@@ -466,127 +437,105 @@
     100% { stroke-dasharray: 90 150; stroke-dashoffset: -124; }
   }
   
-  /* Responsive mejorado */
-  @media (max-width: 768px) {
+  /* Responsive para móviles */
+  @media (max-width: 640px) {
+    .wizard-card {
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      border-radius: 0;
+      margin: 0;
+    }
+    
+    .wizard-container {
+      padding: 0;
+    }
+    
     .wizard-header {
-      padding: var(--spacing-xl) var(--spacing-lg);
+      padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-md);
     }
     
-    .wizard-footer {
-      padding: var(--spacing-lg);
-    }
-    
-    .wizard-loading {
-      padding: var(--spacing-xl);
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .wizard-header {
-      padding: var(--spacing-lg) var(--spacing-md);
-    }
-    
-    .wizard-header span:first-child {
-      font-size: var(--font-sm);
-    }
-    
-    .wizard-header span:last-child {
-      font-size: var(--font-base);
-    }
-    
-    .wizard-footer {
-      padding: var(--spacing-md);
-    }
-    
-    .wizard-footer .btn {
-      padding: var(--spacing-sm) var(--spacing-lg);
-      font-size: var(--font-sm);
-    }
-    
-    .wizard-loading {
-      padding: var(--spacing-lg);
-    }
-    
-    .spinner {
-      width: 48px;
-      height: 48px;
-    }
-    
-    .spinner-svg {
-      width: 48px;
-      height: 48px;
-    }
-  }
-  
-  @media (max-width: 360px) {
-    .wizard-header {
-      padding: var(--spacing-md) var(--spacing-sm);
-    }
-    
-    .wizard-header span:first-child {
+    .wizard-step-counter {
       font-size: var(--font-xs);
     }
     
-    .wizard-header span:last-child {
-      font-size: var(--font-sm);
+    .wizard-step-title {
+      font-size: var(--font-lg);
     }
     
-    .wizard-footer {
-      padding: var(--spacing-sm);
-    }
-    
-    .wizard-footer .btn {
-      padding: var(--spacing-xs) var(--spacing-md);
-      font-size: var(--font-xs);
-    }
-    
-    .wizard-loading {
+    .wizard-content {
       padding: var(--spacing-md);
     }
     
-    .spinner {
-      width: 40px;
-      height: 40px;
+    .wizard-footer {
+      padding: var(--spacing-md) var(--spacing-lg);
+      gap: var(--spacing-md);
     }
     
-    .spinner-svg {
-      width: 40px;
-      height: 40px;
+    .wizard-footer .btn {
+      padding: var(--spacing-md) var(--spacing-lg);
+      font-size: var(--font-sm);
+      min-height: 44px;
+    }
+  }
+  
+  /* Responsive para tablets */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .wizard-card {
+      max-width: 600px;
+      margin: 0 var(--spacing-lg);
+    }
+  }
+  
+  /* Responsive para desktop */
+  @media (min-width: 1025px) {
+    .wizard-card {
+      max-width: 500px;
+      margin: 0;
+    }
+  }
+  
+  /* iOS specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    .wizard-container {
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+    
+    .wizard-card {
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+    
+    .wizard-content {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
     }
   }
   
   /* Dark mode support */
   @media (prefers-color-scheme: dark) {
     .wizard-container {
-      background: linear-gradient(135deg, #1e293b, #334155);
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
     }
     
     .wizard-card {
-      background: linear-gradient(135deg, #1e293b, #334155);
+      background: var(--bg-primary);
       border-color: var(--bg-accent);
     }
     
-    .wizard-progress-bar-container {
-      background: linear-gradient(135deg, #334155, #475569);
-    }
-    
     .wizard-header {
-      /* background: linear-gradient(135deg, #1e293b, #334155); */
+      background: var(--bg-primary);
       border-color: var(--bg-accent);
     }
     
     .wizard-footer {
-      background: linear-gradient(135deg, #1e293b, #334155);
+      background: var(--bg-primary);
       border-color: var(--bg-accent);
     }
     
-    .wizard-content {
-      /* background: linear-gradient(135deg, #1e293b, #334155); */
-    }
-    
-    .wizard-loading {
-      background: linear-gradient(135deg, #1e293b, #334155);
-      border-color: var(--bg-accent);
+    .wizard-progress-bar-container {
+      background: var(--bg-accent);
     }
     
     .spinner-bg {
@@ -600,16 +549,75 @@
       transition: none;
     }
     
-    .wizard-footer .btn:hover {
-      transform: none;
-    }
-    
     .spinner-svg {
       animation: none;
     }
     
     .spinner-fg {
       animation: none;
+    }
+  }
+  
+  /* Asegurar que los botones sean visibles */
+  .wizard-footer .btn {
+    position: relative;
+    z-index: 10;
+    min-width: 100px;
+    min-height: 44px;
+    font-weight: var(--weight-semibold);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+  }
+  
+  .wizard-footer .btn:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  
+  .wizard-footer .btn:active {
+    transform: translateY(0);
+  }
+  
+  /* Prevenir overflow en el contenido */
+  .wizard-content > * {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Asegurar que el footer esté siempre visible */
+  .wizard-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--bg-accent);
+    z-index: 20;
+  }
+  
+  /* Ajustes específicos para pantallas muy pequeñas */
+  @media (max-width: 375px) {
+    .wizard-footer {
+      padding: var(--spacing-sm) var(--spacing-md);
+      gap: var(--spacing-sm);
+    }
+    
+    .wizard-footer .btn {
+      min-width: 80px;
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: var(--font-sm);
+    }
+  }
+  
+  /* Asegurar que el contenido no se superponga con el footer */
+  .wizard-content {
+    padding-bottom: calc(var(--spacing-2xl) + 60px);
+  }
+  
+  /* Mejorar la visibilidad en modo oscuro */
+  @media (prefers-color-scheme: dark) {
+    .wizard-footer {
+      background: var(--bg-primary);
+      border-top: 1px solid var(--bg-accent);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     }
   }
 </style>

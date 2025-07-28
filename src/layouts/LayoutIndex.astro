@@ -1,15 +1,6 @@
 ---
-import '../styles/reset.css';
-import '../styles/variables.css';
-import '../styles/global2.css';
-import '../styles/animations.css';
-import '../styles/performance.css';
+import '../styles/optimized.css';
 
-// export interface Props {
-//   title: string;
-// }
-
-// Asegúrate de definir estas variables en tu componente Astro
 const { 
   title = "Menu-Upp | Digitaliza el menú de tu restaurante", 
   description = "Digitaliza el menú de tu restaurante con Menu-Upp. Convierte tu menú tradicional en una experiencia digital interactiva.",
@@ -23,28 +14,21 @@ const {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/ico.PNG" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    <meta name="description" content="Digitaliza el menú de tu restaurante con Menu-Upp. Convierte tu menú tradicional en una experiencia digital interactiva." />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Favicon básico -->
-    <link rel="icon" type="image/svg+xml" href="/ico.PNG" />
-    <link rel="shortcut icon" href="/ico.PNG">
-    <meta name="theme-color" content="#FFFFFF">
     
     <!-- SEO básico -->
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
-    <meta name="generator" content={Astro.generator} />
     
-    <!-- Fuentes con preload para optimización -->
+    <!-- Favicon optimizado -->
+    <link rel="icon" type="image/svg+xml" href="/ico.PNG" />
+    <link rel="shortcut icon" href="/ico.PNG">
+    <meta name="theme-color" content="#FFFFFF">
+    
+    <!-- Fuentes optimizadas - una sola carga -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     
     <!-- Open Graph / Facebook -->
@@ -64,16 +48,11 @@ const {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={new URL(image, canonicalURL)} />
     <meta name="twitter:image:alt" content="Menu-Upp - Digitalización de menús para restaurantes" />
-  
-    <!-- Fuentes -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <slot />
     
-    <script src="../scripts/main.js"></script>
-    <script src="../scripts/performance-optimizations.js"></script>
+    <!-- Scripts optimizados - solo uno necesario -->
+    <script src="../scripts/main.js" defer></script>
   </body>
 </html>

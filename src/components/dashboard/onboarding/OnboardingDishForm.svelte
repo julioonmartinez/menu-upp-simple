@@ -137,7 +137,7 @@
   }
 </script>
 
-<div class="onboarding-dish-form flex flex-col gap-xl w-full max-w-lg mx-auto">
+<div class="onboarding-dish-form flex flex-col w-full max-w-lg mx-auto">
   <h2 class="text-2xl font-bold text-primary text-center mb-lg">¡Agrega tu primer platillo!</h2>
   <div class="flex flex-col gap-lg">
     <label class="font-medium text-secondary" for="dish-name">Nombre del platillo <span class="text-error">*</span></label>

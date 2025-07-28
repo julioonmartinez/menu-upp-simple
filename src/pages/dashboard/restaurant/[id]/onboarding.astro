@@ -6,3 +6,65 @@ const { id } = Astro.params;
 <PrivateLayout title='Onboarding' description='' noHeader fullScreen>
     <WizardOnboarding client:load restaurantId={id} />
 </PrivateLayout>
+
+<script>
+  // Prevenir rebote en dispositivos móviles
+  if (typeof window !== 'undefined') {
+    // Detectar si es iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // Prevenir zoom y rebote en iOS
+      document.addEventListener('touchmove', function(e) {
+        // Verificar si hay múltiples touches (pinch zoom)
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      
+      // Ajustar viewport para iOS
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+      }
+    }
+    
+    // Prevenir rebote en Android también
+    let startY = 0;
+    let startX = 0;
+    
+    document.addEventListener('touchstart', function(e) {
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', function(e) {
+      const y = e.touches[0].clientY;
+      const x = e.touches[0].clientX;
+      const deltaY = Math.abs(y - startY);
+      const deltaX = Math.abs(x - startX);
+      
+      // Si el scroll es vertical y estamos en los límites, prevenir rebote
+      if (deltaY > deltaX) {
+        const target = e.target;
+        if (target && target instanceof HTMLElement) {
+          const element = target.closest('.wizard-content');
+          if (element && element instanceof HTMLElement) {
+            const scrollTop = element.scrollTop;
+            const scrollHeight = element.scrollHeight;
+            const clientHeight = element.clientHeight;
+            
+            // Si estamos en el top y intentando hacer scroll hacia arriba
+            if (scrollTop <= 0 && y > startY) {
+              e.preventDefault();
+            }
+            // Si estamos en el bottom y intentando hacer scroll hacia abajo
+            if (scrollTop + clientHeight >= scrollHeight && y < startY) {
+              e.preventDefault();
+            }
+          }
+        }
+      }
+    }, { passive: false });
+  }
+</script>

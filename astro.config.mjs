@@ -5,7 +5,10 @@ import svelte from '@astrojs/svelte';
 export default defineConfig({
   output: 'server',
   adapter: vercel({
-    runtime: 'serverless'
+    runtime: 'serverless',
+    speedInsights: {
+      enabled: true
+    }
   }),
   site: 'https://menu-upp-basic.vercel.app',
   integrations: [svelte({
@@ -19,8 +22,24 @@ export default defineConfig({
   },
   build: {
     assets: 'assets',
-    // --- CAMBIO CLAVE AQUÍ ---
-    inlineStylesheets: 'always' // <--- Cambiado de 'auto' a 'always'
+    inlineStylesheets: 'always'
+  },
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['svelte']
+          }
+        }
+      }
+    },
+    css: {
+      devSourcemap: false
+    },
+    optimizeDeps: {
+      include: ['svelte']
+    }
   },
   env: {
     schema: {

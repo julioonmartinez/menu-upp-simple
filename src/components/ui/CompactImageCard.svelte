@@ -29,17 +29,34 @@
 
   function removeImage() {
     dispatch('remove');
+    // Pequeño delay para evitar que se active el contenedor clickeable inmediatamente
+    setTimeout(() => {
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    }, 10);
+  }
+
+  function handleContainerClick() {
+    if (!previewUrl && !disabled && !uploading) {
+      triggerFileInput();
+    }
   }
 </script>
 
 <div class="compact-image-card">
-  <div class="image-container" style="width: {width}px; height: {height}px;">
+  <div 
+    class="image-container" 
+    style="width: {width}px; height: {height}px;"
+    class:clickable={!previewUrl && !disabled && !uploading}
+    on:click={handleContainerClick}
+  >
     {#if previewUrl}
       <img src={previewUrl} alt="Preview" class="image-preview" />
     {:else}
       <div class="image-placeholder">+</div>
     {/if}
-    <div class="actions-compact-image-card">
+    <div class="actions-compact-image-card" on:click|stopPropagation>
       <button type="button" class="action-btn-compact-image-card" aria-label="Cambiar imagen" on:click={triggerFileInput} disabled={disabled || uploading}>
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </button>
@@ -88,6 +105,14 @@
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-xs, 0 1px 2px rgba(0,0,0,0.04));
+  }
+  .image-container.clickable {
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .image-container.clickable:hover {
+    border-color: var(--primary-color, #3b82f6);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
   }
   .image-preview {
     width: 100%;

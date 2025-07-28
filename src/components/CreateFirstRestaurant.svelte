@@ -126,9 +126,18 @@
   }
 
   async function handleSubmit() {
-    if (!isFormValid || creating || isLoading) return;
-    isLoading = true;
+    if (creating || isLoading) return;
     errorMsg = '';
+    if (!isFormValid) {
+      // Construir mensaje de error según los campos
+      let msg = 'Por favor corrige los siguientes campos:';
+      if (errors.name) msg += `\n- Nombre: ${errors.name}`;
+      if (errors.username) msg += `\n- Username: ${errors.username}`;
+      if (errors.description) msg += `\n- Descripción: ${errors.description}`;
+      toastStore.error(msg);
+      return;
+    }
+    isLoading = true;
     // Fade out del formulario y mostrar loader
     const restaurantData = {
       name: formData.name.trim(),
@@ -312,14 +321,25 @@
           </button>
           <button
             type="submit"
-            class="btn btn-primary"
-            disabled={!isFormValid || creating || isLoading}
+            class="btn btn-primary desktop-create-btn"
+            disabled={creating || isLoading}
           >
             Crear Restaurante
           </button>
         </div>
       </form>
     </div>
+  {/if}
+  <!-- Botón flotante solo visible en móviles -->
+  {#if !isLoading && !isSuccess}
+    <button
+      type="button"
+      class="btn btn-primary floating-create-btn"
+      on:click={handleSubmit}
+      disabled={creating || isLoading}
+    >
+      Crear Restaurante
+    </button>
   {/if}
   <!-- <div class="onboarding-benefits animate-fade-in" style="animation-delay:0.2s">
     <h4 class="text-primary font-semibold mb-lg text-xl">¿Qué puedes hacer después?</h4>
@@ -592,6 +612,30 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  /* Botón flotante solo visible en móviles */
+  .floating-create-btn {
+    display: none;
+  }
+  @media (max-width: 640px) {
+    .desktop-create-btn {
+      display: none !important;
+    }
+    .floating-create-btn {
+      display: block;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 96vw;
+      max-width: 100vw;
+      margin: 0 auto var(--spacing-md) auto;
+      z-index: 1000;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.08);
+      font-size: var(--font-lg);
+      padding: var(--spacing-lg) 0;
+    }
   }
 </style>
 <!-- SVG gradient definition for spinner -->

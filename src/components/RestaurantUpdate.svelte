@@ -802,7 +802,7 @@
             class="btn btn-sm"
             style="background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3);"
           >
-            <i class="fas fa-external-link-alt mr-xs"></i> Ver Público
+            <i class="fas fa-external-link-alt mr-xs"></i> Ver Perfil
           </a>
         {/if}
       </div>
@@ -810,7 +810,7 @@
   </div>
 
   {#if isLoading || isLoadingStore}
-    <div class="flex justify-center py-3xl text-center">
+    <div class="flex justify-center py-3xl text-center " style="margin-top: 100px;" >
       <LoadingSpinner size="lg" />
     </div>
   {:else if error || errorStore}

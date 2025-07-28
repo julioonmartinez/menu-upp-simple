@@ -5,6 +5,7 @@ import '../styles/global-styles.css';
 import ModalManager from '../components/ ModalManager.svelte';
 import AuthInitializer from '../components/AuthInitializer.svelte';
 import ToastContainer from '../components/ui/ToastContainer.svelte';
+import HelpFloatingButton from '../components/HelpFloatingButton.astro';
 
 export interface Props {
   title: string;
@@ -32,7 +33,7 @@ const {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content={description}>
   
   <!-- Favicon y iconos -->
@@ -77,6 +78,8 @@ const {
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       min-height: 100vh;
       padding-top: var(--header-height);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     @media (max-width: 767px) {
@@ -194,10 +197,40 @@ const {
       }
     }
 
-    /* FULLSCREEN: Elimina el header-height */
+    /* FULLSCREEN: Elimina el header-height y previene rebote */
     .fullscreen-layout {
       --header-height: 0 !important;
       --header-height-mobile: 0 !important;
+    }
+
+    .fullscreen-layout body {
+      padding-top: 0 !important;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
+
+    .fullscreen-layout main {
+      padding: 0 !important;
+      margin: 0 !important;
+      max-width: none !important;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* iOS specific fixes for fullscreen */
+    @supports (-webkit-touch-callout: none) {
+      .fullscreen-layout body {
+        height: 100vh;
+        height: -webkit-fill-available;
+      }
+      
+      .fullscreen-layout main {
+        height: 100vh;
+        height: -webkit-fill-available;
+      }
     }
 
     /* Dark mode para páginas privadas */
@@ -233,6 +266,9 @@ const {
   
   <!-- Toast Container -->
   <ToastContainer client:load />
+  
+  <!-- Botón flotante de ayuda -->
+  <HelpFloatingButton />
   
   <div id="modal-root">
     <ModalManager client:load />

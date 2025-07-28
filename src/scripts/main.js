@@ -1,34 +1,33 @@
-// Función para activar las animaciones cuando los elementos entran en el viewport
+// Script optimizado para Menu-Upp
 document.addEventListener('DOMContentLoaded', () => {
-    // Observer para las animaciones 
-    const animatedElements = document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .scale-in');
-    
+  // Observer optimizado para animaciones
+  const animatedElements = document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right, .scale-in');
+  
+  if (animatedElements.length > 0) {
     const animationObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('appear');
-          // Opcional: dejar de observar el elemento una vez que ha aparecido
-          // animationObserver.unobserve(entry.target);
         }
       });
     }, {
-      rootMargin: '0px 0px -100px 0px',
+      rootMargin: '0px 0px -50px 0px',
       threshold: 0.1
     });
     
     animatedElements.forEach(element => {
       animationObserver.observe(element);
     });
-    
-    // Función optimizada para resaltar el enlace activo en el menú
-    const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-links a');
-    
-    // Cache de las posiciones de las secciones para evitar lecturas repetidas
+  }
+  
+  // Navegación optimizada
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  
+  if (sections.length > 0 && navLinks.length > 0) {
     let sectionPositions = [];
     let isScrolling = false;
     
-    // Función para calcular y cachear las posiciones de las secciones
     const calculateSectionPositions = () => {
       sectionPositions = Array.from(sections).map(section => ({
         id: section.getAttribute('id'),
@@ -37,16 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
     };
     
-    // Función optimizada para resaltar navegación
     const highlightNavigation = () => {
       if (isScrolling) return;
       
       isScrolling = true;
       
       requestAnimationFrame(() => {
-        const scrollPosition = window.scrollY + 150; // Offset para mejor detección
+        const scrollPosition = window.scrollY + 100;
         
-        // Encontrar la sección activa
         let activeSectionId = null;
         
         for (const section of sectionPositions) {
@@ -56,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         
-        // Actualizar clases solo si es necesario
         navLinks.forEach(link => {
           const href = link.getAttribute('href');
           const isActive = href === `#${activeSectionId}`;
@@ -72,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     };
     
-    // Throttled scroll handler para mejor performance
+    // Throttled scroll handler
     let scrollTimeout;
     const throttledScrollHandler = () => {
       if (scrollTimeout) return;
@@ -80,19 +76,66 @@ document.addEventListener('DOMContentLoaded', () => {
       scrollTimeout = setTimeout(() => {
         highlightNavigation();
         scrollTimeout = null;
-      }, 16); // ~60fps
+      }, 16);
     };
     
-    // Inicializar posiciones de secciones
+    // Inicializar
     calculateSectionPositions();
-    
-    // Event listeners optimizados
     window.addEventListener('scroll', throttledScrollHandler, { passive: true });
-    window.addEventListener('resize', () => {
-      // Recalcular posiciones en resize
-      calculateSectionPositions();
-    }, { passive: true });
-    
-    // Inicializar al cargar
+    window.addEventListener('resize', calculateSectionPositions, { passive: true });
     highlightNavigation();
+  }
+  
+  // Smooth scrolling optimizado
+  const smoothScrollLinks = document.querySelectorAll('a[href^="#"]');
+  
+  smoothScrollLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href && href !== '#') {
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }
+    });
   });
+  
+  // Header scroll effect
+  const header = document.querySelector('.header');
+  if (header) {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check initial state
+  }
+  
+  // Mobile menu toggle
+  const mobileToggle = document.getElementById('mobileToggle');
+  const sidenav = document.getElementById('sidenav');
+  const closeSidenav = document.getElementById('closeSidenav');
+  const sidenavOverlay = document.getElementById('sidenavOverlay');
+  
+  if (mobileToggle && sidenav) {
+    mobileToggle.addEventListener('click', () => {
+      sidenav.classList.add('active');
+    });
+    
+    const closeMenu = () => {
+      sidenav.classList.remove('active');
+    };
+    
+    if (closeSidenav) closeSidenav.addEventListener('click', closeMenu);
+    if (sidenavOverlay) sidenavOverlay.addEventListener('click', closeMenu);
+  }
+});

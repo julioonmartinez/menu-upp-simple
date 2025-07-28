@@ -190,7 +190,8 @@
       toastStore.error(`Has alcanzado el límite máximo de ${maxRestaurants} restaurantes`);
       return;
     }
-    showCreateModal = true;
+    // showCreateModal = true;
+    window.location.href = '/dashboard/first-restaurant';
   }
   
   async function handleRestaurantCreated(event) {

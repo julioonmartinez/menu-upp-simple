@@ -249,11 +249,12 @@
 
   // Exponer método save() para el wizard
   export async function save() {
-    // Validar que haya al menos un slide guardado
+    // Para el wizard, este paso es opcional
+    // Si no hay slides, simplemente retornamos true
     if (!$slidesOrderedByPosition || $slidesOrderedByPosition.length === 0) {
-      error = 'Debes agregar al menos una imagen destacada.';
-      toastStore.error('Debes agregar al menos una imagen destacada.');
-      return false;
+      // No es un error, simplemente no hay slides configurados
+      error = null;
+      return true;
     }
     error = null;
     return true;

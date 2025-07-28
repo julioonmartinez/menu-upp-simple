@@ -1,0 +1,93 @@
+---
+// Componente de botón flotante para ayuda/WhatsApp
+---
+
+<div class="help-floating-container">
+  <a 
+    href="https://wa.me/5510986418?text=Hola,%20necesito%20ayuda%20con%20Menupp" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    class="help-floating-btn" 
+    aria-label="Obtener ayuda por WhatsApp"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+    </svg>
+  </a>
+</div>
+
+<style>
+  /* Contenedor principal del botón flotante de ayuda */
+  .help-floating-container {
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Estilos para el botón flotante de ayuda */
+  .help-floating-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-full);
+    background-color: #25d366; /* Color oficial de WhatsApp */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    text-decoration: none;
+    animation: helpPulse 2s ease-in-out infinite;
+  }
+
+  .help-floating-btn:hover {
+    background-color: #128c7e; /* Color más oscuro de WhatsApp */
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+    animation: none;
+  }
+
+  .help-floating-btn:active {
+    transform: translateY(-2px) scale(0.95);
+  }
+
+  /* Animación de pulso para el botón de ayuda */
+  @keyframes helpPulse {
+    0%, 100% { 
+      transform: scale(1);
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    }
+    50% { 
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(37, 211, 102, 0.6);
+    }
+  }
+
+  /* Responsive para móviles */
+  @media (max-width: 768px) {
+    .help-floating-container {
+      bottom: 16px;
+      right: 20px;
+    }
+
+    .help-floating-btn {
+      width: 45px;
+      height: 45px;
+    }
+    
+    .help-floating-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  /* Ajuste cuando hay múltiples botones flotantes */
+  @media (max-width: 480px) {
+    .help-floating-container {
+      /* bottom: 80px; Espacio para el botón de búsqueda */
+    }
+  }
+</style> 

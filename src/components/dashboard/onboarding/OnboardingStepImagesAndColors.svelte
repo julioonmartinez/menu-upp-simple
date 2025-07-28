@@ -105,7 +105,7 @@
     }
   </script>
   
-  <div class="onboarding-images-colors flex flex-col gap-2xl h-full w-full animate-fade-in">
+  <div class="onboarding-images-colors flex flex-col  h-full w-full animate-fade-in">
     <h2 class="text-2xl font-bold text-primary mb-lg text-center">Personaliza tu restaurante</h2>
     <p class="text-muted text-center mb-xl">Sube tus imágenes y elige los colores que representarán tu marca.</p>
     <div class="flex md:flex-row gap-xl justify-center items-stretch w-full">
