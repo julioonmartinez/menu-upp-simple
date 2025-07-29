@@ -16,8 +16,8 @@ export const mockRestaurant: Restaurant = {
   schedule: "Lun-Dom: 12:00 - 22:00",
   
   logo: "/images/restaurants/labellavita/logo.webp",
-  imageProfile: "/images/restaurants/labellavita/profile.webp",
-  imageCover: "/images/restaurants/labellavita/cover.webp",
+  profileImage: "/images/restaurants/labellavita/profile.webp",
+  coverImage: "/images/restaurants/labellavita/cover.webp",
   primaryColor: "#D32F2F",
   secondaryColor: "#388E3C",
   textColor: "#222222",
@@ -152,7 +152,7 @@ const mockTacosElRey: Restaurant = {
   schedule: "Lun-Sáb: 10:00 - 23:00, Dom: 10:00 - 21:00",
   
   logo: "/images/restaurants/tacoselrey/logo.webp",
-  imageCover: "/images/restaurants/tacoselrey/cover.webp",
+  coverImage: "/images/restaurants/tacoselrey/cover.webp",
   primaryColor: "#FF6B35",
   secondaryColor: "#F7931E",
   textColor: "#333333",
@@ -276,7 +276,7 @@ const mockSushiZen: Restaurant = {
   schedule: "Mar-Dom: 13:00 - 23:00, Lun: Cerrado",
   
   logo: "/images/restaurants/sushizen/logo.webp",
-  imageCover: "/images/restaurants/sushizen/cover.webp",
+  coverImage: "/images/restaurants/sushizen/cover.webp",
   primaryColor: "#1976D2",
   secondaryColor: "#388E3C",
   

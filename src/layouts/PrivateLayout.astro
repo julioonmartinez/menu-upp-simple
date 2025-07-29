@@ -16,6 +16,7 @@ export interface Props {
   backUrl?: string;
   noHeader?: boolean;
   fullScreen?: boolean;
+  positionHelpButton?: 'bottom-right' | 'bottom-left' ;
 }
 
 const { 
@@ -27,6 +28,7 @@ const {
   backUrl = '/dashboard',
   noHeader = false,
   fullScreen = false,
+  positionHelpButton = 'bottom-right'
 } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -268,7 +270,7 @@ const {
   <ToastContainer client:load />
   
   <!-- Botón flotante de ayuda -->
-  <HelpFloatingButton />
+  <HelpFloatingButton positionHelpButton={positionHelpButton} />
   
   <div id="modal-root">
     <ModalManager client:load />

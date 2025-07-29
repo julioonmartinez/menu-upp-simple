@@ -20,6 +20,7 @@
   import LinkTreeForm from './LinkTreeForm.svelte';
   import GlobalModal from './ui/GlobalModal.svelte';
   import type { ApiResult } from '../services/linkTreeService.ts';
+  import LoadingSpinner from './ui/LoadingSpinner.svelte';
 
   // Props
   const { restaurantId= null } = $props<{
@@ -274,9 +275,7 @@
   <!-- Loading State -->
   {#if appState === 'loading'}
     <div class="loading-state">
-      <div class="animate-spin" style="width: 32px; height: 32px; border: 3px solid var(--bg-accent); border-top: 3px solid var(--primary-color); border-radius: 50%; margin-bottom: var(--spacing-md);"></div>
-      <p class="text-muted">Cargando información...</p>
-      <small class="text-light">Estado: {appState}</small>
+      <LoadingSpinner />
     </div>
   
   <!-- Restaurant Not Found -->

@@ -78,7 +78,7 @@
 
   function addMoreDishes() {
     // Navegar al paso de platillos
-    window.location.href = `/dashboard/onboarding/${restaurantId}?step=3`;
+    window.location.href = `/dashboard/restaurant/${restaurantId}/dishes`;
   }
 
   function viewMenu() {
@@ -97,11 +97,11 @@
 <!-- Confeti épico -->
 {#if showConfetti}
   <div class="confetti-container">
-    {#each Array(50) as _, i}
+    {#each Array(30) as _, i}
       <div 
         class="confetti-piece"
         style="
-          --delay: {Math.random() * 3}s;
+          --delay: {Math.random() * 2}s;
           --left: {Math.random() * 100}%;
           --color: {['#ff6b35', '#0D1B2A', '#10b981', '#ff8c69', '#e55a2b', '#34d399', '#64748b'][Math.floor(Math.random() * 7)]};
         "
@@ -111,7 +111,7 @@
 {/if}
 
 <div class="onboarding-final-step">
-  <!-- Header épico con animación -->
+  <!-- Header compacto y elegante -->
   <div class="achievement-header">
     <div class="trophy-icon">
       <i class="fas fa-trophy"></i>
@@ -123,11 +123,11 @@
     </h1>
     
     <p class="achievement-subtitle">
-      Has creado algo increíble. ¡Es hora de compartirlo con el mundo!
+      Has creado algo increíble. ¡Es hora de compartirlo!
     </p>
   </div>
 
-  <!-- QR Code con animación de aparición -->
+  <!-- QR Code optimizado -->
   {#if qrUrl}
     <div class="qr-showcase {qrLoaded ? 'loaded' : ''}">
       <div class="qr-glow"></div>
@@ -151,7 +151,26 @@
     </div>
   {/if}
 
-  <!-- Acciones principales con animación escalonada -->
+  <!-- URL pública compacta -->
+  <div class="url-section">
+    <div class="url-container">
+      <div class="url-icon">
+        <i class="fas fa-link"></i>
+      </div>
+      <input 
+        class="url-input" 
+        type="text" 
+        readonly 
+        value={publicUrl}
+        placeholder="URL de tu menú"
+      />
+      <button class="url-copy-btn" on:click={copyUrl}>
+        <i class="fas fa-copy"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Acciones principales optimizadas -->
   <div class="action-grid {showActions ? 'visible' : ''}">
     <button class="action-card primary" on:click={viewMenu}>
       <div class="action-icon">
@@ -193,26 +212,7 @@
     </button>
   </div>
 
-  <!-- URL pública con diseño mejorado -->
-  <div class="url-section">
-    <div class="url-container">
-      <div class="url-icon">
-        <i class="fas fa-link"></i>
-      </div>
-      <input 
-        class="url-input" 
-        type="text" 
-        readonly 
-        value={publicUrl}
-        placeholder="URL de tu menú"
-      />
-      <button class="url-copy-btn" on:click={copyUrl}>
-        <i class="fas fa-copy"></i>
-      </button>
-    </div>
-  </div>
-
-  <!-- Botón de finalizar con estilo épico -->
+  <!-- Botón de finalizar optimizado -->
   <div class="finish-section">
     <button class="finish-btn" on:click={handleFinish}>
       <span>¡Finalizar Onboarding!</span>

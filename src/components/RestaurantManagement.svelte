@@ -9,6 +9,7 @@
   import RestaurantListItem from './RestaurantListItem.svelte';
   import GlobalModal from './ui/GlobalModal.svelte';
   import ConfirmationModal from './ui/ConfirmationModal.svelte';
+  import LoadingSpinner from './ui/LoadingSpinner.svelte';
   
   // Props
   export let currentUser = null;
@@ -323,8 +324,7 @@
   <div class="management-content min-h-[400px]">
     {#if loading}
       <div class="loading-state flex flex-col items-center justify-center p-4xl text-center bg-white rounded-xl shadow">
-        <span class="spinner-large animate-spin mb-md"></span>
-        <p class="text-lg text-muted">Cargando restaurantes...</p>
+        <LoadingSpinner ></LoadingSpinner>
       </div>
     {:else if apiError}
       <div class="error-state flex flex-col items-center justify-center p-4xl text-center bg-white rounded-xl shadow">

@@ -3,27 +3,51 @@ import Button from './Button.astro';
 ---
 
 <section class="hero-section" id="home">
+  <!-- Fondo con gradiente sutil -->
+  <div class="hero-background">
+    <div class="hero-gradient"></div>
+  </div>
+  
   <div class="hero-container">
-    <div class="hero-content hero-animate">
-      <span class="hero-badge">¡NUEVO!</span>
-      <h1>Digitaliza el menú de tu restaurante <span class="highlight">en minutos</span></h1>
-      <p>Con Menu-Upp, transforma tu carta tradicional en una experiencia digital interactiva que tus clientes amarán.</p>
+    <div class="hero-content">
+      <!-- Badge minimalista -->
+      <div class="hero-badge-wrapper">
+        <span class="hero-badge">
+          <span class="badge-text">Nuevo</span>
+        </span>
+      </div>
       
+      <!-- Título principal con mejor tipografía -->
+      <h1 class="hero-title">
+        Digitaliza el menú de tu 
+        <span class="title-highlight">restaurante</span>
+        <br>
+        <span class="title-subtitle">en minutos</span>
+      </h1>
+      
+      <!-- Descripción mejorada -->
+      <p class="hero-description">
+        Con Menu-Upp, transforma tu carta tradicional en una experiencia digital 
+        <strong>interactiva</strong> que tus clientes amarán.
+      </p>
+      
+      <!-- Features con mejor diseño -->
       <div class="hero-features">
-        <div class="feature">
-          <span class="feature-icon">✓</span>
-          <span>Fácil de personalizar</span>
+        <div class="feature-chip">
+          <span class="chip-icon">✓</span>
+          <span class="chip-text">Fácil de personalizar</span>
         </div>
-        <div class="feature">
-          <span class="feature-icon">✓</span>
-          <span>Sin comisiones ocultas</span>
+        <div class="feature-chip">
+          <span class="chip-icon">✓</span>
+          <span class="chip-text">Sin comisiones ocultas</span>
         </div>
-        <div class="feature">
-          <span class="feature-icon">✓</span>
-          <span>Integración sencilla</span>
+        <div class="feature-chip">
+          <span class="chip-icon">✓</span>
+          <span class="chip-text">Integración sencilla</span>
         </div>
       </div>
       
+      <!-- Botones con mejor diseño -->
       <div class="hero-buttons">
         <Button
           text="Ver demostración"
@@ -31,327 +55,430 @@ import Button from './Button.astro';
           variant="primary"
         />
         <Button
-          text="Ver precios"
-          href="#pricing"
+          text="Crear mi menú"
+          href="/login"
           variant="outline"
         />
       </div>
       
-      <div class="hero-note">
+      <!-- Nota de descuento mejorada -->
+      <!-- <div class="hero-note">
+        <div class="note-icon">🎉</div>
         <p>Lanzamiento especial: <strong>30% de descuento</strong> en todos los planes</p>
-      </div>
+      </div> -->
     </div>
     
-    <div class="hero-image-wrapper hero-animate">
-      <div class="image-badge mode-badge">Menú Digital</div>
-      <img 
-        src="/images/menu-upp-hero.png" 
-        alt="Menu-Upp Demo en dispositivos móviles" 
-        class="hero-image"
-        width="600"
-        height="400"
-        loading="eager"
-        decoding="async"
-      />
+    <!-- Imagen con mejor presentación -->
+    <div class="hero-image-wrapper">
+      <div class="image-container">
+        <div class="image-badge mode-badge">
+          <span class="badge-dot"></span>
+          Menú Digital
+        </div>
+        <img 
+          src="/images/menu-upp-hero.png" 
+          alt="Menu-Upp Demo en dispositivos móviles" 
+          class="hero-image"
+          width="600"
+          height="400"
+          loading="eager"
+          decoding="async"
+        />
+        <!-- Efectos de sombra sutil -->
+        <div class="image-shadow"></div>
+      </div>
     </div>
   </div>
 </section>
 
 <style>
-/* Estilos para la sección Hero */
+/* Estilos minimalistas para la sección Hero */
 .hero-section {
   position: relative;
-  min-height: 90vh;
-  padding: 6rem 2rem;
+  min-height: 100vh;
+  padding: 0;
   overflow: hidden;
-  background-color: var(--light);
-  margin-top: 0;
+  background-color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  padding-top: 120px; /* Espacio para el header fijo */
+}
+
+/* Fondo con gradiente sutil */
+.hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.hero-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(255, 140, 105, 0.02) 0%, transparent 50%);
 }
 
 .hero-container {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 var(--spacing-lg);
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
-  gap: 2rem;
-}
-
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 45%;
-  height: 100%;
-  background-color: rgba(255, 69, 0, 0.05);
-  clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
-  z-index: 0;
-}
-
-.hero-content {
+  gap: var(--spacing-4xl);
   position: relative;
   z-index: 1;
 }
 
-/* Clase especial para animación */
-.hero-animate {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: heroFadeIn 0.5s ease forwards;
+.hero-content {
+  position: relative;
+  z-index: 2;
 }
 
-.hero-content.hero-animate {
-  animation-delay: 0.2s;
-}
-
-.hero-image-wrapper.hero-animate {
-  animation-delay: 0.4s;
-}
-
-@keyframes heroFadeIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Badge minimalista */
+.hero-badge-wrapper {
+  margin-bottom: var(--spacing-lg);
 }
 
 .hero-badge {
-  display: inline-block;
-  background-color: var(--primary);
-  color: white;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  margin-bottom: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 107, 53, 0.08);
+  color: var(--primary-color);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 107, 53, 0.15);
   letter-spacing: 0.5px;
 }
 
-.hero-section h1 {
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  line-height: 1.2;
-  margin-bottom: var(--space-md);
+.badge-text {
+  font-size: var(--font-xs);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.highlight {
-  color: var(--primary);
+/* Título principal */
+.hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.1;
+  margin-bottom: var(--spacing-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.title-highlight {
+  color: var(--primary-color);
   position: relative;
   display: inline-block;
 }
 
-.highlight::after {
+.title-highlight::after {
   content: '';
   position: absolute;
   bottom: 0.1em;
   left: 0;
   width: 100%;
-  height: 0.2em;
-  background-color: rgba(255, 69, 0, 0.2);
+  height: 0.15em;
+  background-color: rgba(255, 107, 53, 0.2);
   z-index: -1;
 }
 
-.hero-section p {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  margin-bottom: var(--space-md);
-  color: var(--gray);
+.title-subtitle {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Descripción */
+.hero-description {
+  font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+  margin-bottom: var(--spacing-xl);
+  color: var(--text-secondary);
+  line-height: 1.6;
   max-width: 540px;
 }
 
+/* Features mejorados */
 .hero-features {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
 }
 
-.feature {
-  display: flex;
+.feature-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(255, 107, 53, 0.05);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: all var(--transition-normal);
+  animation: chipFloat 3s ease-in-out infinite;
 }
 
-.feature-icon {
+.feature-chip:nth-child(1) { animation-delay: 0s; }
+.feature-chip:nth-child(2) { animation-delay: 0.5s; }
+.feature-chip:nth-child(3) { animation-delay: 1s; }
+
+.feature-chip:hover {
+  background: rgba(255, 107, 53, 0.08);
+  border-color: rgba(255, 107, 53, 0.2);
+  transform: translateY(-2px);
+  animation-play-state: paused;
+}
+
+@keyframes chipFloat {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-3px); 
+  }
+}
+
+.chip-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  background-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  background: var(--primary-color);
   color: white;
   border-radius: 50%;
-  font-size: 0.8rem;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
+.chip-text {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-xs);
+  letter-spacing: 0.2px;
+}
+
+/* Botones */
 .hero-buttons {
   display: flex;
-  gap: var(--space-sm);
-  margin-top: var(--space-md);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
 }
 
+/* Nota de descuento */
 .hero-note {
-  margin-top: var(--space-md);
-  font-size: 0.9rem;
-  padding: 0.6rem 1rem;
-  background-color: rgba(255, 69, 0, 0.08);
-  border-radius: var(--radius-sm);
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(255, 107, 53, 0.05);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  max-width: fit-content;
+}
+
+.note-icon {
+  font-size: var(--font-lg);
 }
 
 .hero-note p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
+/* Imagen */
 .hero-image-wrapper {
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.image-container {
+  position: relative;
   width: 100%;
-  padding: 1rem;
-  box-sizing: border-box;
+  max-width: 550px;
 }
 
 .image-badge {
   position: absolute;
-  background-color: white;
-  padding: 0.4rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  top: 10%;
+  left: -10%;
+  background: white;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-sm);
   font-weight: 600;
-  /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); */
+  color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   z-index: 3;
-  white-space: nowrap;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.mode-badge {
-  top: 15%;
-  left: 0;
-  transform: translateX(-30%);
-  color: var(--primary);
-  background-color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  opacity: 0.7;
 }
 
 .hero-image {
   width: 100%;
-  max-width: 550px;
   height: auto;
-  object-fit: contain;
-  border-radius: 12px;
-  /* box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1); */
+  /* border-radius: var(--radius-xl); */
+  /* box-shadow: var(--shadow-lg); */
   animation: heroFloat 6s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
+}
+
+.image-shadow {
+  position: absolute;
+  bottom: -15px;
+  left: 10%;
+  right: 10%;
+  height: 30px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 1;
 }
 
 @keyframes heroFloat {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-15px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
-/* Media queries */
+/* Responsive */
 @media (max-width: 992px) {
   .hero-container {
     grid-template-columns: 55% 45%;
+    gap: var(--spacing-2xl);
   }
 }
 
 @media (max-width: 768px) {
   .hero-section {
     min-height: auto;
-    padding: 5rem 1.5rem 3rem;
-    margin-top: 1rem;
+    padding: var(--spacing-4xl) 0;
+    padding-top: 100px; /* Menos padding en móvil */
   }
   
   .hero-container {
     grid-template-columns: 1fr;
     text-align: center;
-  }
-  
-  .hero-section::before {
-    width: 100%;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 85%);
-    height: 50%;
-    opacity: 0.5;
-  }
-  
-  .hero-content {
-    order: 1;
+    gap: var(--spacing-3xl);
   }
   
   .hero-features {
-    max-width: 300px;
+    max-width: 100%;
     margin-left: auto;
     margin-right: auto;
-    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   
   .hero-buttons {
     justify-content: center;
   }
   
-  .hero-image-wrapper {
-    order: 0;
-    margin-bottom: 2rem;
-    width: 85%;
-    margin-left: auto;
-    margin-right: auto;
+  .hero-note {
+    margin: 0 auto;
   }
   
-  .mode-badge {
+  .image-container {
+    max-width: 400px;
+  }
+  
+  .image-badge {
     top: 5%;
     left: 0;
     transform: translateX(-20%);
-  }
-  
-  .hero-image {
-    width: 100%;
-    animation: none;
   }
 }
 
 @media (max-width: 576px) {
   .hero-section {
-    padding: 4rem 1rem 2rem;
-    margin-top: 2rem; /* Espacio adicional para separar del header en móvil */
+    padding: var(--spacing-3xl) 0;
+    padding-top: 80px; /* Aún menos padding en móvil pequeño */
   }
   
-  .hero-section h1 {
-    font-size: 1.75rem;
+  .hero-container {
+    padding: 0 var(--spacing-md);
   }
   
-  .hero-section p {
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-description {
     font-size: 1rem;
   }
   
   .hero-features {
-    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+  }
+  
+  .feature-chip {
+    font-size: 11px;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
   
   .hero-buttons {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--spacing-sm);
     width: 100%;
     max-width: 300px;
     margin-left: auto;
     margin-right: auto;
   }
   
-  .hero-image {
-    max-width: 95%;
+  .image-container {
+    max-width: 320px;
   }
   
   .image-badge {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.7rem;
+    font-size: var(--font-xs);
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
+  
+  .hero-image {
+    animation: none;
+  }
+}
+
+/* Optimizaciones de rendimiento */
+@media (prefers-reduced-motion: reduce) {
+  .hero-badge,
+  .badge-dot,
+  .hero-image,
+  .feature-chip {
+    animation: none;
+  }
+  
+  .feature-chip:hover {
+    transform: none;
   }
 }
 </style>

@@ -329,7 +329,7 @@
     top: 0;
     left: 0;
     width: 320px;
-    height: 100vh;
+    height: 100dvh;
     background: var(--bg-primary);
     border-right: 1px solid var(--bg-accent);
     box-shadow: var(--shadow-xl);

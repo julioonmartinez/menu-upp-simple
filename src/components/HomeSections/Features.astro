@@ -1,48 +1,65 @@
 ---
-// import '../styles/features.css';
 import FeatureCard from './FeatureCard.astro';
 
 const featuresData = [
   {
-    icon: '⚡',
+    icon: 'fa-bolt',
     title: 'Tus links en un solo lugar',
-    description: 'Tus links en un solo lugar, para que tus clientes puedan acceder a tu menú y tienda en un solo lugar.'
+    description: 'Tus links en un solo lugar, para que tus clientes puedan acceder a tu menú y tienda en un solo lugar.',
+    color: 'var(--primary-color)'
   },
   {
-    icon: '🏁',
-    title: 'Codigo QR',
-    description: 'Accede a tu menú y tienda en un solo lugar con un codigo QR.'
+    icon: 'fa-qrcode',
+    title: 'Código QR',
+    description: 'Accede a tu menú y tienda en un solo lugar con un código QR.',
+    color: 'var(--primary-light)'
   },
   {
-    icon: '🎨',
+    icon: 'fa-palette',
     title: 'Personaliza tu menú',
-    description: 'Personaliza tu menú con colores, fuentes y más.'
+    description: 'Personaliza tu menú con colores, fuentes y más.',
+    color: 'var(--primary-dark)'
   },
   {
-    icon: '🗂️',
+    icon: 'fa-folder-open',
     title: 'Categorización Inteligente',
-    description: 'Organiza tu menú en categorías para que tus clientes encuentren fácilmente lo que buscan.'
+    description: 'Organiza tu menú en categorías para que tus clientes encuentren fácilmente lo que buscan.',
+    color: 'var(--primary-color)'
   },
   {
-    icon: '📸',
+    icon: 'fa-camera',
     title: 'Fotografía Profesional',
-    description: 'Servicio especial de fotografía para hacer que tus platillos luzcan irresistibles.'
+    description: 'Servicio especial de fotografía para hacer que tus platillos luzcan irresistibles.',
+    color: 'var(--primary-light)'
   },
   {
-    icon: '⭐',
+    icon: 'fa-star',
     title: 'Sistema de Favoritos y Rating',
-    description: 'Permite que tus clientes guarden sus platillos favoritos y califiquen su experiencia.'
+    description: 'Permite que tus clientes guarden sus platillos favoritos y califiquen su experiencia.',
+    color: 'var(--primary-dark)'
   }
 ];
 ---
 
 <section class="features" id="features">
   <div class="container">
-    <div class="section-header fade-in">
-      <h2>Características Destacadas</h2>
-      <p>Menu-Upp ofrece todo lo que necesitas para digitalizar tu menú y mejorar la experiencia de tus clientes.</p>
+    <!-- Header de la sección -->
+    <div class="section-header">
+      <div class="header-badge">
+        <span class="badge-icon"><i class="fas fa-sparkles"></i></span>
+        Características
+      </div>
+      <h2 class="section-title">
+        Todo lo que necesitas para 
+        <span class="title-accent">digitalizar tu menú</span>
+      </h2>
+      <p class="section-description">
+        Menu-Upp ofrece herramientas poderosas y fáciles de usar para transformar 
+        tu restaurante en una experiencia digital moderna.
+      </p>
     </div>
     
+    <!-- Grid de características -->
     <div class="features-grid">
       {featuresData.map((feature, index) => (
         <FeatureCard
@@ -50,46 +67,264 @@ const featuresData = [
           title={feature.title}
           description={feature.description}
           index={index}
+          color={feature.color}
         />
       ))}
+    </div>
+    
+    <!-- Call to action adicional -->
+    <div class="features-cta">
+      <div class="cta-content">
+        <h3>¿Listo para empezar?</h3>
+        <p>Crea tu menú digital en menos de 5 minutos</p>
+        <a href="/login" class="cta-button">
+          <span>Comenzar gratis</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
     </div>
   </div>
 </section>
 
 <style>
-    /* Estilos para la sección de características */
+/* Estilos modernos para la sección de características */
 .features {
-  background-color: var(--light);
   position: relative;
   overflow: hidden;
 }
 
-.features::after {
+/* Fondo con patrones sutiles */
+.features::before {
   content: '';
   position: absolute;
   top: -10%;
   left: -5%;
   width: 300px;
   height: 300px;
-  background-color: rgba(255, 69, 0, 0.05);
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.05) 0%, transparent 70%);
   border-radius: 50%;
   z-index: 0;
 }
 
-.features .container {
+.features::after {
+  content: '';
+  position: absolute;
+  bottom: -10%;
+  right: -5%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(255, 140, 105, 0.03) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
   position: relative;
   z-index: 1;
 }
 
+/* Header de la sección */
+.section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-5xl);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 140, 105, 0.1));
+  color: var(--primary-color);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.badge-icon {
+  font-size: var(--font-base);
+}
+
+.section-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+.title-accent {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-description {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Grid de características */
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-5xl);
+}
+
+/* Call to action adicional */
+.features-cta {
+  text-align: center;
+  padding: var(--spacing-4xl) var(--spacing-2xl);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.features-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.02) 0%, rgba(255, 140, 105, 0.02) 100%);
+  z-index: 0;
+}
+
+.cta-content {
+  position: relative;
+  z-index: 1;
+}
+
+.features-cta h3 {
+  font-size: var(--font-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.features-cta p {
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  color: white;
+  padding: var(--spacing-md) var(--spacing-2xl);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-normal);
+  box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+}
+
+.cta-button svg {
+  transition: transform var(--transition-normal);
+}
+
+.cta-button:hover svg {
+  transform: translateX(4px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+  
+  .features-cta {
+    padding: var(--spacing-3xl) var(--spacing-lg);
+  }
+  
+  .features-cta h3 {
+    font-size: var(--font-2xl);
+  }
+  
+  .features-cta p {
+    font-size: var(--font-base);
+  }
 }
 
 @media (max-width: 576px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .section-header {
+    margin-bottom: var(--spacing-4xl);
+  }
+  
   .features-grid {
-    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .features-cta {
+    padding: var(--spacing-2xl) var(--spacing-md);
+  }
+  
+  .cta-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Animaciones */
+.features-grid {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: featuresFadeIn 0.8s ease forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes featuresFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Optimizaciones de rendimiento */
+@media (prefers-reduced-motion: reduce) {
+  .features-grid {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  
+  .cta-button:hover {
+    transform: none;
+  }
+  
+  .cta-button:hover svg {
+    transform: none;
   }
 }
 </style>

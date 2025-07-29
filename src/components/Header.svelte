@@ -134,11 +134,11 @@
          
         </button> -->
         <!-- Favorites -->
-        {#if isAuth}
+        <!-- {#if isAuth}
          <a class="btn btn-ghost btn-sm "  href="/dashboard">Mi cuenta</a>
         {:else}
          <a class="btn btn-ghost btn-sm" href="/login">Crea una cuenta</a>
-        {/if}
+        {/if} -->
         <!-- <a
           class="action-btn favorites-btn"
           title="Favoritos"

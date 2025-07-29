@@ -9,6 +9,7 @@
   import OnboardingStepLink from './onboarding/OnboardingStepLink.svelte';
   import OnboardingStepQRCode from './onboarding/OnboardingStepQRCode.svelte';
   import { restaurantStore, currentRestaurant } from '../../stores/restaurantStore';
+  import LoadingSpinner from '../ui/LoadingSpinner.svelte';
   import { onMount } from 'svelte';
 
   export let restaurantId;
@@ -127,20 +128,45 @@
     </div>
     <div class="wizard-header">
       <div class="wizard-header-content">
-        <span class="wizard-step-counter">Paso {currentStep} de {steps.length}</span>
-        <span class="wizard-step-title">{steps[currentStep-1]}</span>
+        <div class="wizard-header-main">
+          <span class="wizard-step-counter">Paso {currentStep} de {steps.length}</span>
+          <span class="wizard-step-title">{steps[currentStep-1]}</span>
+        </div>
+        {#if restaurant}
+          <div class="wizard-restaurant-info">
+            <div class="restaurant-profile">
+              {#if restaurant.profileImage}
+                <div class="restaurant-avatar">
+                  <img 
+                    src={restaurant.profileImage} 
+                    alt="Foto de {restaurant.name || 'Restaurante'}"
+                    loading="lazy"
+                  />
+                </div>
+              {:else}
+                <div class="restaurant-avatar-placeholder">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" fill="currentColor"/>
+                    <path d="M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z" fill="currentColor"/>
+                  </svg>
+                </div>
+              {/if}
+              <div class="restaurant-details">
+                <div class="restaurant-name">{restaurant.name || 'Restaurante'}</div>
+                <div class="restaurant-username">@{restaurant.username || 'usuario'}</div>
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
     <div class="wizard-content">
       {#if loading}
         <div class="wizard-loading">
           <div class="spinner" aria-label="Cargando">
-            <svg class="spinner-svg" viewBox="0 0 50 50">
-              <circle class="spinner-bg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
-              <circle class="spinner-fg" cx="25" cy="25" r="20" fill="none" stroke-width="6" />
-            </svg>
+            <LoadingSpinner size="lg" />
           </div>
-          <span class="wizard-loading-text">Cargando…</span>
+          <!-- <span class="wizard-loading-text">Cargando…</span> -->
         </div>
       {:else if error}
         <p class="wizard-error">{error}</p>
@@ -276,21 +302,25 @@
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
-    box-shadow: var(--shadow-xl);
-    border: 1px solid var(--bg-accent);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-2xl);
     position: relative;
     overflow: hidden;
     margin: 0;
     -webkit-overflow-scrolling: touch;
+    /* Diseño limpio para pantallas grandes */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 
+                0 1px 3px 0 rgba(0, 0, 0, 0.1), 
+                0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   /* Barra de progreso */
   .wizard-progress-bar-container {
     width: 100%;
-    height: 6px;
-    background: var(--bg-accent);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     overflow: hidden;
     position: relative;
     z-index: 5;
@@ -300,26 +330,127 @@
   .wizard-progress-bar {
     height: 100%;
     background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-    transition: width 0.4s var(--transition-bounce);
-    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
   }
   
   /* Header del wizard */
   .wizard-header {
     padding: var(--spacing-2xl) var(--spacing-xl) var(--spacing-lg);
-    border-bottom: 1px solid var(--bg-accent);
     background: var(--bg-primary);
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
     z-index: 5;
+    /* Separador sutil */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
   
   .wizard-header-content {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     width: 100%;
+    gap: var(--spacing-lg);
+  }
+  
+  .wizard-header-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .wizard-restaurant-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 140px;
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .wizard-restaurant-info:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  .restaurant-profile {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+
+  .restaurant-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid var(--primary-color);
+    background: var(--bg-primary);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .restaurant-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .restaurant-avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 2px solid var(--primary-color);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .restaurant-avatar-placeholder svg {
+    color: white;
+    opacity: 0.9;
+  }
+
+  .restaurant-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .restaurant-name {
+    font-size: var(--font-sm);
+    font-weight: var(--weight-bold);
+    color: var(--primary-color);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .restaurant-username {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    font-weight: var(--weight-medium);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
   
   .wizard-step-counter {
@@ -338,22 +469,44 @@
   .wizard-content {
     flex: 1;
     overflow-y: auto;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl);
     min-height: 300px;
     position: relative;
     z-index: 1;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     scroll-behavior: smooth;
+    /* Scroll personalizado para pantallas grandes */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  /* Estilos del scrollbar para webkit */
+  .wizard-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .wizard-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .wizard-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  .wizard-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
   
   /* Footer con botones */
   .wizard-footer {
-    padding: var(--spacing-lg) var(--spacing-xl);
-    padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0));
+    padding: var(--spacing-xl) var(--spacing-xl);
+    padding-bottom: calc(var(--spacing-xl) + env(safe-area-inset-bottom, 0));
     background: var(--bg-primary);
-    border-top: 1px solid var(--bg-accent);
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -445,6 +598,10 @@
       max-width: 100vw;
       border-radius: 0;
       margin: 0;
+      /* Diseño específico para móviles */
+      box-shadow: none;
+      border: none;
+      backdrop-filter: none;
     }
     
     .wizard-container {
@@ -453,6 +610,38 @@
     
     .wizard-header {
       padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-md);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .wizard-header-content {
+      gap: var(--spacing-sm);
+    }
+    
+    .wizard-header-main {
+      width: 100%;
+    }
+    
+    .wizard-restaurant-info {
+      align-self: flex-end;
+      min-width: 120px;
+      padding: var(--spacing-sm);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .restaurant-avatar,
+    .restaurant-avatar-placeholder {
+      width: 28px;
+      height: 28px;
+    }
+
+    .restaurant-avatar-placeholder svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .restaurant-profile {
+      gap: var(--spacing-xs);
     }
     
     .wizard-step-counter {
@@ -463,6 +652,15 @@
       font-size: var(--font-lg);
     }
     
+    .restaurant-name {
+      font-size: var(--font-xs);
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    .restaurant-username {
+      font-size: var(--font-xs);
+    }
+    
     .wizard-content {
       padding: var(--spacing-md);
     }
@@ -470,6 +668,7 @@
     .wizard-footer {
       padding: var(--spacing-md) var(--spacing-lg);
       gap: var(--spacing-md);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
     
     .wizard-footer .btn {
@@ -541,6 +740,16 @@
     .spinner-bg {
       stroke: var(--bg-accent);
     }
+    
+    .wizard-restaurant-info {
+      background: var(--bg-secondary);
+      border-color: var(--bg-accent);
+    }
+    
+    .wizard-restaurant-info:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--primary-color);
+    }
   }
   
   /* Reduced motion support */
@@ -589,7 +798,7 @@
     position: sticky;
     bottom: 0;
     background: var(--bg-primary);
-    border-top: 1px solid var(--bg-accent);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
     z-index: 20;
   }
   
@@ -605,6 +814,34 @@
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: var(--font-sm);
     }
+    
+    .wizard-restaurant-info {
+      min-width: 100px;
+      padding: var(--spacing-xs);
+    }
+
+    .restaurant-avatar,
+    .restaurant-avatar-placeholder {
+      width: 24px;
+      height: 24px;
+    }
+
+    .restaurant-avatar-placeholder svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .restaurant-profile {
+      gap: var(--spacing-xs);
+    }
+    
+    .restaurant-name {
+      font-size: var(--font-xs);
+    }
+    
+    .restaurant-username {
+      font-size: var(--font-xs);
+    }
   }
   
   /* Asegurar que el contenido no se superponga con el footer */
@@ -616,7 +853,7 @@
   @media (prefers-color-scheme: dark) {
     .wizard-footer {
       background: var(--bg-primary);
-      border-top: 1px solid var(--bg-accent);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     }
   }

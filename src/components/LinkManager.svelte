@@ -634,7 +634,7 @@
     <div class="links-list">
       {#each sortLinksByOrder(displayLinks || []) as link, index (link.id)}
         <div 
-          class="link-item card card-compact"
+          class="link-item"
           class:dragging={draggedLink?.id === link.id}
           class:drop-target={dropTarget === index}
           class:inactive={!link.active}
@@ -645,70 +645,72 @@
           on:drop={(e) => handleDrop(e, index)}
           on:dragend={handleDragEnd}
           on:dragleave={() => dropTarget = null}
-          
         >
-          <!-- Link Display -->
-          <div class="link-content flex items-center gap-lg">
-            <div class="link-handle" class:hidden={!editable}>
-              <i class="fa-solid fa-grip-vertical text-muted"></i>
+          <!-- Drag Handle -->
+          {#if editable}
+            <div class="link-handle">
+              <i class="fa-solid fa-grip-vertical"></i>
             </div>
+          {/if}
 
-            <div class="link-icon flex-shrink-0" style="background-color: {link.customColor || '#3b82f6'}">
-              <i class="{getLinkIconClass(link)}" style="color: {getLinkIconColor(link)}"></i>
-            </div>
-
-            <div class="link-details flex-1 min-w-0">
-              <div class="link-title text-lg font-semibold text-primary mb-xs">{link.title}</div>
-                              <div class="link-url text-sm text-accent mb-xs break-all">{link.url}</div>
-                                  {#if link.description}
-                    <div class="link-description text-sm text-muted mb-xs">{link.description}</div>
-                  {/if}
-              <div class="link-meta flex gap-lg text-xs text-light">
-                <span class="link-type">{LINK_TYPE_LABELS[link.type]}</span>
-                {#if showAnalytics && link.analytics}
-                  <span class="link-clicks">
-                    {formatClickCount(link.analytics.clicks)} clics
-                  </span>
-                {/if}
-              </div>
-            </div>
-
-            {#if editable}
-              <div class="link-actions flex gap-xs flex-shrink-0">
-                <button
-                  class="btn-icon"
-                  class:active={link.active}
-                  on:click={() => toggleLinkActive(link)}
-                  title={link.active ? 'Desactivar' : 'Activar'}
-                  disabled={isReorderingInProgress}
-                >
-                  <i class="fa-solid {link.active ? 'fa-eye' : 'fa-eye-slash'}"></i>
-                </button>
-
-                <button
-                  class="btn-icon"
-                  on:click={() => startEditLink(link)}
-                  title="Editar"
-                  disabled={isReorderingInProgress}
-                >
-                  <i class="fa-solid fa-edit"></i>
-                </button>
-
-                <button
-                  class="btn-icon delete"
-                  on:click={() => showDeleteConfirmation(link)}
-                  disabled={deletingLinkId === link.id || isReorderingInProgress}
-                  title="Eliminar"
-                >
-                  {#if deletingLinkId === link.id}
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                  {:else}
-                    <i class="fa-solid fa-trash"></i>
-                  {/if}
-                </button>
-              </div>
-            {/if}
+          <!-- Link Icon -->
+          <div class="link-icon" style="background-color: {link.customColor || '#3b82f6'}">
+            <i class="{getLinkIconClass(link)}" style="color: {getLinkIconColor(link)}"></i>
           </div>
+
+          <!-- Link Details -->
+          <div class="link-details">
+            <div class="link-title">{link.title}</div>
+            <div class="link-url">{link.url}</div>
+            {#if link.description}
+              <div class="link-description">{link.description}</div>
+            {/if}
+            <div class="link-meta">
+              <span class="link-type">{LINK_TYPE_LABELS[link.type]}</span>
+              {#if showAnalytics && link.analytics}
+                <span class="link-clicks">
+                  {formatClickCount(link.analytics.clicks)} clics
+                </span>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Link Actions -->
+          {#if editable}
+            <div class="link-actions">
+              <button
+                class="btn-icon"
+                class:active={link.active}
+                on:click={() => toggleLinkActive(link)}
+                title={link.active ? 'Desactivar' : 'Activar'}
+                disabled={isReorderingInProgress}
+              >
+                <i class="fa-solid {link.active ? 'fa-eye' : 'fa-eye-slash'}"></i>
+              </button>
+
+              <button
+                class="btn-icon"
+                on:click={() => startEditLink(link)}
+                title="Editar"
+                disabled={isReorderingInProgress}
+              >
+                <i class="fa-solid fa-edit"></i>
+              </button>
+
+              <button
+                class="btn-icon delete"
+                on:click={() => showDeleteConfirmation(link)}
+                disabled={deletingLinkId === link.id || isReorderingInProgress}
+                title="Eliminar"
+              >
+                {#if deletingLinkId === link.id}
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                {:else}
+                  <i class="fa-solid fa-trash"></i>
+                {/if}
+              </button>
+            </div>
+          {/if}
         </div>
       {/each}
     </div>

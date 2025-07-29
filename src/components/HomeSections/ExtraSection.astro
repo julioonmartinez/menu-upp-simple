@@ -1,49 +1,133 @@
 ---
-// import '../styles/extras.css';
 import Button from './Button.astro';
 ---
 
 <section class="extras" id="extras">
   <div class="container">
+    <!-- Header de la sección -->
+    <div class="section-header">
+      <div class="header-badge">
+        <span class="badge-icon"><i class="fas fa-camera"></i></span>
+        Servicios Adicionales
+      </div>
+      <h2 class="section-title">
+        Fotografía <span class="title-accent">Profesional</span>
+      </h2>
+      <p class="section-description">
+        Destaca tu menú con fotografías de alta calidad que harán que tus clientes 
+        se antojen antes de probar.
+      </p>
+    </div>
+    
     <div class="extras-content">
-      <div class="extras-text fade-in">
-        <h2>Fotografía Profesional para tus Platillos</h2>
-        <p>Destaca tu menú con fotografías de alta calidad que harán que tus clientes se antojen antes de probar.</p>
-        <ul class="extras-list">
-          <li>Sesiones fotográficas profesionales para tus platillos</li>
-          <li>Edición y retoque para resaltar colores y texturas</li>
-          <li>Imágenes optimizadas para web y dispositivos móviles</li>
-          <li>Asesoría en presentación y estilismo culinario</li>
-        </ul>
-        <p>El precio es variable según la cantidad de platillos. Contáctanos para una cotización personalizada.</p>
-        <div class="extras-action">
-          <Button
-            text="Solicitar información"
-            href="#contacto"
-            variant="primary"
-          />
+      <div class="extras-text">
+        <div class="text-content">
+          <h3>Haz que tus platillos luzcan irresistibles</h3>
+          <p>
+            Nuestro equipo de fotógrafos profesionales especializados en gastronomía 
+            captura la esencia y el sabor de cada uno de tus platillos, creando 
+            imágenes que despiertan el apetito y aumentan las ventas.
+          </p>
+          
+          <div class="features-list">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h4>Sesiones fotográficas profesionales</h4>
+                <p>Para tus platillos con iluminación y composición experta</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h4>Edición y retoque profesional</h4>
+                <p>Para resaltar colores, texturas y detalles de tus platillos</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h4>Optimización para web y móviles</h4>
+                <p>Imágenes perfectas para todos los dispositivos</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+                </svg>
+              </div>
+              <div class="feature-text">
+                <h4>Asesoría en presentación</h4>
+                <p>Consejos de estilismo culinario para mejores resultados</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="pricing-note">
+            <div class="note-icon">💰</div>
+            <div class="note-content">
+              <p><strong>Precio variable</strong> según la cantidad de platillos</p>
+              <span>Contáctanos para una cotización personalizada</span>
+            </div>
+          </div>
+          
+          <div class="extras-action">
+            <Button
+              text="Solicitar información"
+              href="#contacto"
+              variant="primary"
+            />
+          </div>
         </div>
       </div>
       
-      <div class="extras-image fade-in">
-        <img 
-          src="/images/food-photography.webp" 
-          alt="Fotografía profesional de alimentos"
-          width="500"
-          height="400"
-        >
+      <div class="extras-image">
+        <div class="image-container">
+          <img 
+            src="/images/food-photography.webp" 
+            alt="Fotografía profesional de alimentos"
+            width="500"
+            height="400"
+          >
+          <div class="image-decoration"></div>
+          <div class="image-badge">
+            <span class="badge-dot"></span>
+            Profesional
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
 <style>
-    /* Estilos para la sección de extras */
+/* Estilos modernos para la sección de extras */
 .extras {
-  background-color: var(--light-gray);
   position: relative;
   overflow: hidden;
 }
 
+/* Fondo con patrones sutiles */
 .extras::before {
   content: '';
   position: absolute;
@@ -51,17 +135,74 @@ import Button from './Button.astro';
   right: 0;
   width: 40%;
   height: 80%;
-  background-color: rgba(255, 69, 0, 0.05);
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.03) 0%, transparent 70%);
   clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
   z-index: 0;
 }
 
-.extras-content {
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
   position: relative;
   z-index: 1;
+}
+
+/* Header de la sección */
+.section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-5xl);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 140, 105, 0.1));
+  color: var(--primary-color);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.badge-icon {
+  font-size: var(--font-base);
+}
+
+.section-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+.title-accent {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-description {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Contenido principal */
+.extras-content {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xl);
+  gap: var(--spacing-4xl);
   align-items: center;
 }
 
@@ -70,74 +211,303 @@ import Button from './Button.astro';
   min-width: 300px;
 }
 
-.extras-text h2 {
-  margin-bottom: var(--space-sm);
+.text-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
-.extras-list {
-  margin: var(--space-md) 0;
+.text-content h3 {
+  font-size: var(--font-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
 }
 
-.extras-list li {
-  position: relative;
-  padding-left: var(--space-md);
-  margin-bottom: var(--space-sm);
+.text-content > p {
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
 }
 
-.extras-list li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--primary);
+/* Lista de características */
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.feature-item {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-normal);
+}
+
+.feature-item:hover {
+  transform: translateX(8px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(255, 107, 53, 0.2);
+}
+
+.feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  align-self: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  color: white;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.feature-text h4 {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.3;
+}
+
+.feature-text p {
+  font-size: var(--font-base);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Nota de precios */
+.pricing-note {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.05), rgba(255, 140, 105, 0.05));
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 107, 53, 0.1);
+}
+
+.note-icon {
+  font-size: var(--font-xl);
+  flex-shrink: 0;
+}
+
+.note-content p {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.note-content span {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
 }
 
 .extras-action {
-  margin-top: var(--space-md);
+  margin-top: var(--spacing-md);
 }
 
+/* Imagen */
 .extras-image {
   flex: 1;
   min-width: 300px;
   position: relative;
 }
 
-.extras-image img {
+.image-container {
+  position: relative;
   width: 100%;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  transition: var(--transition);
-  object-fit: cover;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.extras-image::before {
-  content: '';
+.extras-image img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  transition: transform var(--transition-normal);
+  position: relative;
+  z-index: 2;
+}
+
+.image-container:hover img {
+  transform: scale(1.02);
+}
+
+.image-decoration {
   position: absolute;
   top: -20px;
   left: -20px;
   width: 60%;
   height: 60%;
-  border: 3px solid var(--primary);
-  border-radius: var(--radius-md);
+  border: 3px solid var(--primary-color);
+  border-radius: var(--radius-xl);
   opacity: 0.2;
-  z-index: -1;
+  z-index: 1;
 }
 
+.image-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--primary-color);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  z-index: 3;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .extras-content {
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--spacing-3xl);
+   
   }
   
   .extras-text, .extras-image {
     width: 100%;
   }
   
-  .extras-image::before {
+  .text-content h3 {
+    font-size: var(--font-2xl);
+  }
+  
+  .text-content > p {
+    font-size: var(--font-base);
+  }
+  
+  .feature-item {
+    padding: var(--spacing-sm);
+    justify-self: center;
+  }
+  
+  .feature-icon {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .feature-text h4 {
+    font-size: var(--font-base);
+  }
+  
+  .feature-text p {
+    font-size: var(--font-sm);
+  }
+  
+  .image-decoration {
     display: none;
+  }
+  
+  .image-badge {
+    top: 10px;
+    right: 10px;
+    font-size: var(--font-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .section-header {
+    margin-bottom: var(--spacing-4xl);
+  }
+  
+  .text-content {
+    gap: var(--spacing-lg);
+  }
+  
+  .features-list {
+    gap: var(--spacing-md);
+  }
+  
+  .feature-item {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+  
+  .feature-item:hover {
+    transform: translateY(-4px);
+  }
+  
+  .pricing-note {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-sm);
+  }
+  
+  .extras-action {
+    text-align: center;
+  }
+}
+
+/* Animaciones */
+.extras-content {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: extrasFadeIn 0.8s ease forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes extrasFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Optimizaciones de rendimiento */
+@media (prefers-reduced-motion: reduce) {
+  .extras-content {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  
+  .feature-item:hover {
+    transform: none;
+  }
+  
+  .image-container:hover img {
+    transform: none;
+  }
+  
+  .badge-dot {
+    animation: none;
   }
 }
 </style>

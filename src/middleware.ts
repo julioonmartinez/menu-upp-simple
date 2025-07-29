@@ -22,6 +22,61 @@ const {
 } = middlewareConfig;
 
 /**
+ * Verifica si una ruta es pública (no necesita autenticación)
+ */
+function isPublicRoute(pathname: string): boolean {
+  // Rutas públicas que no necesitan verificación de token
+  const publicRoutes = [
+    '/',
+    '/index',
+    '/about',
+    '/contact',
+    '/privacy',
+    '/terms',
+    '/sitemap.xml',
+    '/robots.txt',
+    '/favicon.ico',
+    '/manifest.json'
+  ];
+  
+  // Patrones de rutas públicas que no necesitan autenticación
+  const publicPatterns = [
+    '/_astro/',           // Assets de Astro
+    '/.well-known/',      // Archivos de configuración del navegador
+    '/favicon',           // Favicons
+    '/robots',            // Robots.txt
+    '/sitemap',           // Sitemaps
+    '/manifest',          // Web app manifests
+    '/api/health',        // Health checks
+    '/api/status',        // Status endpoints
+    '/static/',           // Archivos estáticos
+    '/assets/',           // Assets
+    '/images/',           // Imágenes
+    '/css/',              // CSS
+    '/js/',               // JavaScript
+    '/fonts/'             // Fuentes
+  ];
+  
+  // Verificar rutas exactas
+  if (publicRoutes.includes(pathname)) {
+    return true;
+  }
+  
+  // Verificar patrones
+  if (publicPatterns.some(pattern => pathname.startsWith(pattern))) {
+    return true;
+  }
+  
+  // Verificar extensiones de archivos estáticos
+  const staticExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+  if (staticExtensions.some(ext => pathname.endsWith(ext))) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
  * Verifica si el token JWT es válido consultando la API
  */
 async function verifyToken(token: string): Promise<User | null> {
@@ -50,6 +105,15 @@ async function verifyToken(token: string): Promise<User | null> {
     debugLog('Token verification failed', { status: response.status });
     return null;
   } catch (error) {
+    // Si el backend no está disponible, no fallar completamente
+    if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
+      debugLog('Backend not available, skipping token verification', { 
+        error: error.message,
+        apiUrl: apiBaseUrl 
+      });
+      return null;
+    }
+    
     debugError('Error verifying token', error instanceof Error ? error : new Error(String(error)));
     return null;
   }
@@ -58,7 +122,15 @@ async function verifyToken(token: string): Promise<User | null> {
 /**
  * Obtiene el usuario desde las cookies si existe un token válido
  */
-async function getUserFromCookies(cookies: any): Promise<User | null> {
+async function getUserFromCookies(cookies: any, pathname: string): Promise<User | null> {
+  // Si es una ruta pública, no verificar token para evitar peticiones innecesarias
+  if (isPublicRoute(pathname)) {
+    debugLog('Public route detected, skipping token verification', { pathname });
+    return null;
+  }
+  
+  debugLog('Protected route detected, checking for auth token', { pathname });
+  
   const token = cookies.get('auth_token')?.value;
   if (!token) {
     debugLog('No auth token found in cookies');
@@ -174,7 +246,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   try {
     // Obtener usuario de las cookies
-    const user = await getUserFromCookies(cookies);
+    const user = await getUserFromCookies(cookies, pathname);
     
     // Establecer información del usuario en locals
     if (user) {

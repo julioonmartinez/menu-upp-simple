@@ -49,9 +49,17 @@
   // Estados de upload individuales
   let uploading = {
     logo: false,
-    imageProfile: false,
-    imageCover: false,
+    profileImage: false,
+    coverImage: false,
     image: false
+  };
+
+  // Estados de error individuales para cada imagen
+  let imageErrors = {
+    logo: '',
+    profileImage: '',
+    coverImage: '',
+    image: ''
   };
 
   // Estados del formulario
@@ -197,7 +205,7 @@
     const { file } = event.detail;
     
     uploading[imageType] = true;
-    error = null;
+    imageErrors[imageType] = ''; // Clear previous errors
 
     try {
       const result = await restaurantStore.uploadRestaurantImage(
@@ -210,10 +218,10 @@
         formData[imageType] = result.restaurant[imageType];
         console.log(`${imageType} uploaded successfully:`, result.restaurant[imageType]);
       } else {
-        error = result.error || `Error subiendo ${imageType}`;
+        imageErrors[imageType] = result.error || `Error subiendo ${imageType}`;
       }
     } catch (err) {
-      error = err.message || `Error desconocido subiendo ${imageType}`;
+      imageErrors[imageType] = err.message || `Error desconocido subiendo ${imageType}`;
     } finally {
       uploading[imageType] = false;
     }
@@ -222,17 +230,17 @@
   async function handleImageRemove(imageType) {
     if (!restaurantId) return;
     uploading[imageType] = true;
-    error = null;
+    imageErrors[imageType] = ''; // Clear previous errors
     try {
       const result = await restaurantStore.deleteRestaurantImage(restaurantId, imageType);
       if (result.success) {
         formData[imageType] = '';
         // Opcional: mostrar mensaje de éxito
       } else {
-        error = result.error || `Error eliminando ${imageType}`;
+        imageErrors[imageType] = result.error || `Error eliminando ${imageType}`;
       }
     } catch (err) {
-      error = err.message || `Error desconocido eliminando ${imageType}`;
+      imageErrors[imageType] = err.message || `Error desconocido eliminando ${imageType}`;
     } finally {
       uploading[imageType] = false;
     }
@@ -276,7 +284,7 @@
           width={96}
           height={96}
           uploading={uploading.logo}
-          error={error}
+          error={imageErrors.logo}
           on:fileSelected={(e) => handleImageUpload('logo', e)}
           on:remove={() => handleImageRemove('logo')}
         />
@@ -287,7 +295,7 @@
         width={96}
         height={96}
         uploading={uploading.profileImage}
-        error={error}
+        error={imageErrors.profileImage}
         on:fileSelected={(e) => handleImageUpload('profileImage', e)}
         on:remove={() => handleImageRemove('profileImage')}
       />
@@ -298,7 +306,7 @@
           width={96}
           height={96}
           uploading={uploading.image}
-          error={error}
+          error={imageErrors.image}
           on:fileSelected={(e) => handleImageUpload('image', e)}
           on:remove={() => handleImageRemove('image')}
         />
@@ -310,7 +318,7 @@
         width={96}
         height={96}
         uploading={uploading.coverImage}
-        error={error}
+        error={imageErrors.coverImage}
         on:fileSelected={(e) => handleImageUpload('coverImage', e)}
         on:remove={() => handleImageRemove('coverImage')}
       />
