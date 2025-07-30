@@ -1,0 +1,99 @@
+---
+// src/pages/dashboard/admin/utilidades/platillo-base.astro
+
+import Layout from '../../../../layouts/PrivateLayout.astro';
+import PlatilloBaseManager from '../../../../components/PlatilloBaseManager.svelte';
+---
+
+<Layout title="Gestión de Platillos Base - Admin">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="/dashboard/admin">Dashboard</a>
+      <span>/</span>
+      <a href="/dashboard/admin/utilidades">Utilidades</a>
+      <span>/</span>
+      <span>Platillos Base</span>
+    </div>
+
+    <div class="page-header">
+      <h1>Gestión de Platillos Base</h1>
+      <p class="description">
+        Administra los platillos base del sistema. Los platillos base son plantillas que pueden ser 
+        vinculadas por múltiples restaurantes para mantener consistencia en la información.
+      </p>
+    </div>
+
+    <div class="content">
+      <PlatilloBaseManager client:load />
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .breadcrumb a {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .breadcrumb span {
+    color: #d1d5db;
+  }
+
+  .page-header {
+    margin-bottom: 30px;
+  }
+
+  .page-header h1 {
+    margin: 0 0 10px 0;
+    color: #1f2937;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .description {
+    margin: 0;
+    color: #6b7280;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 15px;
+    }
+
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .description {
+      font-size: 0.875rem;
+    }
+  }
+</style>

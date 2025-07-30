@@ -1,0 +1,17 @@
+---
+import PrivateLayout from "../../layouts/PrivateLayout.astro";
+console.log("Dashboard");
+---
+<PrivateLayout title="Dashboard">
+    <div class="flex flex-col gap-4">
+        <h1 class="text-2xl font-bold">Dashboard</h1>
+    </div>
+    <section class="flex flex-col gap-4">
+        <h2 class="text-xl font-bold">Utilidades</h2>
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+                <a href="/dashboard/admin/utilidades/platillo-base" class="btn btn-primary">Platillos base</a>
+            </div>
+        </div>
+    </section>
+</PrivateLayout>
